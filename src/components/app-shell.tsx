@@ -25,6 +25,7 @@ import { useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
 import { LogoMark } from "@/lib/logo";
 import { PrivacySync, PrivacyToggle } from "./privacy-toggle";
+import { PullToRefresh } from "./pull-to-refresh";
 import { SyncPill } from "./sync-pill";
 import { cx, Sheet } from "./ui";
 
@@ -54,6 +55,8 @@ const HIDE_NAV = ["/welcome", "/add", "/accounts/new", ...AUTH_ROUTES];
 const MODAL_ROUTES = ["/add", "/accounts/new"];
 /** Form-like pages that read better as a single column on desktop. */
 const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", "/payments"];
+/** Read-only screens where pulling down from the top syncs with the cloud now (phones only). */
+const PULL_TO_REFRESH = ["/home", "/accounts", "/accounts/view", "/activity", "/people", "/owed", "/owed/person", "/instalments", "/payments", "/analytics"];
 /** Public pages that render without the app chrome or the onboarding gate. */
 const BARE = ["/"];
 
@@ -140,7 +143,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 MODAL_ROUTES.includes(pathname) && "lg:my-8 lg:min-h-0 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-line lg:bg-surface lg:shadow-soft",
               )}
             >
-              {children}
+              <PullToRefresh enabled={PULL_TO_REFRESH.includes(pathname)}>{children}</PullToRefresh>
             </div>
           </ViewTransition>
         )}</main>

@@ -85,6 +85,25 @@ export function scheduleSync(delay = 0) {
   timer = setTimeout(() => void runSync(), delay);
 }
 
+/**
+ * Sync right now (pull-to-refresh) and resolve once that run, and any rerun it queued, has settled.
+ * Resolves false when there is no signed-in cloud account to sync.
+ */
+export function syncNow(timeout = 20_000): Promise<boolean> {
+  if (!account) return Promise.resolve(false);
+  if (timer) clearTimeout(timer);
+  void runSync();
+  const started = Date.now();
+  return new Promise((resolve) => {
+    const check = () => {
+      const busy = running || rerun || state.phase === "syncing";
+      if (busy && Date.now() - started < timeout) setTimeout(check, 120);
+      else resolve(true);
+    };
+    check();
+  });
+}
+
 function stopSync() {
   account?.stopWatching();
   account = null;
