@@ -14,8 +14,8 @@ import {
   WifiOff,
   Zap,
 } from "lucide-react";
-import { InstallButton, ShortcutBuilder } from "@/components/install";
-import { HeroVisual, OpenAppButton, Reveal } from "@/components/landing";
+import { InstallButton, InstallSheet, ShortcutBuilder } from "@/components/install";
+import { HeroSecondary, HeroVisual, OpenAppButton, Reveal } from "@/components/landing";
 import { LogoMark } from "@/lib/logo";
 
 export const metadata: Metadata = {
@@ -94,7 +94,7 @@ export default function Landing() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <OpenAppButton className="sm:min-w-56" />
-              <InstallButton variant="outline" />
+              <HeroSecondary />
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-3">
               <li className="flex items-center gap-1.5"><HardDrive className="size-4 text-brand" /> No sign-up needed</li>
@@ -242,6 +242,8 @@ export default function Landing() {
           </div>
         </Reveal>
       </section>
+
+      <InstallSheet />
 
       <footer className="border-t border-line py-8 pb-[calc(2rem+var(--safe-bottom))]">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 text-sm text-ink-3 sm:flex-row sm:px-6">

@@ -2,7 +2,9 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Copy, Download, ExternalLink, Hash, Link2, MoreHorizontal, Plus, Share, Smartphone, SquarePlus, Zap } from "lucide-react";
+import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
+import { useMeta } from "@/lib/hooks";
 import { cx, Sheet } from "./ui";
 
 // ---------- Install prompt (Android / desktop Chromium) ----------
@@ -14,6 +16,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 let deferred: BeforeInstallPromptEvent | null = null;
 let installed = false;
+let sheetOpen = false;
 const subs = new Set<() => void>();
 const emit = () => subs.forEach((f) => f());
 
@@ -37,9 +40,10 @@ interface InstallState {
   standalone: boolean;
   canPrompt: boolean;
   installed: boolean;
+  sheetOpen: boolean;
 }
 
-const SERVER: InstallState = { platform: "desktop", standalone: false, canPrompt: false, installed: false };
+const SERVER: InstallState = { platform: "desktop", standalone: false, canPrompt: false, installed: false, sheetOpen: false };
 let cached: InstallState = SERVER;
 
 function readState(): InstallState {
@@ -50,13 +54,14 @@ function readState(): InstallState {
     standalone: window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true,
     canPrompt: !!deferred,
     installed,
+    sheetOpen,
   };
   // keep referential stability for useSyncExternalStore
   if (JSON.stringify(next) !== JSON.stringify(cached)) cached = next;
   return cached;
 }
 
-function useInstall() {
+export function useInstall() {
   return useSyncExternalStore(
     (cb) => {
       subs.add(cb);
@@ -67,23 +72,52 @@ function useInstall() {
   );
 }
 
-/** "Add to Home Screen": native prompt where the browser offers one, otherwise a how-to sheet. */
+/** True on phones/tablets that haven't installed Kaban yet: they should save it to the Home Screen first. */
+export function shouldInstallFirst(s: InstallState) {
+  return s.platform !== "desktop" && !s.standalone && !s.installed;
+}
+
+function setSheet(open: boolean) {
+  sheetOpen = open;
+  emit();
+}
+
+/** Start saving to the Home Screen: the browser's own prompt where offered, otherwise the how-to sheet. */
+export async function requestInstall() {
+  if (deferred) {
+    const d = deferred;
+    await d.prompt();
+    const { outcome } = await d.userChoice;
+    if (outcome === "accepted") installed = true;
+    deferred = null;
+    emit();
+    if (outcome === "accepted") return;
+  }
+  setSheet(true);
+}
+
+/** The shared how-to sheet. Render once per page that offers installing. */
+export function InstallSheet() {
+  const s = useInstall();
+  const mode = useMeta<string>("mode");
+  const href = typeof mode === "string" ? "/home" : "/welcome";
+  return (
+    <Sheet open={s.sheetOpen} onClose={() => setSheet(false)} title={s.platform === "desktop" ? "Install Kaban" : "Add to Home Screen"}>
+      <InstallSteps platform={s.platform} />
+      {s.platform !== "desktop" && (
+        <Link href={href} onClick={() => setSheet(false)} className="mt-1 flex min-h-11 items-center justify-center text-sm font-medium text-ink-3 hover:text-ink">
+          Continue in browser instead
+        </Link>
+      )}
+    </Sheet>
+  );
+}
+
+/** "Add to Home Screen" button. */
 export function InstallButton({ className, variant = "light" }: { className?: string; variant?: "light" | "dark" | "outline" }) {
   const s = useInstall();
-  const [open, setOpen] = useState(false);
   const done = s.standalone || s.installed;
-
-  async function onClick() {
-    if (deferred) {
-      await deferred.prompt();
-      const { outcome } = await deferred.userChoice;
-      if (outcome === "accepted") installed = true;
-      deferred = null;
-      emit();
-      return;
-    }
-    setOpen(true);
-  }
+  const onClick = () => requestInstall();
 
   return (
     <>
@@ -101,9 +135,6 @@ export function InstallButton({ className, variant = "light" }: { className?: st
         {done ? <Check className="size-4" /> : s.platform === "desktop" && !s.canPrompt ? <Download className="size-4" /> : <SquarePlus className="size-4" />}
         {done ? "Installed on this device" : s.platform === "desktop" ? "Install Kaban" : "Add to Home Screen"}
       </button>
-      <Sheet open={open} onClose={() => setOpen(false)} title={s.platform === "desktop" ? "Install Kaban" : "Add to Home Screen"}>
-        <InstallSteps platform={s.platform} />
-      </Sheet>
     </>
   );
 }

@@ -2,24 +2,35 @@
 
 import { motion } from "motion/react";
 import Link from "next/link";
-import { ArrowRight, CreditCard, HandCoins, TrendingDown } from "lucide-react";
+import { ArrowRight, CreditCard, HandCoins, SquarePlus, TrendingDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMeta } from "@/lib/hooks";
+import { InstallButton, requestInstall, shouldInstallFirst, useInstall } from "./install";
 import { cx } from "./ui";
 
-/** "Get started" for new visitors, "Open Kaban" for people who already have data on this device. */
+/**
+ * Primary CTA. Desktop or already-installed: opens the app ("Get started" / "Open Kaban").
+ * Phones that haven't installed yet: goes straight into saving Kaban to the Home Screen.
+ */
 export function OpenAppButton({ className, children, variant = "primary" }: { className?: string; children?: ReactNode; variant?: "primary" | "light" }) {
   const mode = useMeta<string>("mode");
+  const install = useInstall();
   const started = typeof mode === "string";
+  const installFirst = shouldInstallFirst(install);
+  const cls = cx(
+    "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 font-medium transition active:scale-[0.98]",
+    variant === "primary" ? "bg-brand text-white shadow-float hover:bg-brand-deep" : "bg-white text-brand hover:bg-pale",
+    className,
+  );
+  if (installFirst)
+    return (
+      <button type="button" onClick={() => requestInstall()} className={cls}>
+        {children ?? "Get the app"}
+        <SquarePlus className="size-4" />
+      </button>
+    );
   return (
-    <Link
-      href={started ? "/home" : "/welcome"}
-      className={cx(
-        "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 font-medium transition active:scale-[0.98]",
-        variant === "primary" ? "bg-brand text-white shadow-float hover:bg-brand-deep" : "bg-white text-brand hover:bg-pale",
-        className,
-      )}
-    >
+    <Link href={started ? "/home" : "/welcome"} className={cls}>
       {children ?? (started ? "Open Kaban" : "Get started — it's free")}
       <ArrowRight className="size-4" />
     </Link>
@@ -131,4 +142,17 @@ export function Reveal({ children, delay = 0, className }: { children: ReactNode
       {children}
     </motion.div>
   );
+}
+
+/** Hero secondary action: on phones (where the main button installs) offer the browser; elsewhere offer installing. */
+export function HeroSecondary() {
+  const mode = useMeta<string>("mode");
+  const install = useInstall();
+  if (shouldInstallFirst(install))
+    return (
+      <Link href={typeof mode === "string" ? "/home" : "/welcome"} className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-line bg-white px-5 font-medium text-ink hover:bg-pale">
+        Use in browser instead
+      </Link>
+    );
+  return <InstallButton variant="outline" />;
 }
