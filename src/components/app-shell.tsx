@@ -65,7 +65,8 @@ const BARE = ["/", "/terms", "/privacy"];
 
 /** Pages that are panes of one swipeable screen share a key, so swiping between them never remounts the screen. */
 const ACCOUNT_PANES = groupHrefs("accounts");
-const viewKey = (path: string) => (ACCOUNT_PANES.includes(path) ? "/accounts" : path);
+const ACTIVITY_PANES = groupHrefs("activity");
+const viewKey = (path: string) => (ACCOUNT_PANES.includes(path) ? "/accounts" : ACTIVITY_PANES.includes(path) ? "/activity" : path);
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();

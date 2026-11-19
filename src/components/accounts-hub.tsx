@@ -1,149 +1,58 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Archive, ChevronRight, CreditCard, HandCoins, Landmark, Plus, UserPlus, Users, Wallet, WalletCards } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { Archive, CreditCard, HandCoins, Landmark, Plus, UserPlus, Users, Wallet, WalletCards } from "lucide-react";
+import { useState } from "react";
 import { AccountCard } from "@/components/account-card";
 import { BankLogo } from "@/components/bank-logo";
 import { DebtSheet } from "@/components/debt-sheets";
 import { HapticButton, HapticLink } from "@/components/haptic-button";
-import { SwipePager } from "@/components/swipe-pager";
-import { Avatar, Button, ButtonLink, Card, Chip, cx, EmptyState, Field, inputCls, Loading, Money, PageHeader, Progress, Segmented, Sheet } from "@/components/ui";
+import { GroupTitle, Row, SwipeHub, Tile, Tiles, type HubPane } from "@/components/swipe-hub";
+import { Avatar, Button, ButtonLink, Card, Chip, EmptyState, Field, inputCls, Money, Progress, Sheet } from "@/components/ui";
 import { bankFor } from "@/lib/banks";
-import { useIsDesktop, useLedger } from "@/lib/hooks";
+import { useLedger } from "@/lib/hooks";
 import { savePerson } from "@/lib/repo";
 import type { AccountType } from "@/lib/types";
 
 type Ledger = ReturnType<typeof useLedger>;
 
-/** The three pages under the Accounts tab, shown as one swipeable screen (like Home's Money / Credit). */
-const PANES = [
-  { href: "/accounts", key: "accounts", tab: "Accounts", title: "Accounts" },
-  { href: "/people", key: "people", tab: "People", title: "People" },
-  { href: "/owed", key: "owed", tab: "Owed to me", title: "Who Owes Me" },
-] as const;
-
-type PaneKey = (typeof PANES)[number]["key"];
-
-const indexFor = (path: string) => Math.max(0, PANES.findIndex((p) => p.href === path));
-
+/** Accounts, People and Owed to me: one swipeable screen under the Accounts tab. */
 export function AccountsHub() {
-  const pathname = usePathname();
   const ledger = useLedger();
-  const desktop = useIsDesktop();
-  const [index, setIndex] = useState(() => indexFor(pathname));
-  const [seenPath, setSeenPath] = useState(pathname);
   const [addingPerson, setAddingPerson] = useState(false);
   const [addingDebt, setAddingDebt] = useState(false);
+  const btn = "grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-soft";
 
-  // Bottom-nav or sidebar navigation to one of the three routes moves the pager.
-  if (seenPath !== pathname) {
-    setSeenPath(pathname);
-    setIndex(indexFor(pathname));
-  }
-
-  function select(i: number) {
-    setIndex(i);
-    // Keep the address in step so reload, share and back land on the same pane, without a page transition.
-    if (window.location.pathname !== PANES[i].href) window.history.replaceState(window.history.state, "", PANES[i].href);
-  }
-
-  const key: PaneKey = PANES[index].key;
-  const action = {
-    accounts: (
-      <HapticLink href="/accounts/new" className="grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-soft" aria-label="Add account">
-        <Plus className="size-5" />
-      </HapticLink>
-    ),
-    people: (
-      <HapticButton onClick={() => setAddingPerson(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-soft" aria-label="Add person">
-        <UserPlus className="size-5" />
-      </HapticButton>
-    ),
-    owed: (
-      <HapticButton onClick={() => setAddingDebt(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-soft" aria-label="Record a debt">
-        <Plus className="size-5" />
-      </HapticButton>
-    ),
-  }[key];
-
-  const panes = [
-    <AccountsPane key="accounts" ledger={ledger} />,
-    <PeoplePane key="people" ledger={ledger} onAdd={() => setAddingPerson(true)} />,
-    <OwedPane key="owed" ledger={ledger} onAdd={() => setAddingDebt(true)} />,
+  const panes: HubPane[] = [
+    {
+      href: "/accounts",
+      tab: "Accounts",
+      title: "Accounts",
+      action: <HapticLink href="/accounts/new" className={btn} aria-label="Add account"><Plus className="size-5" /></HapticLink>,
+      content: <AccountsPane ledger={ledger} />,
+    },
+    {
+      href: "/people",
+      tab: "People",
+      title: "People",
+      action: <HapticButton onClick={() => setAddingPerson(true)} className={btn} aria-label="Add person"><UserPlus className="size-5" /></HapticButton>,
+      content: <PeoplePane ledger={ledger} onAdd={() => setAddingPerson(true)} />,
+    },
+    {
+      href: "/owed",
+      tab: "Owed to me",
+      title: "Who Owes Me",
+      action: <HapticButton onClick={() => setAddingDebt(true)} className={btn} aria-label="Record a debt"><Plus className="size-5" /></HapticButton>,
+      content: <OwedPane ledger={ledger} onAdd={() => setAddingDebt(true)} />,
+    },
   ];
 
   return (
     <>
-      <PageHeader
-        title={desktop ? PANES[index].title : "Accounts"}
-        action={
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span key={key} className="grid" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.16 }}>
-              {action}
-            </motion.span>
-          </AnimatePresence>
-        }
-      />
-
-      {!ledger.ready ? (
-        <Loading />
-      ) : desktop ? (
-        // Desktop lists the three pages separately in the sidebar: show just the current one.
-        <div className="px-4">{panes[index]}</div>
-      ) : (
-        <>
-          <div className="px-4 pb-4">
-            <Segmented<PaneKey> value={key} onChange={(k) => select(indexFor(PANES.find((p) => p.key === k)!.href))} options={PANES.map((p) => ({ value: p.key, label: p.tab }))} />
-          </div>
-          <SwipePager index={index} onIndexChange={select}>
-            {panes}
-          </SwipePager>
-        </>
-      )}
-
+      <SwipeHub title="Accounts" panes={panes} ready={ledger.ready} />
       <AddPersonSheet open={addingPerson} onClose={() => setAddingPerson(false)} />
       <DebtSheet open={addingDebt} onClose={() => setAddingDebt(false)} ledger={ledger} />
     </>
-  );
-}
-
-/* ---------- Shared pieces so all three panes read the same ---------- */
-
-function Tiles({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-3 lg:hidden">{children}</div>;
-}
-
-function Tile({ label, children, dark }: { label: string; children: ReactNode; dark?: boolean }) {
-  return (
-    <Card className={dark ? "bg-night text-white dark:border-white/6" : "bg-pale"}>
-      <p className={cx("text-xs", dark ? "text-white/60" : "text-ink-3")}>{label}</p>
-      <div className="text-xl font-semibold">{children}</div>
-    </Card>
-  );
-}
-
-function GroupTitle({ icon: Icon, children }: { icon: typeof Wallet; children: ReactNode }) {
-  return (
-    <h2 className="mb-2 flex items-center gap-1.5 px-1 text-sm font-semibold text-ink-2">
-      <Icon className="size-4" /> {children}
-    </h2>
-  );
-}
-
-function Row({ href, lead, title, sub, trail }: { href: string; lead: ReactNode; title: ReactNode; sub: ReactNode; trail?: ReactNode }) {
-  return (
-    <Link href={href} className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors active:bg-pale lg:hover:bg-pale">
-      {lead}
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{title}</p>
-        <div className="truncate text-xs text-ink-3">{sub}</div>
-      </div>
-      {trail && <div className="shrink-0 text-right">{trail}</div>}
-      <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden="true" />
-    </Link>
   );
 }
 
@@ -163,7 +72,7 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
   return (
     <div className="space-y-5 pb-4">
       <DesktopAccounts ledger={ledger} list={list} />
-      <Tiles>
+      <Tiles className="lg:hidden">
         <Tile label="Available funds"><Money minor={ledger.totals.availableFunds} /></Tile>
         <Tile label="Credit outstanding" dark><Money minor={ledger.totals.creditOutstanding} /></Tile>
       </Tiles>
@@ -273,7 +182,7 @@ function PeoplePane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
 
   return (
     <div className="space-y-5 pb-4">
-      <Tiles>
+      <Tiles className="lg:hidden">
         <Tile label="People"><span className="num">{people.length}</span></Tile>
         <Tile label={owing ? `Owed by ${owing} ${owing === 1 ? "person" : "people"}` : "Owed to you"} dark><Money minor={owedTotal} /></Tile>
       </Tiles>
@@ -363,7 +272,7 @@ function OwedPane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
 
   return (
     <div className="space-y-5 pb-4">
-      <Tiles>
+      <Tiles className="lg:hidden">
         <Tile label="Owed to you"><Money minor={totalOutstanding} /></Tile>
         <Tile label="Repaid so far" dark><Money minor={totalRepaid} /></Tile>
       </Tiles>

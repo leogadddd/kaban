@@ -12,16 +12,25 @@ export function SwipePager({ index, onIndexChange, children }: { index: number; 
   const count = panes.length;
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
+  // Fill down to the bottom of the screen, so a swipe on the empty space below a short pane still works.
+  const [minHeight, setMinHeight] = useState(0);
   const x = useMotionValue(0);
 
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const measure = () => setWidth(el.clientWidth);
+    const measure = () => {
+      setWidth(el.clientWidth);
+      setMinHeight(Math.max(0, window.innerHeight - (el.getBoundingClientRect().top + window.scrollY)));
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, []);
 
   const snapTo = useCallback(
@@ -54,8 +63,8 @@ export function SwipePager({ index, onIndexChange, children }: { index: number; 
   return (
     <div ref={ref} className="overflow-hidden">
       <motion.div
-        className="flex items-start touch-pan-y"
-        style={{ x, width: `${count * 100}%` }}
+        className="flex items-stretch touch-pan-y"
+        style={{ x, width: `${count * 100}%`, minHeight }}
         drag="x"
         dragConstraints={{ left: -(count - 1) * width, right: 0 }}
         dragElastic={0.12}
