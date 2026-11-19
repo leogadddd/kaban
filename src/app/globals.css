@@ -388,3 +388,25 @@ button,
 @media (prefers-reduced-motion: reduce) {
   .intro-stagger > * { animation: none; }
 }
+
+/* Keyboard-aware bottom UI. --kb is the on-screen keyboard height (set in AppShell), 0 when closed.
+   Unlayered so it wins over the bottom-0 / max-h utilities; lg:static bars ignore `bottom`. */
+.kb-bar,
+.kb-sheet {
+  bottom: var(--kb, 0px);
+  transition: bottom 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.kb-sheet {
+  max-height: calc(88dvh - var(--kb, 0px));
+}
+/* The home indicator is hidden behind the keyboard, so drop the safe-area padding while it's up. */
+:root[data-kb] .kb-bar {
+  padding-bottom: 0.75rem;
+}
+:root[data-kb] .kb-sheet {
+  padding-bottom: 1rem;
+}
+/* Extra scroll room so the last fields can be scrolled above the lifted bar. */
+:root[data-kb] body {
+  padding-bottom: var(--kb);
+}

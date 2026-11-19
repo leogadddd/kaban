@@ -246,7 +246,7 @@ function AccountForm() {
 
         {error && <p className="rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         {/* Actions stay pinned to the bottom (like Add) so Skip is visible without scrolling. */}
-        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md space-y-1.5 bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-0 lg:pt-2 lg:pb-0">
+        <div className="kb-bar fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md space-y-1.5 bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-0 lg:pt-2 lg:pb-0">
           <Button type="submit" wrapperClassName="w-full">{editId ? "Update account" : "Create account"}</Button>
           {first && (
             <Button type="button" variant="ghost" wrapperClassName="w-full" className="min-h-10 text-sm" onClick={() => router.replace("/home")}>

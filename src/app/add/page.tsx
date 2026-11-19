@@ -585,7 +585,7 @@ function Editor() {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-6 lg:pt-3 lg:pb-6">
+      <div className="kb-bar fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-6 lg:pt-3 lg:pb-6">
         {error && <p className="mb-2 rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         <Button wrapperClassName="w-full" className="text-base" onClick={submit} disabled={saving || voided}>
           <span>

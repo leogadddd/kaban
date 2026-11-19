@@ -84,6 +84,39 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => installNavDirection(), []);
 
+  // iOS (and Android Chrome) overlay the keyboard instead of shrinking the page, so fixed action bars
+  // would sit behind it. Publish the keyboard's height as --kb; .kb-bar / .kb-sheet ride on top of it.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement;
+    const update = () => {
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const open = kb > 80; // ignore browser toolbar show/hide
+      root.style.setProperty("--kb", `${open ? Math.round(kb) : 0}px`);
+      root.toggleAttribute("data-kb", open);
+      if (open) requestAnimationFrame(revealFocused);
+    };
+    // The lifted bar sits between the keyboard and the page: keep the field being typed in above it.
+    const revealFocused = () => {
+      const el = document.activeElement as HTMLElement | null;
+      const bar = document.querySelector<HTMLElement>(".kb-bar");
+      if (!el || !bar || !el.matches("input, textarea, select, [contenteditable]") || el.closest(".kb-bar, .kb-sheet")) return;
+      const overlap = el.getBoundingClientRect().bottom - bar.getBoundingClientRect().top + 12;
+      if (overlap > 0) window.scrollBy({ top: overlap, behavior: "smooth" });
+    };
+    const onFocus = () => setTimeout(() => root.hasAttribute("data-kb") && revealFocused(), 50);
+    document.addEventListener("focusin", onFocus);
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      document.removeEventListener("focusin", onFocus);
+    };
+  }, []);
+
   // iOS Safari ignores user-scalable=no; cancelling its gesture events blocks pinch-zoom there too.
   useEffect(() => {
     const block = (e: Event) => e.preventDefault();
