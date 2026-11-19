@@ -50,7 +50,7 @@ Without keys the app is local-only, exactly as before. To turn sync on:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon / publishable key>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key (or set NEXT_PUBLIC_SUPABASE_ANON_KEY to the legacy anon key)>
 ```
 
 How it works:

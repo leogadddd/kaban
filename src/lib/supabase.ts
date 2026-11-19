@@ -1,7 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Supabase's dashboard now calls this the "publishable" key; older projects call it "anon". Either works.
+// (Each name is written out in full so Next.js can inline it at build time.)
+const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /** False when the build has no Supabase keys: the app then runs local-only, exactly as before. */
 export const cloudConfigured = !!(url && key);
