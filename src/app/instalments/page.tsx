@@ -20,7 +20,7 @@ export default function InstalmentsPage() {
 
   return (
     <>
-      <PageHeader title="Instalments" back="/" subtitle={<>Still to be billed <Money minor={totalRemaining} className="font-semibold text-ink" /></>} />
+      <PageHeader title="Instalments" back="/home" subtitle={<>Still to be billed <Money minor={totalRemaining} className="font-semibold text-ink" /></>} />
       <div className="space-y-4 px-4">
         {!ledger.ready ? (
           <Loading />

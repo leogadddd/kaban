@@ -7,6 +7,8 @@ import { cycleInfo } from "@/lib/billing";
 import { daysBetween, formatDay, formatDayLong, todayISO } from "@/lib/dates";
 import { billedOnStatement } from "@/lib/finance";
 import type { Ledger } from "@/lib/hooks";
+import { BankLogo } from "./bank-logo";
+import { bankFor } from "@/lib/banks";
 import { BigMoney, Button, Card, Chip, EmptyState, Money, SectionTitle } from "./ui";
 import { UtilisationRing } from "./charts";
 import { TxnRow } from "./txn-row";
@@ -65,7 +67,8 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
       <Card className="overflow-hidden bg-ink p-5 text-white">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm text-white/60">
+            <p className="flex items-center gap-2 text-sm text-white/60">
+              {bankFor(acc) && <BankLogo bank={bankFor(acc)!} size={22} />}
               {acc.name}
               {acc.last4 ? ` · •••• ${acc.last4}` : ""}
             </p>

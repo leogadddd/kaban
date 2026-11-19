@@ -10,7 +10,10 @@ import { shiftStatement, statementFor } from "@/lib/billing";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, TYPE_LABEL } from "@/lib/categories";
 import { db } from "@/lib/db";
 import { formatDayLong, todayISO } from "@/lib/dates";
+import { BankLogo } from "@/components/bank-logo";
+import { bankFor } from "@/lib/banks";
 import { useLedger } from "@/lib/hooks";
+import { animatedBack } from "@/lib/nav-direction";
 import { formatMoney, minorToInput, parseMinor, splitEvenly } from "@/lib/money";
 import { savePerson, saveTransaction, setTransactionVoid } from "@/lib/repo";
 import { ME, type Account, type Arrangement, type Txn, type TxnType } from "@/lib/types";
@@ -166,6 +169,8 @@ function Editor() {
     setNewPerson("");
   }
 
+  const close = () => animatedBack(() => (window.history.length > 1 ? router.back() : router.replace("/home")), "down");
+
   async function submit() {
     setError(undefined);
     if (!(amountMinor > 0)) return setError("Enter an amount");
@@ -194,7 +199,7 @@ function Editor() {
         editId,
       );
       setSaved(true);
-      setTimeout(() => (window.history.length > 1 ? router.back() : router.replace("/")), 450);
+      setTimeout(close, 450);
     } catch (e) {
       setError((e as Error).message);
       setSaving(false);
@@ -217,7 +222,7 @@ function Editor() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl">
-        <button onClick={() => (window.history.length > 1 ? router.back() : router.replace("/"))} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
+        <button onClick={close} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
           <X className="size-6" />
         </button>
         <h1 className="font-semibold">{editId ? (voided ? "Voided transaction" : "Edit transaction") : "New transaction"}</h1>
@@ -429,7 +434,7 @@ function Editor() {
             onClick={async () => {
               if (!voided && !confirm("Void this transaction? It stays in history but stops affecting balances.")) return;
               await setTransactionVoid(existing.id, !voided);
-              router.back();
+              close();
             }}
           >
             {voided ? <><RotateCcw className="size-4" /> Restore transaction</> : <><Ban className="size-4" /> Void transaction</>}
@@ -437,7 +442,7 @@ function Editor() {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)]">
+      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t lg:left-64 lg:max-w-xl from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)]">
         {error && <p className="mb-2 rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         <Button className="w-full text-base" onClick={submit} disabled={saving || voided}>
           <AnimatePresence mode="wait" initial={false}>
@@ -481,7 +486,11 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
               style={active ? { background: a.color } : undefined}
             >
               <span className="flex items-center gap-1.5 text-sm font-medium">
-                {!active && <span className="size-2.5 rounded-full" style={{ background: a.color }} />}
+                {(() => {
+                  const bank = a.type === "cash" ? undefined : bankFor(a);
+                  if (bank) return <BankLogo bank={bank} size={20} />;
+                  return !active && <span className="size-2.5 rounded-full" style={{ background: a.color }} />;
+                })()}
                 {a.name}
               </span>
               <span className={cx("num block text-xs", active ? "text-white/75" : "text-ink-3")}>

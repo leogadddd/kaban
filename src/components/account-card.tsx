@@ -5,7 +5,9 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, CreditCard, Landmark, Wallet } from "lucide-react";
 import { useState } from "react";
 import type { AccountBalance } from "@/lib/finance";
+import { bankFor } from "@/lib/banks";
 import { formatMoney } from "@/lib/money";
+import { BankLogo } from "./bank-logo";
 import { cx } from "./ui";
 
 const TYPE_META = {
@@ -24,6 +26,7 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
   const a = b.account;
   const meta = TYPE_META[a.type];
   const Icon = meta.icon;
+  const bank = a.type === "cash" ? undefined : bankFor(a);
   const fg = textOn(a.color);
   const credit = a.type === "credit";
   const util = b.utilisation ?? 0;
@@ -40,9 +43,13 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
           <p className="text-sm font-medium opacity-75">{meta.label}{a.issuer ? ` · ${a.issuer}` : ""}</p>
           <p className="text-lg font-semibold tracking-tight">{a.name}</p>
         </div>
-        <span className="grid size-10 place-items-center rounded-2xl" style={{ background: `color-mix(in oklab, ${fg} 16%, transparent)` }}>
-          <Icon className="size-5" />
-        </span>
+        {bank ? (
+          <BankLogo bank={bank} size={40} className="shadow-sm" />
+        ) : (
+          <span className="grid size-10 place-items-center rounded-2xl" style={{ background: `color-mix(in oklab, ${fg} 16%, transparent)` }}>
+            <Icon className="size-5" />
+          </span>
+        )}
       </div>
       <div className="relative">
         <p className="text-xs font-medium tracking-wide uppercase opacity-70">{credit ? "Outstanding" : "Balance"}</p>

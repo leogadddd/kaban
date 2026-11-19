@@ -21,7 +21,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings" back="/" />
+      <PageHeader title="Settings" back="/home" />
       <div className="space-y-5 px-4 pb-4">
         <Card className="flex items-center gap-3">
           <LogoMark size={44} />

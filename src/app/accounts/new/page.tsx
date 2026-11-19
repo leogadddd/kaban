@@ -8,6 +8,8 @@ import { Button, cx, Field, inputCls, Loading, PageHeader, Segmented } from "@/c
 import { db } from "@/lib/db";
 import { todayISO } from "@/lib/dates";
 import { minorToInput, parseMinor } from "@/lib/money";
+import { BankLogo } from "@/components/bank-logo";
+import { BANKS, bankById, bankFor } from "@/lib/banks";
 import { ACCOUNT_COLORS, saveAccount } from "@/lib/repo";
 import type { AccountType } from "@/lib/types";
 
@@ -33,6 +35,8 @@ function AccountForm() {
   const [closingDay, setClosingDay] = useState("15");
   const [dueDays, setDueDays] = useState("21");
   const [issuer, setIssuer] = useState("");
+  const [bankId, setBankId] = useState<string>("");
+  const [otherBank, setOtherBank] = useState(false);
   const [last4, setLast4] = useState("");
   const [color, setColor] = useState(ACCOUNT_COLORS[0]);
   const [error, setError] = useState<string>();
@@ -50,6 +54,9 @@ function AccountForm() {
       setClosingDay(String(a.closingDay ?? 15));
       setDueDays(String(a.dueDaysAfterClosing ?? 21));
       setIssuer(a.issuer ?? "");
+      const b = bankFor(a);
+      setBankId(b?.id ?? "");
+      setOtherBank(!b && !!a.issuer);
       setLast4(a.last4 ?? "");
       setColor(a.color);
       setLoaded(true);
@@ -83,13 +90,14 @@ function AccountForm() {
           creditLimitMinor: credit ? limitMinor : undefined,
           closingDay: credit ? cd : undefined,
           dueDaysAfterClosing: credit ? dd : undefined,
-          issuer: issuer.trim() || undefined,
+          issuer: type === "cash" ? undefined : (bankById(bankId)?.name ?? issuer.trim()) || undefined,
+          bankId: type !== "cash" && bankId ? bankId : undefined,
           last4: last4 || undefined,
           color,
         },
         editId,
       );
-      router.replace(first ? "/" : `/accounts/view?id=${id}`);
+      router.replace(first ? "/home" : `/accounts/view?id=${id}`);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -98,7 +106,7 @@ function AccountForm() {
   if (!loaded) return <Loading />;
 
   const preview = {
-    account: { id: "p", type, name: name || "New account", openingMinor, openingDate, color, archived: false, sortOrder: 0, createdAt: 0, updatedAt: 0, version: 0, issuer, last4, creditLimitMinor: limitMinor },
+    account: { id: "p", type, name: name || "New account", openingMinor, openingDate, color, archived: false, sortOrder: 0, createdAt: 0, updatedAt: 0, version: 0, issuer, bankId: bankId || undefined, last4, creditLimitMinor: limitMinor },
     balance: openingMinor,
     available: limitMinor - openingMinor,
     utilisation: limitMinor > 0 ? (openingMinor / limitMinor) * 100 : 0,
@@ -156,19 +164,65 @@ function AccountForm() {
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={credit ? "Issuer (optional)" : "Bank (optional)"}>{(id) => <input id={id} className={inputCls} value={issuer} onChange={(e) => setIssuer(e.target.value)} placeholder="BDO, BPI…" />}</Field>
-          {type !== "cash" && (
-            <Field label="Last 4 digits">
-              {(id) => <input id={id} className={cx(inputCls, "num")} inputMode="numeric" maxLength={4} value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, ""))} placeholder="1234" />}
-            </Field>
-          )}
-        </div>
+        {type !== "cash" && (
+          <div>
+            <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">{credit ? "Card issuer" : "Bank or e-wallet"} (optional)</p>
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-5" role="radiogroup" aria-label="Bank">
+              {BANKS.filter((b) => !credit || b.kind !== "wallet").map((b) => {
+                const active = bankId === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => {
+                      setBankId(active ? "" : b.id);
+                      setOtherBank(false);
+                      if (!active) setColor(b.color);
+                    }}
+                    className={cx(
+                      "flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border p-1.5 text-[0.68rem] leading-tight font-medium transition active:scale-95",
+                      active ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-line bg-white text-ink-2",
+                    )}
+                  >
+                    <BankLogo bank={b} size={32} />
+                    <span className="line-clamp-1 text-center">{b.short}</span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={otherBank}
+                onClick={() => {
+                  setOtherBank((v) => !v);
+                  setBankId("");
+                }}
+                className={cx(
+                  "flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border p-1.5 text-[0.68rem] font-medium transition active:scale-95",
+                  otherBank ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-dashed border-line bg-white text-ink-2",
+                )}
+              >
+                <span className="grid size-8 place-items-center rounded-[9px] bg-pale text-base text-brand">+</span>
+                Other
+              </button>
+            </div>
+            {otherBank && (
+              <input className={cx(inputCls, "mt-2")} value={issuer} onChange={(e) => setIssuer(e.target.value)} placeholder="Bank name" aria-label="Bank name" autoFocus />
+            )}
+          </div>
+        )}
+        {type !== "cash" && (
+          <Field label="Last 4 digits (optional)">
+            {(id) => <input id={id} className={cx(inputCls, "num")} inputMode="numeric" maxLength={4} value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, ""))} placeholder="1234" />}
+          </Field>
+        )}
 
         <div>
           <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">Card colour</p>
           <div className="flex flex-wrap gap-2.5">
-            {ACCOUNT_COLORS.map((c) => (
+            {[...new Set([bankById(bankId)?.color, ...ACCOUNT_COLORS].filter((c): c is string => !!c))].map((c) => (
               <button type="button" key={c} onClick={() => setColor(c)} className={cx("size-10 rounded-full ring-offset-2 ring-offset-bg", color === c && "ring-2 ring-brand")} style={{ background: c }} aria-label={`Colour ${c}`} aria-pressed={color === c} />
             ))}
           </div>
@@ -177,7 +231,7 @@ function AccountForm() {
         {error && <p className="rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         <Button type="submit" className="w-full">{editId ? "Save changes" : "Create account"}</Button>
         {first && (
-          <Button type="button" variant="ghost" className="w-full" onClick={() => router.replace("/")}>
+          <Button type="button" variant="ghost" className="w-full" onClick={() => router.replace("/home")}>
             Skip for now
           </Button>
         )}

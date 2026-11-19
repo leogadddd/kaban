@@ -31,7 +31,7 @@ export default function PeoplePage() {
     <>
       <PageHeader
         title="People"
-        back="/"
+        back="/home"
         subtitle="Family & friends you split with — they don't need an account."
         action={<button onClick={() => setOpen(true)} className="grid size-11 place-items-center rounded-full bg-brand text-white" aria-label="Add person"><UserPlus className="size-5" /></button>}
       />

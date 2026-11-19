@@ -15,7 +15,7 @@ export default function PaymentsPage() {
 
   return (
     <>
-      <PageHeader title="Payment history" back="/" />
+      <PageHeader title="Payment history" back="/home" />
       <div className="space-y-4 px-4">
         <Segmented value={kind} onChange={setKind} options={[{ value: "card", label: "Card payments" }, { value: "received", label: "Repayments received" }]} />
         <Card className="flex items-center justify-between">

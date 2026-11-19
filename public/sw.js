@@ -1,10 +1,11 @@
 /* Kaban service worker: offline app shell. Data lives in IndexedDB, so the shell is all we cache. */
-const VERSION = "kaban-v1";
+const VERSION = "kaban-v3";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 
 const ROUTES = [
   "/",
+  "/home",
   "/accounts",
   "/accounts/new",
   "/accounts/view",
@@ -24,6 +25,7 @@ const ROUTES = [
   "/icon-192.png",
   "/icon-512.png",
   "/apple-icon",
+  "/banks/bdo.png", "/banks/bpi.png", "/banks/chinabank.png", "/banks/gcash.png", "/banks/gotyme.png", "/banks/landbank.png", "/banks/maribank.png", "/banks/metrobank.png", "/banks/pnb.png", "/banks/rcbc.png", "/banks/securitybank.png", "/banks/tonik.png",
 ];
 
 /** Fetch each route and also cache every /_next/static asset its HTML references. */

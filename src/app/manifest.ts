@@ -5,10 +5,10 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Kaban — Family Finance",
     short_name: "Kaban",
     description: "Offline-first tracker for cash, debit and a shared family credit card.",
-    start_url: "/",
+    start_url: "/home",
     scope: "/",
     display: "standalone",
-    orientation: "portrait",
+    orientation: "any",
     background_color: "#F7FAF7",
     theme_color: "#176B4D",
     icons: [

@@ -28,7 +28,7 @@ export default function OwedPage() {
     <>
       <PageHeader
         title="Who Owes Me"
-        back="/"
+        back="/home"
         action={<button onClick={() => setAdding(true)} className="grid size-11 place-items-center rounded-full bg-brand text-white" aria-label="Add debt"><Plus className="size-5" /></button>}
       />
       <div className="space-y-4 px-4">

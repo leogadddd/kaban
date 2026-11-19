@@ -44,24 +44,24 @@
   }
 }
 
-.num {
+@utility num {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
 }
 
-.pt-safe {
+@utility pt-safe {
   padding-top: max(var(--safe-top), 0.75rem);
 }
 
-.pb-nav {
+@utility pb-nav {
   padding-bottom: calc(6.5rem + var(--safe-bottom));
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
+@utility no-scrollbar {
   scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Inputs get 16px via `inputCls` (prevents iOS zoom on focus); not set globally so utilities can override. */
@@ -71,12 +71,154 @@
 }
 
 /* Subtle dotted texture used on cards */
-.card-grain {
+@utility card-grain {
   background-image: radial-gradient(rgb(255 255 255 / 0.09) 1px, transparent 1px);
   background-size: 12px 12px;
 }
 
+/* ---------- Native-app feel ---------- */
+a,
+button,
+[role="tab"],
+[role="radio"] {
+  -webkit-touch-callout: none; /* no iOS long-press link preview */
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation; /* no double-tap zoom delay */
+}
+
+/* ---------- Page transitions (React <ViewTransition>, direction from <html data-nav>) ---------- */
+:root {
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --vt-push: 420ms;
+}
+
+/* The persistent chrome stays put; only the page moves. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(bottom-nav),
+::view-transition-group(sidebar) {
+  z-index: 10;
+  animation: none;
+}
+::view-transition-group(.page-in),
+::view-transition-group(.page-out) {
+  animation-duration: var(--vt-push);
+}
+
+/* Default (untagged navigation): quick crossfade with a small lift. */
+::view-transition-old(.page-out) {
+  animation: 140ms ease-out both vt-fade-out;
+}
+::view-transition-new(.page-in) {
+  animation: 260ms var(--ease-ios) 40ms both vt-lift-in;
+}
+
+/* Push: new page slides in from the right over the old, which parallaxes left and dims. */
+:root[data-nav="forward"]::view-transition-new(.page-in) {
+  animation: var(--vt-push) var(--ease-ios) both vt-from-right;
+}
+:root[data-nav="forward"]::view-transition-old(.page-out) {
+  animation: var(--vt-push) var(--ease-ios) both vt-to-left-dim;
+}
+
+/* Pop: old page slides off to the right, revealing the previous one from the left. */
+:root[data-nav="back"]::view-transition-group(.page-out) {
+  z-index: 2;
+}
+:root[data-nav="back"]::view-transition-old(.page-out) {
+  animation: var(--vt-push) var(--ease-ios) both vt-to-right;
+}
+:root[data-nav="back"]::view-transition-new(.page-in) {
+  animation: var(--vt-push) var(--ease-ios) both vt-from-left-dim;
+}
+
+/* Present a modal screen: rises from the bottom like a sheet. */
+:root[data-nav="up"]::view-transition-new(.page-in) {
+  animation: 460ms var(--ease-ios) both vt-from-bottom;
+}
+:root[data-nav="up"]::view-transition-old(.page-out) {
+  animation: 460ms var(--ease-ios) both vt-recede;
+}
+
+/* Dismiss: modal drops away, the page underneath settles back. */
+:root[data-nav="down"]::view-transition-group(.page-out) {
+  z-index: 2;
+}
+:root[data-nav="down"]::view-transition-old(.page-out) {
+  animation: 380ms var(--ease-ios) both vt-to-bottom;
+}
+:root[data-nav="down"]::view-transition-new(.page-in) {
+  animation: 380ms var(--ease-ios) both vt-settle;
+}
+
+/* Tabs: soft crossfade, no travel. */
+:root[data-nav="tab"]::view-transition-old(.page-out) {
+  animation: 120ms ease-out both vt-fade-out;
+}
+:root[data-nav="tab"]::view-transition-new(.page-in) {
+  animation: 240ms var(--ease-ios) 40ms both vt-tab-in;
+}
+
+/* The bottom bar tucks under a presented sheet and rises again after it's dismissed. */
+:root[data-nav="up"]::view-transition-group(bottom-nav),
+:root[data-vt-root="down"]::view-transition-group(bottom-nav) {
+  z-index: 0;
+}
+:root[data-nav="up"]::view-transition-old(bottom-nav) {
+  animation: 260ms var(--ease-ios) both vt-to-bottom;
+}
+:root[data-vt-root="down"]::view-transition-new(bottom-nav),
+:root[data-nav="down"]::view-transition-new(bottom-nav) {
+  animation: 360ms var(--ease-ios) 120ms both vt-from-bottom;
+}
+
+/* Manual whole-page transitions for history pops (see animatedBack). */
+:root[data-vt-root="back"]::view-transition-old(root) {
+  z-index: 1;
+  animation: var(--vt-push) var(--ease-ios) both vt-to-right;
+}
+:root[data-vt-root="back"]::view-transition-new(root) {
+  animation: var(--vt-push) var(--ease-ios) both vt-from-left-dim;
+}
+:root[data-vt-root="down"]::view-transition-old(root) {
+  z-index: 1;
+  animation: 380ms var(--ease-ios) both vt-to-bottom;
+}
+:root[data-vt-root="down"]::view-transition-new(root) {
+  animation: 380ms var(--ease-ios) both vt-settle;
+}
+
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-lift-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes vt-tab-in { from { opacity: 0; transform: scale(0.985); } }
+@keyframes vt-from-right { from { transform: translateX(100%); box-shadow: -12px 0 32px rgb(15 61 46 / 0.12); } to { box-shadow: -12px 0 32px rgb(15 61 46 / 0); } }
+@keyframes vt-to-left-dim { to { transform: translateX(-28%); opacity: 0.5; filter: brightness(0.96); } }
+@keyframes vt-to-right { to { transform: translateX(100%); } }
+@keyframes vt-from-left-dim { from { transform: translateX(-28%); opacity: 0.5; } }
+@keyframes vt-from-bottom { from { transform: translateY(100%); } }
+@keyframes vt-to-bottom { to { transform: translateY(100%); } }
+@keyframes vt-recede { to { transform: scale(0.94); opacity: 0.4; border-radius: 1.5rem; } }
+@keyframes vt-settle { from { transform: scale(0.94); opacity: 0.4; } }
+
+/* Desktop: content panes are wide, so push/pop travel a short distance with a fade. */
+@media (min-width: 1024px) {
+  @keyframes vt-from-right { from { transform: translateX(48px); opacity: 0; } }
+  @keyframes vt-to-left-dim { to { transform: translateX(-24px); opacity: 0; } }
+  @keyframes vt-to-right { to { transform: translateX(48px); opacity: 0; } }
+  @keyframes vt-from-left-dim { from { transform: translateX(-24px); opacity: 0; } }
+  @keyframes vt-from-bottom { from { transform: translateY(40px); opacity: 0; } }
+  @keyframes vt-to-bottom { to { transform: translateY(40px); opacity: 0; } }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
   *,
   *::before,
   *::after {

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Archive, ChevronRight, CreditCard, Landmark, Plus, Wallet } from "lucide-react";
 import { useState } from "react";
 import { Card, Chip, Loading, Money, PageHeader, Progress } from "@/components/ui";
+import { BankLogo } from "@/components/bank-logo";
+import { bankFor } from "@/lib/banks";
 import { useLedger } from "@/lib/hooks";
 import type { AccountType } from "@/lib/types";
 
@@ -55,9 +57,10 @@ export default function AccountsPage() {
                 <Card className="divide-y divide-line p-0">
                   {items.map((a) => {
                     const b = ledger.balances.get(a.id)!;
+                    const bank = a.type === "cash" ? undefined : bankFor(a);
                     return (
                       <Link key={a.id} href={`/accounts/view?id=${a.id}`} className="flex min-h-16 items-center gap-3 px-4 py-3 active:bg-pale">
-                        <span className="size-9 shrink-0 rounded-xl" style={{ background: a.color }} aria-hidden="true" />
+                        {bank ? <BankLogo bank={bank} size={36} /> : <span className="size-9 shrink-0 rounded-xl" style={{ background: a.color }} aria-hidden="true" />}
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-medium">
                             {a.name} {a.archived && <span className="ml-1 rounded-full bg-pale px-2 py-0.5 text-[0.65rem] text-ink-3">Archived</span>}

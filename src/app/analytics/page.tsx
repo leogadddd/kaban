@@ -18,7 +18,7 @@ export default function AnalyticsPage() {
 
   return (
     <>
-      <PageHeader title="Analytics" back="/" />
+      <PageHeader title="Analytics" back="/home" />
       {!ledger.ready ? (
         <Loading />
       ) : (

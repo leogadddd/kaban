@@ -18,7 +18,7 @@ export default function WelcomePage() {
     await setMeta("mode", "local");
     await setMeta("startedAt", Date.now());
     if (demo) await loadDemoData();
-    router.replace(demo ? "/" : "/accounts/new?first=1");
+    router.replace(demo ? "/home" : "/accounts/new?first=1");
   }
 
   return (

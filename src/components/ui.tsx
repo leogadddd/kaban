@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { useEffect, useId, type ReactNode } from "react";
 import { formatMoney } from "@/lib/money";
+import { animatedBack } from "@/lib/nav-direction";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -58,7 +59,7 @@ export function PageHeader({
       <div className="flex min-h-12 items-center gap-2">
         {back &&
           (back === true ? (
-            <button onClick={() => router.back()} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
+            <button onClick={() => animatedBack(() => router.back())} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
               <ChevronLeft className="size-6" />
             </button>
           ) : (
@@ -215,7 +216,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={title}>
           <motion.div className="absolute inset-0 bg-brand-deep/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
-            className="absolute inset-x-0 bottom-0 mx-auto max-h-[88dvh] max-w-md overflow-y-auto rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
+            className="absolute inset-x-0 bottom-0 mx-auto max-h-[88dvh] max-w-md overflow-y-auto rounded-t-[2rem] lg:bottom-8 lg:rounded-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}

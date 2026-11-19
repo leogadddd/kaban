@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, ViewTransition, type ReactNode } from "react";
 import {
   BarChart3,
   CalendarClock,
@@ -21,10 +21,13 @@ import {
 } from "lucide-react";
 import { requestPersistence } from "@/lib/db";
 import { useMeta, useOnline } from "@/lib/hooks";
+import { installNavDirection, notePath } from "@/lib/nav-direction";
+import { LogoMark } from "@/lib/logo";
+import { SyncPill } from "./sync-pill";
 import { cx, Sheet } from "./ui";
 
 const NAV = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/home", label: "Home", icon: Home },
   { href: "/accounts", label: "Accounts", icon: WalletCards },
   { href: "/add", label: "Add", icon: Plus },
   { href: "/activity", label: "Activity", icon: List },
@@ -41,6 +44,10 @@ const MORE = [
 ];
 
 const HIDE_NAV = ["/welcome", "/add", "/accounts/new"];
+/** Form-like pages that read better as a single column on desktop. */
+const NARROW = ["/welcome", "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", "/payments"];
+/** Public pages that render without the app chrome or the onboarding gate. */
+const BARE = ["/"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -50,8 +57,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
-    if (mode === undefined && pathname !== "/welcome") router.replace("/welcome");
+    if (mode === undefined && pathname !== "/welcome" && !BARE.includes(pathname)) router.replace("/welcome");
   }, [mode, pathname, router]);
+
+  useEffect(() => installNavDirection(), []);
+  useEffect(() => notePath(pathname), [pathname]);
 
   useEffect(() => {
     requestPersistence();
@@ -77,9 +87,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const hideNav = HIDE_NAV.includes(pathname);
   const gated = mode === null || (mode === undefined && pathname !== "/welcome");
+  const showSidebar = pathname !== "/welcome" && !gated;
+
+  if (BARE.includes(pathname)) return <>{children}</>;
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md">
+    <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
+      {showSidebar && <Sidebar pathname={pathname} />}
       <AnimatePresence>
         {!online && (
           <motion.div
@@ -96,7 +110,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
 
-      <main className={cx(!hideNav && "pb-nav")}>{gated ? null : children}</main>
+      <main className={cx("mx-auto max-w-md lg:px-6 lg:pt-4", NARROW.includes(pathname) ? "lg:max-w-xl" : "lg:max-w-5xl", !hideNav ? "pb-nav lg:pb-12" : "lg:pb-12")}>{gated ? null : (
+          // Keyed by path: each navigation exits the old page and enters the new one as a view transition.
+          <ViewTransition key={pathname} enter="page-in" exit="page-out" default="none">
+            {/* Opaque, full-height surface so a page never shows the previous one through it mid-transition. */}
+            <div className="min-h-dvh bg-bg">{children}</div>
+          </ViewTransition>
+        )}</main>
 
       {!hideNav && !gated && <BottomNav pathname={pathname} onMore={() => setMoreOpen(true)} />}
 
@@ -125,10 +145,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void }) {
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const isActive = (href: string) => pathname.startsWith(href);
   const moreActive = MORE.some((m) => pathname.startsWith(m.href));
   return (
-    <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 pb-[max(var(--safe-bottom),0.75rem)]">
+    <nav aria-label="Primary" style={{ viewTransitionName: "bottom-nav" }} className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 lg:hidden pb-[max(var(--safe-bottom),0.75rem)]">
       <div className="flex items-center justify-between rounded-[1.75rem] bg-ink/95 px-2 py-2 text-white shadow-float backdrop-blur-xl">
         {NAV.map(({ href, label, icon: Icon }) => {
           if (href === "/add")
@@ -153,5 +173,43 @@ function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void 
         </button>
       </div>
     </nav>
+  );
+}
+
+/** Desktop navigation: everything from the bottom bar and the More drawer in one column. */
+function Sidebar({ pathname }: { pathname: string }) {
+  const items = [...NAV.filter((n) => n.href !== "/add"), ...MORE];
+  return (
+    <aside data-nav-peer style={{ viewTransitionName: "sidebar" }} className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-white/70 px-4 py-6 backdrop-blur-xl lg:flex" aria-label="Primary">
+      <Link href="/home" className="mb-6 flex items-center gap-2.5 px-2">
+        <LogoMark size={34} />
+        <span className="text-lg font-semibold tracking-tight">Kaban</span>
+      </Link>
+      <Link href="/add" className="mb-5 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand-2 font-medium text-white shadow-float active:scale-[0.98]">
+        <Plus className="size-5" strokeWidth={2.4} /> Add transaction
+      </Link>
+      <nav className="flex-1 space-y-0.5 overflow-y-auto">
+        {items.map(({ href, label, icon: Icon }, i) => {
+          const active = pathname.startsWith(href);
+          return (
+            <div key={href}>
+              {i === NAV.length - 1 && <p className="mt-5 mb-1 px-3 text-[0.68rem] font-semibold tracking-wide text-ink-3 uppercase">More</p>}
+              <Link
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={cx("relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors", active ? "text-brand" : "text-ink-2 hover:bg-pale")}
+              >
+                {active && <motion.span layoutId="side-pill" className="absolute inset-0 rounded-xl bg-pale" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />}
+                <Icon className="relative size-[1.1rem]" />
+                <span className="relative">{label}</span>
+              </Link>
+            </div>
+          );
+        })}
+      </nav>
+      <div className="px-1 pt-4">
+        <SyncPill />
+      </div>
+    </aside>
   );
 }

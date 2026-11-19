@@ -60,7 +60,7 @@ export default function SyncPage() {
 
   return (
     <>
-      <PageHeader title="Sync & backup" back="/" />
+      <PageHeader title="Sync & backup" back="/home" />
       <div className="space-y-4 px-4">
         <Card className="space-y-3">
           <div className="flex items-center gap-3">

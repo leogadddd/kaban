@@ -13,6 +13,8 @@ export interface Account {
   /** Payment due date = closing date + N days. */
   dueDaysAfterClosing?: number;
   issuer?: string;
+  /** Picked from the bank list (lib/banks.ts); issuer keeps the display name. */
+  bankId?: string;
   last4?: string;
   color: string;
   archived: boolean;
