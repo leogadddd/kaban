@@ -1,15 +1,25 @@
 "use client";
 
 import { ChevronRight, CircleUserRound, LogIn, RefreshCw, Settings, UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cloudConfigured } from "@/lib/supabase";
 import { useSyncState } from "@/lib/sync";
-import { HapticButton, HapticLink } from "./haptic-button";
+import { HapticButton } from "./haptic-button";
 import { Sheet } from "./ui";
 
 /** Top-right avatar on Home: account status plus the less-used pages (Sync & Backup, Settings). */
 export function ProfileButton() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  // Let the sheet finish sliding away before leaving Home. Otherwise the browser's snapshot of this page
+  // (what an iOS/Android back-swipe shows) still has the sheet open, and it flashes on the way back.
+  function openPage(href: string) {
+    setOpen(false);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => router.push(href), reduce ? 0 : 340);
+  }
   const { email, userId } = useSyncState();
   const initial = email?.[0]?.toUpperCase();
 
@@ -43,24 +53,24 @@ export function ProfileButton() {
 
           {!userId && cloudConfigured && (
             <div className="grid grid-cols-2 gap-2">
-              <HapticLink href="/signup" onClick={() => setOpen(false)} className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand font-medium text-on-brand">
+              <HapticButton type="button" onClick={() => openPage("/signup")} wrapperClassName="grid" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand font-medium text-on-brand">
                 <UserPlus className="size-4" /> Create account
-              </HapticLink>
-              <HapticLink href="/login" onClick={() => setOpen(false)} className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-pale font-medium text-brand">
+              </HapticButton>
+              <HapticButton type="button" onClick={() => openPage("/login")} wrapperClassName="grid" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-pale font-medium text-brand">
                 <LogIn className="size-4" /> Sign in
-              </HapticLink>
+              </HapticButton>
             </div>
           )}
 
           <nav className="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-surface">
             {rows.map(({ href, label, icon: Icon }) => (
-              <HapticLink key={href} href={href} onClick={() => setOpen(false)} wrapperClassName="grid" className="flex min-h-14 items-center gap-3 px-4 font-medium active:bg-pale">
+              <HapticButton type="button" key={href} onClick={() => openPage(href)} wrapperClassName="grid" className="flex min-h-14 w-full items-center gap-3 px-4 text-left font-medium active:bg-pale">
                 <span className="grid size-9 place-items-center rounded-xl bg-pale text-brand">
                   <Icon className="size-4.5" />
                 </span>
                 <span className="flex-1">{label}</span>
                 <ChevronRight className="size-4 text-ink-3" />
-              </HapticLink>
+              </HapticButton>
             ))}
           </nav>
         </div>
