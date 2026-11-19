@@ -92,7 +92,7 @@ export default function AccountsPage() {
           })}
 
           {!list.length && (
-            <Card className="text-center">
+            <Card className="text-center lg:hidden">
               <p className="font-medium">No accounts yet</p>
               <Link href="/accounts/new" className="mt-2 inline-block text-brand">Add one</Link>
             </Card>

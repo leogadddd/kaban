@@ -12,7 +12,7 @@ export const SITE_URL = (
 export const SITE_NAME = "Kaban";
 export const SITE_TAGLINE = "Every peso on the family card, accounted for";
 export const SITE_DESCRIPTION =
-  "Kaban is a free, offline-first money tracker for the Philippines. Track cash, debit and a shared family credit card: billing cycles, instalments, split expenses and who still owes you. Installs on iPhone and Android.";
+  "Kaban is a free, offline-first money tracker for Filipino households. Track cash, debit, shared credit cards and pay-later plans: billing cycles, instalments, split expenses and who still owes you, with optional sync across devices. Installs on iPhone and Android.";
 
 export const SITE_KEYWORDS = [
   "credit card tracker Philippines",

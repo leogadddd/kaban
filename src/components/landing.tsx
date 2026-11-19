@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import Link from "next/link";
-import { ArrowRight, CreditCard, HandCoins, SquarePlus, TrendingDown } from "lucide-react";
+import { ArrowRight, CloudCheck, CreditCard, HandCoins, SquarePlus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMeta } from "@/lib/hooks";
 import { InstallButton, requestInstall, shouldInstallFirst, useInstall } from "./install";
@@ -127,8 +127,8 @@ export function HeroVisual() {
 
       <motion.div className="absolute right-6 top-2 rounded-2xl bg-white p-2.5 shadow-float" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }}>
         <motion.div {...float(2.1, 6)} className="flex items-center gap-2">
-          <TrendingDown className="size-4 text-brand-2" />
-          <p className="text-[0.7rem] font-medium">40% utilised</p>
+          <CloudCheck className="size-4 text-brand-2" />
+          <p className="text-[0.7rem] font-medium">Synced just now</p>
         </motion.div>
       </motion.div>
     </div>
