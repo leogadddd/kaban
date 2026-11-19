@@ -52,8 +52,7 @@ export default function HomePage() {
         </div>
         {ledger.activeAccounts.length > 0 && (
           <div className="flex items-center gap-2">
-          <PrivacyToggle withLabel />
-          <Link href="/accounts/new" className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-white px-4 text-sm font-medium hover:bg-pale">
+          <Link href="/accounts/new" className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-4 text-sm font-medium hover:bg-pale">
             <Plus className="size-4" /> Add account
           </Link>
           </div>
@@ -131,7 +130,7 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
       <EmptyState
         icon={<WalletCards className="size-6" />}
         title="Add your first account"
-        body="Start with your wallet cash, a debit account or the family credit card."
+        body="Start with your wallet cash, a bank or e-wallet account, or a credit card."
         action={
           <Link href="/accounts/new">
             <Button>
@@ -152,19 +151,19 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <button onClick={onCredit} className="rounded-3xl bg-ink p-4 text-left text-white shadow-float active:scale-[0.98]">
+        <button onClick={onCredit} className="rounded-3xl bg-night p-4 text-left text-white shadow-float dark:ring-1 dark:ring-white/6 active:scale-[0.98]">
           <p className="text-xs text-white/60">Credit outstanding</p>
           <Money minor={totals.creditOutstanding} className="mt-1 block text-xl font-semibold" />
           <p className="mt-2 flex items-center gap-1 text-xs text-mint">
             Credit view <ArrowRight className="size-3" />
           </p>
         </button>
-        <Link href="/owed" className="rounded-3xl bg-brand-2 p-4 text-white shadow-float active:scale-[0.98]">
-          <p className="flex items-center gap-1 text-xs text-white/75">
+        <Link href="/owed" className="rounded-3xl bg-brand-2 p-4 text-on-brand shadow-float active:scale-[0.98]">
+          <p className="flex items-center gap-1 text-xs text-on-brand/75">
             <HandCoins className="size-3.5" /> Owed to me
           </p>
           <Money minor={receivable} className="mt-1 block text-xl font-semibold" />
-          <p className="mt-2 text-xs text-white/75">Net position <Money minor={totals.netPosition} /></p>
+          <p className="mt-2 text-xs text-on-brand/75">Net position <Money minor={totals.netPosition} /></p>
         </Link>
       </div>
 
@@ -203,11 +202,11 @@ function DesktopSetup() {
   const options = [
     { href: "/accounts/new?type=cash", icon: Wallet, title: "Cash wallet", body: "Money in your pocket or at home." },
     { href: "/accounts/new?type=debit", icon: Landmark, title: "Bank or e-wallet", body: "Savings, payroll, GCash, Maya…" },
-    { href: "/accounts/new?type=credit", icon: CreditCard, title: "Credit card", body: "The family card: limit, billing cycle, due date." },
+    { href: "/accounts/new?type=credit", icon: CreditCard, title: "Credit card", body: "Limit, billing cycle and due date." },
   ];
   return (
     <div className="px-4">
-      <div className="rounded-[2rem] border border-line bg-white p-10 shadow-soft">
+      <div className="rounded-[2rem] border border-line bg-surface p-10 shadow-soft">
         <div className="max-w-xl">
           <span className="grid size-12 place-items-center rounded-2xl bg-pale text-brand">
             <WalletCards className="size-6" />
@@ -218,7 +217,7 @@ function DesktopSetup() {
         <div className="mt-8 grid grid-cols-3 gap-4">
           {options.map(({ href, icon: Icon, title, body }) => (
             <Link key={href} href={href} className="group rounded-3xl border border-line bg-bg p-5 transition hover:-translate-y-0.5 hover:border-brand-2 hover:bg-pale">
-              <span className="grid size-11 place-items-center rounded-2xl bg-white text-brand ring-1 ring-line">
+              <span className="grid size-11 place-items-center rounded-2xl bg-surface text-brand ring-1 ring-line">
                 <Icon className="size-5" />
               </span>
               <p className="mt-4 font-semibold">{title}</p>

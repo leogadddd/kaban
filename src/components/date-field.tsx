@@ -59,7 +59,7 @@ export function DateField({
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         className={cx(
-          cx("flex min-h-12 w-full min-w-0 items-center gap-2.5 rounded-2xl border border-line bg-white text-left text-[16px]", compact ? "px-3" : "px-4"),
+          cx("flex min-h-12 w-full min-w-0 items-center gap-2.5 rounded-2xl border border-line bg-field text-left text-[16px]", compact ? "px-3" : "px-4"),
           className,
         )}
       >
@@ -189,7 +189,7 @@ function Calendar({
                   aria-label={longDay.format(fromISO(iso))}
                   className={cx(
                     "num mx-auto grid aspect-square w-full max-w-11 place-items-center rounded-full text-[0.95rem] transition disabled:opacity-25",
-                    iso === value ? "bg-brand font-semibold text-white" : iso === today ? "font-semibold text-brand ring-1 ring-brand/40" : "text-ink active:bg-pale",
+                    iso === value ? "bg-brand font-semibold text-on-brand" : iso === today ? "font-semibold text-brand ring-1 ring-brand/40" : "text-ink active:bg-pale",
                   )}
                 >
                   {Number(iso.slice(8))}

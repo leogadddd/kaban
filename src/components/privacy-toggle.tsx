@@ -38,7 +38,7 @@ export function PrivacyToggle({ className, withLabel = false }: { className?: st
       title={on ? "Show amounts" : "Hide amounts"}
       className={cx(
         "flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border text-xs font-medium transition active:scale-95",
-        on ? "border-brand bg-brand text-white" : "border-line bg-white text-ink-2 hover:bg-pale",
+        on ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2 hover:bg-pale",
         withLabel ? "px-3" : "w-10",
         className,
       )}

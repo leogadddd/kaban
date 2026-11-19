@@ -8,7 +8,7 @@ export const OG_ALT = `Kaban: ${SITE_TAGLINE}`;
 /** Social share card: headline on the left, stacked account cards on the right. */
 export function renderOgImage() {
   const cards = [
-    { c: "#1F2D27", label: "Family Card", v: "₱47,940.50", top: 0, rot: -7 },
+    { c: "#1F2D27", label: "Credit Card", v: "₱47,940.50", top: 0, rot: -7 },
     { c: "#176B4D", label: "Savings", v: "₱139,851.00", top: 92, rot: 4 },
     { c: "#2D936C", label: "Wallet", v: "₱6,895.00", top: 184, rot: -2 },
   ];
@@ -22,9 +22,9 @@ export function renderOgImage() {
             <span style={{ fontSize: 40, fontWeight: 700, color: "#17241D", letterSpacing: -1 }}>Kaban</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 68, fontWeight: 700, color: "#17241D", lineHeight: 1.02, letterSpacing: -2.5 }}>Every peso on the family card,</div>
+            <div style={{ fontSize: 68, fontWeight: 700, color: "#17241D", lineHeight: 1.02, letterSpacing: -2.5 }}>Every peso,</div>
             <div style={{ fontSize: 68, fontWeight: 700, color: "#2D936C", lineHeight: 1.02, letterSpacing: -2.5 }}>accounted for.</div>
-            <div style={{ marginTop: 24, fontSize: 28, color: "#4C5C53", lineHeight: 1.3 }}>Cash, debit &amp; shared credit · instalments · splits · who owes you</div>
+            <div style={{ marginTop: 24, fontSize: 28, color: "#4C5C53", lineHeight: 1.3 }}>Cash, banks, e-wallets &amp; credit cards · instalments · who owes you</div>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             {["Free", "Works offline", "Installs on iPhone"].map((t) => (

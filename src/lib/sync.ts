@@ -447,9 +447,13 @@ export async function resendConfirmation(email: string) {
 }
 
 /** Auth events select the ledger only after the required factors are complete. */
-export async function signIn(email: string, password: string) {
-  const { error } = await sb().auth.signInWithPassword({ email, password });
+export async function signIn(email: string, password: string): Promise<{ needsCode: boolean }> {
+  const { data, error } = await sb().auth.signInWithPassword({ email, password });
   if (error) throw error;
+  // Tell the login screen straight away whether a second factor is due, so it can go to the code step
+  // without waiting for the ledger to open.
+  const { data: aal } = await sb().auth.mfa.getAuthenticatorAssuranceLevel(data.session?.access_token);
+  return { needsCode: !!aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2" };
 }
 
 export async function sendPasswordReset(email: string) {

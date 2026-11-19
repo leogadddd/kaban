@@ -1,25 +1,16 @@
 "use client";
 
-import { alertDialog, confirmDialog, confirmSignOut } from "@/components/dialog";
+import { confirmDialog } from "@/components/dialog";
 import { useLiveQuery } from "dexie-react-hooks";
-import { AlertTriangle, Cloud, CloudOff, Download, HardDrive, LogOut, RefreshCw, ShieldCheck, Smartphone, Trash2, Upload } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { AlertTriangle, Cloud, CloudOff, Download, HardDrive, RefreshCw, ShieldCheck, Upload } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { CodeField } from "@/components/auth-ui";
 import { Button, Card, cx, PageHeader, Progress, SectionTitle } from "@/components/ui";
 import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
 import { useMeta, useOnline } from "@/lib/hooks";
 import { exportBackup, importBackup, MAX_BACKUP_BYTES, prepareBackupImport, setMeta } from "@/lib/repo";
 import {
-  confirmAuthenticator,
-  deleteCloudData,
-  friendlyAuthError,
-  listAuthenticators,
-  removeAuthenticator,
   runSync,
-  signOut,
-  startAuthenticatorEnrollment,
   recoveryBackup,
   useSyncState,
   type SyncState,
@@ -95,7 +86,7 @@ export default function SyncPage() {
 
   return (
     <>
-      <PageHeader title="Sync & backup" back="/home" />
+      <PageHeader title="Sync & backup" back="/home" privacy={false} />
       <div className="space-y-4 px-4 pb-4">
         <Card className="space-y-3">
           <div className="flex items-center gap-3">
@@ -176,8 +167,7 @@ function CloudSection({ sync }: { sync: SyncState }) {
       </Card>
     );
   }
-  if (sync.phase === "mfa") return <FinishSignInCard />;
-  if (!sync.userId) return <SignedOutCard />;
+  if (!sync.userId || sync.phase === "mfa") return <SignedOutCard />;
   return <AccountCard sync={sync} />;
 }
 
@@ -193,19 +183,9 @@ function SignedOutCard() {
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/signup" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-white shadow-soft">Create account</Link>
+        <Link href="/signup" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">Create account</Link>
         <Link href="/login" className="flex min-h-12 items-center justify-center rounded-2xl bg-pale font-medium text-brand">Sign in</Link>
       </div>
-    </Card>
-  );
-}
-
-function FinishSignInCard() {
-  return (
-    <Card className="space-y-3">
-      <p className="flex items-center gap-2 font-semibold"><Smartphone className="size-4 text-brand" /> Finish signing in</p>
-      <p className="text-sm text-ink-3">Your account uses two-step verification. Enter the code from your authenticator app to start syncing.</p>
-      <Link href="/login/verify" className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-white shadow-soft">Enter code</Link>
     </Card>
   );
 }
@@ -213,33 +193,9 @@ function FinishSignInCard() {
 // ---------- Signed in ----------
 
 function AccountCard({ sync }: { sync: SyncState }) {
-  const router = useRouter();
-  const db = useLedgerDatabase();
   const q = sync.quota;
   const recPct = q ? (q.records / q.maxRecords) * 100 : 0;
   const bytePct = q ? (q.bytes / q.maxBytes) * 100 : 0;
-
-  async function doSignOut() {
-    if (!(await confirmSignOut()) || !isActiveDatabase(db)) return;
-    await signOut();
-    router.replace("/welcome");
-  }
-
-  async function doDeleteCloud() {
-    const ok = await confirmDialog({
-      title: "Delete your cloud data?",
-      body: "Delete your account’s cloud records and reset sync on all your devices. This browser keeps a recovery copy you can export from this screen.",
-      confirmLabel: "Delete cloud data",
-      danger: true,
-      typeToConfirm: "DELETE",
-    });
-    if (!ok || !isActiveDatabase(db)) return;
-    try {
-      await deleteCloudData();
-    } catch (e) {
-      await alertDialog({ title: "Couldn't delete cloud data", body: friendlyAuthError(e), danger: true });
-    }
-  }
 
   return (
     <>
@@ -279,119 +235,10 @@ function AccountCard({ sync }: { sync: SyncState }) {
         )}
       </Card>
 
-      <TwoFactorCard />
-
-      <Card className="space-y-2">
-        <SectionTitle>Account</SectionTitle>
-        <Button variant="secondary" className="w-full" onClick={doSignOut}><LogOut className="size-4" /> Sign out</Button>
-        <Button variant="danger" className="w-full" onClick={doDeleteCloud}><Trash2 className="size-4" /> Delete cloud data</Button>
-      </Card>
+      <p className="px-1 text-xs text-ink-3">
+        Sign out, two-factor sign-in and deleting cloud data are in <Link href="/settings" className="font-medium text-brand">Settings → Account</Link>.
+      </p>
     </>
-  );
-}
-
-function TwoFactorCard() {
-  const [factors, setFactors] = useState<{ id: string }[] | null>(null);
-  const [enroll, setEnroll] = useState<{ factorId: string; qr: string; secret: string }>();
-  const [code, setCode] = useState("");
-  const [error, setError] = useState<string>();
-  const [busy, setBusy] = useState(false);
-
-  const refresh = () => listAuthenticators().then(setFactors).catch(() => setFactors([]));
-  useEffect(() => {
-    void refresh();
-  }, []);
-
-  const on = !!factors?.length;
-
-  return (
-    <Card className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="flex items-center gap-2 font-semibold"><Smartphone className="size-4 text-brand" /> Two-factor sign-in</p>
-        {factors && <span className={cx("rounded-full px-2.5 py-1 text-xs font-medium", on ? "bg-pale text-brand" : "bg-line/60 text-ink-3")}>{on ? "On" : "Off"}</span>}
-      </div>
-      <p className="text-sm text-ink-3">Ask for a code from an authenticator app (Google Authenticator, 1Password, Authy…) whenever this account signs in on a new device.</p>
-
-      {enroll ? (
-        <form
-          className="space-y-3"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setBusy(true);
-            setError(undefined);
-            try {
-              await confirmAuthenticator(enroll.factorId, code);
-              setEnroll(undefined);
-              setCode("");
-              await refresh();
-            } catch (err) {
-              setError(friendlyAuthError(err));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={enroll.qr} alt="QR code for your authenticator app" className="mx-auto size-44 rounded-2xl border border-line bg-white p-2" />
-          <p className="text-center text-xs text-ink-3">
-            Scan it, or enter this key: <span className="num break-all text-ink-2 select-all">{enroll.secret}</span>
-          </p>
-          <CodeField value={code} onChange={setCode} error={error} />
-          <div className="grid grid-cols-2 gap-3">
-            <Button type="button" variant="secondary" onClick={() => setEnroll(undefined)}>Cancel</Button>
-            <Button type="submit" disabled={busy || code.length !== 6}>Turn on</Button>
-          </div>
-        </form>
-      ) : on ? (
-        <Button
-          variant="secondary"
-          className="w-full"
-          disabled={busy}
-          onClick={async () => {
-            if (
-              !(await confirmDialog({
-                title: "Turn off two-factor sign-in?",
-                body: "Signing in will only need your password again.",
-                confirmLabel: "Turn off",
-                danger: true,
-              }))
-            )
-              return;
-            setBusy(true);
-            try {
-              for (const f of factors!) await removeAuthenticator(f.id);
-              await refresh();
-            } catch (err) {
-              setError(friendlyAuthError(err));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          Turn off
-        </Button>
-      ) : (
-        <Button
-          variant="secondary"
-          className="w-full"
-          disabled={busy || !factors}
-          onClick={async () => {
-            setBusy(true);
-            setError(undefined);
-            try {
-              setEnroll(await startAuthenticatorEnrollment());
-            } catch (err) {
-              setError(friendlyAuthError(err));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <ShieldCheck className="size-4" /> Set up authenticator app
-        </Button>
-      )}
-      {error && !enroll && <p className="px-1 text-sm text-expense" role="alert">{error}</p>}
-    </Card>
   );
 }
 

@@ -54,7 +54,7 @@ export default function SignupPage() {
           <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-pale text-brand">
             <MailCheck className="size-6" />
           </div>
-          <Link href="/login" replace className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-white shadow-soft">
+          <Link href="/login" replace className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">
             I&apos;ve confirmed — sign in
           </Link>
           <Button

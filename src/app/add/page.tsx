@@ -6,7 +6,7 @@ import { useMoney } from "@/lib/privacy";
 import { DateField } from "@/components/date-field";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Ban, Check, ChevronDown, CreditCard, Minus, Plus, RotateCcw, Split, UserPlus, X } from "lucide-react";
+import { ArrowLeftRight, Ban, Check, ChevronDown, ChevronLeft, ChevronRight, CreditCard, Minus, Plus, Receipt, RotateCcw, Scale, Split, TrendingUp, Undo2, UserPlus, X, type LucideIcon } from "lucide-react";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Button, Chip, cx, Field, inputCls, Loading, Segmented } from "@/components/ui";
 import { shiftStatement, statementFor } from "@/lib/billing";
@@ -32,6 +32,17 @@ export default function Page() {
 const TYPES: TxnType[] = ["expense", "income", "transfer", "card_payment", "refund", "adjustment"];
 const INSTALMENT_PRESETS = [3, 6, 9, 12, 18, 24, 36];
 
+/** Step 1 of a new transaction: what kind it is decides which accounts and fields apply. */
+const TYPE_CHOICES: { type: TxnType; icon: LucideIcon; body: string; tone: "expense" | "income" | "neutral" }[] = [
+  { type: "expense", icon: Receipt, body: "Money you spent, by cash, debit or card", tone: "expense" },
+  { type: "income", icon: TrendingUp, body: "Salary, sales, gifts, interest", tone: "income" },
+  { type: "transfer", icon: ArrowLeftRight, body: "Move money between your accounts", tone: "neutral" },
+  { type: "card_payment", icon: CreditCard, body: "Pay a credit card bill", tone: "neutral" },
+  { type: "refund", icon: Undo2, body: "Money returned to an account or card", tone: "income" },
+  { type: "adjustment", icon: Scale, body: "Correct a balance to match the bank", tone: "neutral" },
+];
+type Step = "type" | "account" | "form";
+
 function Editor() {
   const router = useRouter();
   const db = useLedgerDatabase();
@@ -41,7 +52,10 @@ function Editor() {
   const { fmt: fmtMoney } = useMoney();
 
   const [existing, setExisting] = useState<Txn | null | undefined>(editId ? undefined : null);
-  const [type, setType] = useState<TxnType>(() => (TYPES.includes(params.get("type") as TxnType) ? (params.get("type") as TxnType) : "expense"));
+  const linkedType = TYPES.includes(params.get("type") as TxnType) ? (params.get("type") as TxnType) : undefined;
+  const [type, setType] = useState<TxnType>(linkedType ?? "expense");
+  // New records walk type → account → details; edits and fully deep-linked records open on the form.
+  const [step, setStep] = useState<Step>(() => (editId ? "form" : !linkedType ? "type" : params.get("account") ? "form" : "account"));
   const [amount, setAmount] = useState(() => {
     const p = params.get("amount");
     const m = p ? parseMinor(p) : null;
@@ -69,8 +83,8 @@ function Editor() {
   const initialised = useRef(false);
 
   useEffect(() => {
-    if (!editId) amountRef.current?.focus({ preventScroll: true });
-  }, [editId, ledger.ready]);
+    if (!editId && step === "form") amountRef.current?.focus({ preventScroll: true });
+  }, [editId, ledger.ready, step]);
 
   // Load the record being edited.
   useEffect(() => {
@@ -224,21 +238,89 @@ function Editor() {
   const isReimbursement = type === "reimbursement";
   const voided = existing?.state === "void";
 
+  function chooseType(t: TxnType) {
+    setType(t);
+    const choices = accounts.filter((a) => (t === "income" || t === "transfer" || t === "card_payment" ? a.type !== "credit" : true));
+    if (choices.length === 1) {
+      setAccountId(choices[0].id);
+      setStep("form");
+    } else setStep("account");
+  }
+  const stepBack = () => setStep(step === "form" && !editId ? (fromChoices.length > 1 ? "account" : "type") : "type");
+
+  if (step === "type")
+    return (
+      <StepScreen title="New transaction" subtitle="What kind of transaction is this?" onClose={close}>
+        <div className="grid grid-cols-2 gap-3">
+          {TYPE_CHOICES.map(({ type: t, icon: Icon, body, tone }, i) => (
+            <motion.button
+              key={t}
+              type="button"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              onClick={() => chooseType(t)}
+              className="flex min-h-36 flex-col items-start gap-3 rounded-3xl border border-line bg-surface p-4 text-left shadow-soft transition active:scale-[0.98] lg:hover:border-brand-2"
+            >
+              <span className={cx("grid size-11 place-items-center rounded-2xl", tone === "expense" ? "bg-expense/10 text-expense" : tone === "income" ? "bg-income/10 text-income" : "bg-pale text-brand")}>
+                <Icon className="size-5" />
+              </span>
+              <span>
+                <span className="block font-semibold">{TYPE_LABEL[t]}</span>
+                <span className="mt-0.5 block text-xs text-ink-3">{body}</span>
+              </span>
+            </motion.button>
+          ))}
+        </div>
+      </StepScreen>
+    );
+
+  if (step === "account")
+    return (
+      <StepScreen
+        title={TYPE_LABEL[type]}
+        subtitle={type === "card_payment" ? "Which account are you paying from?" : type === "transfer" ? "Which account is the money leaving?" : type === "income" || type === "refund" ? "Which account received it?" : "Which account or card did you use?"}
+        onBack={() => setStep("type")}
+        onClose={close}
+      >
+        <AccountList
+          accounts={fromChoices}
+          ledger={ledger}
+          onPick={(id) => {
+            setAccountId(id);
+            setStep("form");
+          }}
+        />
+      </StepScreen>
+    );
+
   return (
     <div className="flex min-h-dvh flex-col lg:min-h-0">
-      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-white lg:px-6 lg:py-3 lg:backdrop-blur-none">
-        <button onClick={close} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
-          <X className="size-6" />
-        </button>
-        <h1 className="font-semibold">{editId ? (voided ? "Voided transaction" : "Edit transaction") : "New transaction"}</h1>
-        <span className="size-11" />
+      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
+        {editId ? (
+          <button onClick={close} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
+            <X className="size-6" />
+          </button>
+        ) : (
+          <button onClick={stepBack} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
+            <ChevronLeft className="size-6" />
+          </button>
+        )}
+        <h1 className="font-semibold">{editId ? (voided ? "Voided transaction" : "Edit transaction") : `New ${TYPE_LABEL[type].toLowerCase()}`}</h1>
+        {editId ? (
+          <span className="size-11" />
+        ) : (
+          <button onClick={close} className="-mr-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
+            <X className="size-6" />
+          </button>
+        )}
       </header>
 
       <div className="flex-1 space-y-5 px-4 pb-40 lg:px-6 lg:pt-5 lg:pb-2">
         {/* Type */}
         {isReimbursement ? (
           <p className="rounded-2xl bg-pale p-3 text-sm text-brand">Reimbursement from {ledger.personById.get(existing?.personId ?? "")?.name ?? "someone"} — linked to a debt in Who Owes Me.</p>
-        ) : (
+        ) : editId ? (
           <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" role="tablist" aria-label="Transaction type">
             {TYPES.map((t) => (
               <Chip key={t} active={type === t} onClick={() => setType(t)}>
@@ -246,7 +328,7 @@ function Editor() {
               </Chip>
             ))}
           </div>
-        )}
+        ) : null}
 
         {/* Amount first */}
         <div className="text-center">
@@ -295,7 +377,7 @@ function Editor() {
         <AnimatePresence initial={false}>
           {isCreditPurchase && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-              <div className="space-y-3 rounded-3xl border border-line bg-white p-4">
+              <div className="space-y-3 rounded-3xl border border-line bg-surface p-4">
                 <p className="flex items-center gap-1.5 text-sm font-medium"><CreditCard className="size-4 text-brand" /> Billing</p>
                 <Segmented<Arrangement>
                   size="sm"
@@ -340,7 +422,7 @@ function Editor() {
                   aria-pressed={category === name}
                   className={cx(
                     "flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-2xl border p-1.5 text-[0.68rem] leading-tight font-medium transition",
-                    category === name ? "border-brand bg-brand text-white" : "border-line bg-white text-ink-2",
+                    category === name ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2",
                   )}
                 >
                   <Icon className="size-5" />
@@ -355,7 +437,7 @@ function Editor() {
 
         {/* Split */}
         {canSplit && (
-          <div className="rounded-3xl border border-line bg-white p-4">
+          <div className="rounded-3xl border border-line bg-surface p-4">
             <button type="button" onClick={() => setSplitOn((v) => !v)} className="flex w-full items-center justify-between" aria-expanded={splitOn}>
               <span className="flex items-center gap-2 font-medium"><Split className="size-4 text-brand" /> Split with others</span>
               <span className={cx("relative h-7 w-12 rounded-full transition-colors", splitOn ? "bg-brand" : "bg-line")}>
@@ -512,7 +594,7 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
               role="radio"
               aria-checked={active}
               onClick={() => onChange(a.id)}
-              className={cx("min-w-36 shrink-0 rounded-2xl border p-3 text-left transition", active ? "border-transparent text-white shadow-float" : "border-line bg-white")}
+              className={cx("min-w-36 shrink-0 rounded-2xl border p-3 text-left transition", active ? "border-transparent text-white shadow-float" : "border-line bg-surface")}
               style={active ? { background: a.color } : undefined}
             >
               <span className="flex items-center gap-1.5 text-sm font-medium">
@@ -530,6 +612,66 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/** Full-screen step of the new-transaction flow (type, then account), before the form. */
+function StepScreen({ title, subtitle, onBack, onClose, children }: { title: string; subtitle: string; onBack?: () => void; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-dvh flex-col lg:min-h-0">
+      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
+        {onBack ? (
+          <button onClick={onBack} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
+            <ChevronLeft className="size-6" />
+          </button>
+        ) : (
+          <span className="size-11" />
+        )}
+        <h1 className="font-semibold">{title}</h1>
+        <button onClick={onClose} className="-mr-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
+          <X className="size-6" />
+        </button>
+      </header>
+      <motion.div key={title} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 380, damping: 34 }} className="flex-1 px-4 pt-2 pb-10 lg:px-6 lg:pt-5">
+        <p className="mb-4 px-1 text-[1.35rem] leading-tight font-semibold tracking-tight">{subtitle}</p>
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+function AccountList({ accounts, ledger, onPick }: { accounts: Account[]; ledger: ReturnType<typeof useLedger>; onPick: (id: string) => void }) {
+  const { fmt } = useMoney();
+  return (
+    <div className="space-y-2">
+      {accounts.map((a) => {
+        const b = ledger.balances.get(a.id);
+        const bank = a.type === "cash" ? undefined : bankFor(a);
+        return (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => onPick(a.id)}
+            className="flex min-h-18 w-full items-center gap-3 rounded-3xl border border-line bg-surface p-3 text-left shadow-soft transition active:scale-[0.99] lg:hover:border-brand-2"
+          >
+            {bank ? (
+              <BankLogo bank={bank} size={44} />
+            ) : (
+              <span className="size-11 shrink-0 rounded-2xl" style={{ background: `linear-gradient(140deg, ${a.color}, color-mix(in oklab, ${a.color} 70%, black))` }} />
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{a.name}</span>
+              <span className="block text-xs text-ink-3">{a.type === "credit" ? "Credit card" : a.type === "cash" ? "Cash" : "Debit"}{a.last4 ? ` · •••• ${a.last4}` : ""}</span>
+            </span>
+            <span className="num amount text-right text-sm font-semibold">
+              {a.type === "credit" ? fmt(b?.available ?? 0, { compact: true }) : fmt(b?.balance ?? 0)}
+              {a.type === "credit" && <span className="block text-[0.68rem] font-normal text-ink-3">available</span>}
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-ink-3" />
+          </button>
+        );
+      })}
     </div>
   );
 }

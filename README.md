@@ -2,7 +2,7 @@
 
 > *Kaban* — Tagalog for a chest or coffer, as in *kaban ng bayan* (the national treasury).
 
-An offline-first PWA for tracking cash, debit and a **shared family credit card**: who bought what, how much is still owed to the bank, instalments, and who owes you. Built from the PRD in [`docs/`](docs/).
+An offline-first personal finance PWA for tracking cash, bank and e-wallet accounts, credit cards and pay-later plans: what you spent, how much is still owed to the bank, instalments, and who owes you. Built from the PRD in [`docs/`](docs/).
 
 **Stack:** Next.js 16 (App Router) · Tailwind CSS v4 · Motion · Dexie (IndexedDB) · Recharts · TypeScript
 

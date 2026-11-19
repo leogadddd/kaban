@@ -32,8 +32,8 @@ export default function PeoplePage() {
       <PageHeader
         title="People"
         back="/home"
-        subtitle="Family & friends you split with — they don't need an account."
-        action={<button onClick={() => setOpen(true)} className="grid size-11 place-items-center rounded-full bg-brand text-white" aria-label="Add person"><UserPlus className="size-5" /></button>}
+        subtitle="People you split bills with or lend to. They don't need an account."
+        action={<button onClick={() => setOpen(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand" aria-label="Add person"><UserPlus className="size-5" /></button>}
       />
       <div className="space-y-4 px-4">
         {ledger.ready && people.length > 0 && (
@@ -92,7 +92,7 @@ export default function PeoplePage() {
             })}
           </ul>
         ) : (
-          <EmptyState icon={<Users className="size-6" />} title="No people yet" body="Add the family members who share the card." action={<Button onClick={() => setOpen(true)}>Add person</Button>} />
+          <EmptyState icon={<Users className="size-6" />} title="No people yet" body="Add the friends or relatives you split bills with or lend money to." action={<Button onClick={() => setOpen(true)}>Add person</Button>} />
         )}
       </div>
       <Sheet open={open} onClose={() => setOpen(false)} title="Add person">

@@ -28,7 +28,7 @@ export default function AccountsPage() {
         title="Accounts"
         action={
           <div className="flex items-center gap-2">
-            <Link href="/accounts/new" className="grid size-11 place-items-center rounded-full bg-brand text-white shadow-soft" aria-label="Add account">
+            <Link href="/accounts/new" className="grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-soft" aria-label="Add account">
               <Plus className="size-5" />
             </Link>
           </div>
@@ -44,7 +44,7 @@ export default function AccountsPage() {
               <p className="text-xs text-ink-3">Available funds</p>
               <Money minor={ledger.totals.availableFunds} className="text-xl font-semibold" />
             </Card>
-            <Card className="bg-ink text-white">
+            <Card className="bg-night text-white dark:border-white/6">
               <p className="text-xs text-white/60">Credit outstanding</p>
               <Money minor={ledger.totals.creditOutstanding} className="text-xl font-semibold" />
             </Card>
@@ -114,9 +114,9 @@ function DesktopAccounts({ ledger, list }: { ledger: ReturnType<typeof useLedger
   const owed = ledger.debtStatus.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
   const tiles = [
     { label: "Available funds", value: ledger.totals.availableFunds, cls: "bg-pale" },
-    { label: "Credit outstanding", value: ledger.totals.creditOutstanding, cls: "bg-ink text-white", sub: "text-white/60" },
-    { label: "Net position", value: ledger.totals.netPosition, cls: "bg-white" },
-    { label: "Owed to you", value: owed, cls: "bg-brand-2 text-white", sub: "text-white/75" },
+    { label: "Credit outstanding", value: ledger.totals.creditOutstanding, cls: "bg-night text-white dark:border-white/6", sub: "text-white/60" },
+    { label: "Net position", value: ledger.totals.netPosition, cls: "bg-surface" },
+    { label: "Owed to you", value: owed, cls: "bg-brand-2 text-on-brand", sub: "text-on-brand/75" },
   ];
   return (
     <div className="hidden space-y-8 lg:block">

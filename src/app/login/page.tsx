@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useLeaveWhenSignedIn } from "@/components/auth-redirect";
 import { AuthScreen, EmailField, FormError, PasswordField } from "@/components/auth-ui";
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const router = useRouter();
   useLeaveWhenSignedIn();
 
   async function submit(e: FormEvent) {
@@ -19,7 +21,9 @@ export default function LoginPage() {
     setBusy(true);
     setError(undefined);
     try {
-      await signIn(email.trim(), password);
+      const { needsCode } = await signIn(email.trim(), password);
+      // Password accepted: the code is its own step, before Kaban opens the account.
+      if (needsCode) router.replace("/login/verify");
     } catch (err) {
       setError(friendlyAuthError(err));
       setBusy(false);

@@ -71,7 +71,7 @@ export function HeroVisual() {
           </div>
           <div className="relative mt-4 h-[11.5rem]">
             {[
-              { c: "#1F2D27", t: 0, s: 0.9, l: "Family Card", v: "₱47,940.50" },
+              { c: "#1F2D27", t: 0, s: 0.9, l: "Credit Card", v: "₱47,940.50" },
               { c: "#176B4D", t: 22, s: 0.95, l: "Savings", v: "₱139,851.00" },
               { c: "#2D936C", t: 44, s: 1, l: "Wallet", v: "₱6,895.00" },
             ].map((k, i) => (

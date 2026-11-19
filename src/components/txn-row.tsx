@@ -94,7 +94,7 @@ export function GroupedTxns({ txns, ledger, perspective }: { txns: Txn[]; ledger
       {groups.map((g) => (
         <section key={g.day}>
           <h3 className="mb-1 px-2 text-xs font-semibold tracking-wide text-ink-3 uppercase">{relativeDayLabel(g.day)}</h3>
-          <div className="rounded-3xl border border-line bg-white p-1.5 shadow-soft">
+          <div className="rounded-3xl border border-line bg-surface p-1.5 shadow-soft">
             {g.items.map((t) => (
               <TxnRow key={t.id} t={t} ledger={ledger} perspective={perspective} showDate={false} />
             ))}

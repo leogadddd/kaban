@@ -38,6 +38,11 @@ export default function VerifyPage() {
       title="Two-step verification"
       subtitle="Open your authenticator app and enter the 6-digit code for Kaban."
       back="/login"
+      onBack={async () => {
+        // Leaving the code step cancels the sign-in instead of keeping a half-signed session.
+        await signOut();
+        router.replace("/login");
+      }}
       footer={
         <button
           type="button"

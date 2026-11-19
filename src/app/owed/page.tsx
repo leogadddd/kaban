@@ -29,13 +29,13 @@ export default function OwedPage() {
       <PageHeader
         title="Who Owes Me"
         back="/home"
-        action={<button onClick={() => setAdding(true)} className="grid size-11 place-items-center rounded-full bg-brand text-white" aria-label="Add debt"><Plus className="size-5" /></button>}
+        action={<button onClick={() => setAdding(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand" aria-label="Add debt"><Plus className="size-5" /></button>}
       />
       <div className="space-y-4 px-4">
-        <Card className="bg-brand-2 text-white">
-          <p className="text-sm text-white/75">Total owed to you</p>
+        <Card className="bg-brand-2 text-on-brand">
+          <p className="text-sm text-on-brand/75">Total owed to you</p>
           <BigMoney minor={totalOutstanding} className="block text-[2.4rem] leading-tight" centsClass="text-2xl" />
-          <p className="text-xs text-white/75">Repaid so far <Money minor={totalRepaid} className="font-semibold text-white" /></p>
+          <p className="text-xs text-on-brand/75">Repaid so far <Money minor={totalRepaid} className="font-semibold text-on-brand" /></p>
         </Card>
 
         <Segmented value={filter} onChange={setFilter} options={[{ value: "open", label: "Unsettled" }, { value: "settled", label: "Settled" }]} />

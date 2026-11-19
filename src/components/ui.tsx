@@ -105,7 +105,8 @@ export function PageHeader({
           <h1 className="truncate text-[1.6rem] leading-tight font-semibold tracking-tight lg:text-[2rem]">{title}</h1>
           {subtitle && <div className="text-sm text-ink-3">{subtitle}</div>}
         </div>
-        {privacy && <PrivacyToggle className="size-11" />}
+        {/* Desktop has one toggle in the sidebar; phones get it on screens that show amounts. */}
+        {privacy && <PrivacyToggle className="size-11 lg:hidden" />}
         {action}
       </div>
     </header>
@@ -123,7 +124,7 @@ export function Button({
       {...props}
       className={cx(
         "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 font-medium transition active:scale-[0.98] disabled:opacity-40",
-        variant === "primary" && "bg-brand text-white shadow-soft",
+        variant === "primary" && "bg-brand text-on-brand shadow-soft",
         variant === "secondary" && "bg-pale text-brand",
         variant === "ghost" && "text-brand active:bg-pale",
         variant === "danger" && "bg-expense/10 text-expense",
@@ -138,7 +139,7 @@ export function Button({
 
 export function Card({ children, className, ...p }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div {...p} className={cx("rounded-3xl border border-line p-4 shadow-soft", !/(^|\s)bg-/.test(className ?? "") && "bg-white", className)}>
+    <div {...p} className={cx("rounded-3xl border border-line p-4 shadow-soft", !/(^|\s)bg-/.test(className ?? "") && "bg-surface", className)}>
       {children}
     </div>
   );
@@ -168,7 +169,7 @@ export function Field({ label, children, hint, error }: { label: string; childre
 }
 
 export const inputCls =
-  "w-full min-h-12 text-[16px] rounded-2xl border border-line bg-white px-4 text-ink outline-none placeholder:text-ink-3";
+  "w-full min-h-12 text-[16px] rounded-2xl border border-line bg-field px-4 text-ink outline-none placeholder:text-ink-3";
 
 export function Segmented<T extends string>({
   value,
@@ -201,7 +202,7 @@ export function Segmented<T extends string>({
             )}
           >
             {active && (
-              <motion.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-xl bg-white shadow-soft" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />
+              <motion.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-xl bg-surface shadow-soft" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />
             )}
             <span className="relative">{o.label}</span>
           </button>
@@ -219,7 +220,7 @@ export function Chip({ active, children, onClick, className }: { active?: boolea
       aria-pressed={active}
       className={cx(
         "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition",
-        active ? "border-brand bg-brand text-white" : "border-line bg-white text-ink-2",
+        active ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2",
         className,
       )}
     >

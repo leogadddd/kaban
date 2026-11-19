@@ -36,7 +36,7 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
   const dot = s.lastIndexOf(".");
   return (
     <div
-      className={cx("card-grain relative flex h-48 flex-col justify-between overflow-hidden rounded-[var(--radius-card)] p-5 shadow-float", className)}
+      className={cx("card-grain relative flex h-48 flex-col justify-between overflow-hidden rounded-[var(--radius-card)] p-5 shadow-float dark:ring-1 dark:ring-white/8 dark:ring-inset", className)}
       style={{ background: `linear-gradient(140deg, ${a.color}, color-mix(in oklab, ${a.color} 70%, black))`, color: fg }}
     >
       <div className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full opacity-20" style={{ background: fg }} />
@@ -86,13 +86,11 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
 /** Horizontally swipeable stack of account cards, with buttons and dots for non-gesture navigation. */
 export function CardStack({ items, linkTo = true }: { items: AccountBalance[]; linkTo?: boolean }) {
   const [index, setIndex] = useState(0);
-  const [dir, setDir] = useState(1);
   const n = items.length;
   if (n === 0) return null;
   const i = ((index % n) + n) % n;
 
   const go = (d: number) => {
-    setDir(d);
     setIndex((v) => v + d);
   };
   const onDragEnd = (_: unknown, info: PanInfo) => {
@@ -101,61 +99,52 @@ export function CardStack({ items, linkTo = true }: { items: AccountBalance[]; l
   };
 
   const behind = Math.min(2, n - 1);
+  const PEEK = 14;
+  // One deck: every visible card keeps its key (account id) and only moves up/down and scales to its
+  // new depth, so cards never slide sideways. Next sends the front card to the back; previous pulls
+  // the back card to the front.
+  const visible = items
+    .map((b, k) => ({ b, depth: (k - i + n) % n }))
+    .filter((c) => c.depth <= behind)
+    .sort((a, b) => b.depth - a.depth);
+  const at = (depth: number) => ({ x: 0, y: -depth * PEEK, scale: 1 - depth * 0.06, opacity: depth === 0 ? 1 : 1 - depth * 0.25, rotate: 0 });
   return (
     <div>
-      <div className="relative" style={{ paddingTop: behind * 14 }}>
-        {/* peeking cards behind */}
-        {Array.from({ length: behind }, (_, k) => {
-          const depth = behind - k;
-          const item = items[(i + depth) % n];
-          return (
-            <motion.div
-              key={`behind-${item.account.id}-${depth}`}
-              className="absolute inset-x-0"
-              style={{ top: (behind - depth) * 14, zIndex: 10 - depth }}
-              initial={false}
-              animate={{ scale: 1 - depth * 0.06, opacity: 1 - depth * 0.25 }}
-              aria-hidden="true"
-            >
-              <AccountCard b={item} />
-            </motion.div>
-          );
-        })}
-        <div className="relative z-20">
-          <AnimatePresence initial={false} custom={dir} mode="popLayout">
-            <motion.div
-              key={items[i].account.id + ":" + index}
-              custom={dir}
-              variants={{
-                enter: (d: number) => ({ x: d > 0 ? 60 : -60, opacity: 0, scale: 0.96 }),
-                center: { x: 0, opacity: 1, scale: 1 },
-                exit: (d: number) => ({ x: d > 0 ? -260 : 260, opacity: 0, rotate: d > 0 ? -6 : 6 }),
-              }}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ type: "spring", stiffness: 320, damping: 30 }}
-              drag={n > 1 ? "x" : false}
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.7}
-              onDragEnd={onDragEnd}
-              whileTap={{ cursor: "grabbing" }}
-              className="touch-pan-y"
-            >
-              {linkTo ? (
-                <Link href={`/accounts/view?id=${items[i].account.id}`} draggable={false} aria-label={`Open ${items[i].account.name}`}>
-                  <AccountCard b={items[i]} />
-                </Link>
-              ) : (
-                <AccountCard b={items[i]} />
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+      <div className="relative" style={{ height: `calc(12rem + ${behind * PEEK}px)` }}>
+        <AnimatePresence initial={false}>
+          {visible.map(({ b, depth }) => {
+            const front = depth === 0;
+            return (
+              <motion.div
+                key={b.account.id}
+                className={cx("absolute inset-x-0", front && "touch-pan-y")}
+                style={{ top: behind * PEEK, zIndex: 20 - depth }}
+                initial={{ ...at(behind + 1), opacity: 0 }}
+                animate={at(depth)}
+                exit={{ ...at(behind + 1), opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 32 }}
+                drag={front && n > 1 ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.7}
+                onDragEnd={front ? onDragEnd : undefined}
+                aria-hidden={!front || undefined}
+                inert={!front || undefined}
+              >
+                {front && linkTo ? (
+                  <Link href={`/accounts/view?id=${b.account.id}`} draggable={false} aria-label={`Open ${b.account.name}`}>
+                    <AccountCard b={b} />
+                  </Link>
+                ) : (
+                  <AccountCard b={b} />
+                )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
       {n > 1 && (
         <div className="mt-3 flex items-center justify-between px-1">
-          <button onClick={() => go(-1)} className="grid size-11 place-items-center rounded-full border border-line bg-white active:scale-95" aria-label="Previous account">
+          <button onClick={() => go(-1)} className="grid size-11 place-items-center rounded-full border border-line bg-surface active:scale-95" aria-label="Previous account">
             <ChevronLeft className="size-5" />
           </button>
           <div className="flex gap-1.5" aria-label={`Account ${i + 1} of ${n}`}>
@@ -163,7 +152,7 @@ export function CardStack({ items, linkTo = true }: { items: AccountBalance[]; l
               <span key={it.account.id} className={cx("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-brand" : "w-1.5 bg-line")} />
             ))}
           </div>
-          <button onClick={() => go(1)} className="grid size-11 place-items-center rounded-full border border-line bg-white active:scale-95" aria-label="Next account">
+          <button onClick={() => go(1)} className="grid size-11 place-items-center rounded-full border border-line bg-surface active:scale-95" aria-label="Next account">
             <ChevronRight className="size-5" />
           </button>
         </div>

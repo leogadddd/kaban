@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
         back="/login"
       >
         {expired && (
-          <Link href="/forgot-password" replace className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-white shadow-soft">
+          <Link href="/forgot-password" replace className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">
             Send a new link
           </Link>
         )}

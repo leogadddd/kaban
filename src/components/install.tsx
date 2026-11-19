@@ -51,7 +51,7 @@ function readState(): InstallState {
   const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const next: InstallState = {
     platform: ios ? "ios" : /Android/i.test(ua) ? "android" : "desktop",
-    standalone: window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true,
+    standalone: isInstalledApp(),
     canPrompt: !!deferred,
     installed,
     sheetOpen,
@@ -59,6 +59,18 @@ function readState(): InstallState {
   // keep referential stability for useSyncExternalStore
   if (JSON.stringify(next) !== JSON.stringify(cached)) cached = next;
   return cached;
+}
+
+/**
+ * True when Kaban is running as the installed app rather than a browser tab: iOS "Open as Web App"
+ * (navigator.standalone), an installed Chrome/Android/desktop PWA (display-mode from the manifest or
+ * one the browser falls back to), or the Android TWA wrapper (android-app:// referrer).
+ */
+export function isInstalledApp() {
+  if (typeof window === "undefined") return false;
+  if ((navigator as unknown as { standalone?: boolean }).standalone === true) return true;
+  if (["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"].some((m) => window.matchMedia(`(display-mode: ${m})`).matches)) return true;
+  return document.referrer.startsWith("android-app://");
 }
 
 export function useInstall() {
@@ -128,7 +140,7 @@ export function InstallButton({ className, variant = "light" }: { className?: st
           "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 font-medium transition active:scale-[0.98] disabled:opacity-70",
           variant === "light" && "bg-white text-brand hover:bg-pale",
           variant === "dark" && "bg-ink text-white hover:bg-brand-deep",
-          variant === "outline" && "border border-line bg-white text-ink hover:bg-pale",
+          variant === "outline" && "border border-line bg-surface text-ink hover:bg-pale",
           className,
         )}
       >
@@ -164,7 +176,7 @@ function InstallSteps({ platform }: { platform: Platform }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 * i }}
-          className="flex items-start gap-3 rounded-2xl border border-line bg-white p-4"
+          className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-4"
         >
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-pale text-brand">
             <Icon className="size-5" />

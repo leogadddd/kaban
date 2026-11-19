@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Kaban — Family Finance",
+    name: "Kaban — Personal Finance",
     short_name: "Kaban",
-    description: "Offline-first tracker for cash, debit and a shared family credit card.",
+    description: "Offline-first personal finance tracker for cash, bank and e-wallet accounts, credit cards and instalments.",
     start_url: "/home",
     scope: "/",
     display: "standalone",

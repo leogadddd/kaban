@@ -64,7 +64,7 @@ export default function ActivityPage() {
           </div>
           <button
             onClick={() => setFiltersOpen((v) => !v)}
-            className={cx("relative grid size-12 shrink-0 place-items-center rounded-2xl border lg:hidden", filtersOpen || activeFilters ? "border-brand bg-brand text-white" : "border-line bg-white")}
+            className={cx("relative grid size-12 shrink-0 place-items-center rounded-2xl border lg:hidden", filtersOpen || activeFilters ? "border-brand bg-brand text-on-brand" : "border-line bg-surface")}
             aria-label="Filters"
             aria-expanded={filtersOpen}
           >

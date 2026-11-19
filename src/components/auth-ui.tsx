@@ -14,6 +14,7 @@ export function AuthScreen({
   children,
   footer,
   back = "/welcome",
+  onBack,
 }: {
   title: string;
   subtitle?: ReactNode;
@@ -21,14 +22,16 @@ export function AuthScreen({
   footer?: ReactNode;
   /** Where Back goes when there's no history to return to (e.g. opened from an email link). */
   back?: string;
+  /** Replaces the default Back behaviour (e.g. cancel a half-finished sign-in). */
+  onBack?: () => void;
 }) {
   const router = useRouter();
   return (
     <div className="pt-safe flex min-h-dvh flex-col px-5 pb-[max(var(--safe-bottom),1.25rem)] lg:justify-center lg:py-12">
-      <div className="lg:rounded-[2rem] lg:border lg:border-line lg:bg-white lg:p-8 lg:shadow-soft">
+      <div className="lg:rounded-[2rem] lg:border lg:border-line lg:bg-surface lg:p-8 lg:shadow-soft">
         <button
           type="button"
-          onClick={() => (window.history.length > 1 ? router.back() : router.replace(back))}
+          onClick={() => (onBack ? onBack() : window.history.length > 1 ? router.back() : router.replace(back))}
           className="-ml-2 mt-2 grid size-11 place-items-center rounded-full active:bg-pale lg:mt-0 lg:hover:bg-pale"
           aria-label="Back"
         >

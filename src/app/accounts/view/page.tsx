@@ -36,7 +36,7 @@ function AccountView() {
         title={acc.name}
         back="/accounts"
         action={
-          <Link href={`/accounts/new?edit=${acc.id}`} className="grid size-11 place-items-center rounded-full border border-line bg-white" aria-label="Edit account">
+          <Link href={`/accounts/new?edit=${acc.id}`} className="grid size-11 place-items-center rounded-full border border-line bg-surface" aria-label="Edit account">
             <Pencil className="size-4" />
           </Link>
         }

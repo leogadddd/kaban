@@ -7,13 +7,13 @@ import type { MonthFlow } from "@/lib/finance";
 import { useMoney } from "@/lib/privacy";
 import { cx } from "./ui";
 
-const INK3 = "#85948B";
-const LINE = "#E1EBE4";
-const SERIES_IN = "#1E8A5A";
-const SERIES_OUT = "#C94B4B";
+const INK3 = "var(--color-ink-3)";
+const LINE = "var(--color-line)";
+const SERIES_IN = "var(--color-income)";
+const SERIES_OUT = "var(--color-expense)";
 
 function Tip({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-xl border border-line bg-white px-3 py-2 text-xs shadow-float">{children}</div>;
+  return <div className="rounded-xl border border-line bg-surface px-3 py-2 text-xs shadow-float">{children}</div>;
 }
 
 /** Single-series daily spend trend (title names the series; no legend needed). */
@@ -27,14 +27,14 @@ export function SpendTrend({ data, height = 140 }: { data: { day: string; amount
           <AreaChart data={data} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
             <defs>
               <linearGradient id="spendFill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#2D936C" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#2D936C" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--color-brand-2)" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="var(--color-brand-2)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis dataKey="day" hide />
             <YAxis hide domain={[0, "dataMax"]} />
             <Tooltip
-              cursor={{ stroke: "#176B4D", strokeWidth: 1, strokeDasharray: "3 3" }}
+              cursor={{ stroke: "var(--color-brand)", strokeWidth: 1, strokeDasharray: "3 3" }}
               content={({ active, payload }) =>
                 active && payload?.[0] ? (
                   <Tip>
@@ -44,7 +44,7 @@ export function SpendTrend({ data, height = 140 }: { data: { day: string; amount
                 ) : null
               }
             />
-            <Area type="monotone" dataKey="amount" stroke="#176B4D" strokeWidth={2} fill="url(#spendFill)" activeDot={{ r: 5, stroke: "#fff", strokeWidth: 2 }} />
+            <Area type="monotone" dataKey="amount" stroke="var(--color-brand)" strokeWidth={2} fill="url(#spendFill)" activeDot={{ r: 5, stroke: "var(--color-surface)", strokeWidth: 2 }} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -145,11 +145,11 @@ export function UtilisationRing({ value, size = 120, label = "utilised" }: { val
   const v = Math.max(0, Math.min(100, value));
   const r = 44;
   const c = 2 * Math.PI * r;
-  const color = v >= 80 ? "#C94B4B" : v >= 50 ? "#D99A1E" : "#2D936C";
+  const color = v >= 80 ? "var(--color-expense)" : v >= 50 ? "var(--color-gold)" : "var(--color-brand-2)";
   return (
     <div className="relative grid place-items-center" style={{ width: size, height: size }} role="img" aria-label={`${v.toFixed(0)}% of credit limit ${label}`}>
       <svg viewBox="0 0 100 100" className="-rotate-90" width={size} height={size}>
-        <circle cx="50" cy="50" r={r} fill="none" stroke="#E8F4EC" strokeWidth="9" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--color-pale)" strokeWidth="9" />
         <motion.circle
           cx="50"
           cy="50"

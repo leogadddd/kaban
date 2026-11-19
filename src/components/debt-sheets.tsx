@@ -121,7 +121,7 @@ function RepayForm({ target, onClose, ledger }: { target: NonNullable<RepayTarge
   return (
     <form onSubmit={submit} className="space-y-4">
       {/* Who is paying and what they owe */}
-      <div className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-line">
+      <div className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-line">
         <Avatar name={person.name} color={person.color} size={44} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{person.name}</p>
@@ -159,7 +159,7 @@ function RepayForm({ target, onClose, ledger }: { target: NonNullable<RepayTarge
                 role="radio"
                 aria-checked={active}
                 onClick={() => setAccountId(a.id)}
-                className={cx("min-w-36 shrink-0 rounded-2xl border p-3 text-left transition", active ? "border-brand bg-pale ring-2 ring-brand/25" : "border-line bg-white")}
+                className={cx("min-w-36 shrink-0 rounded-2xl border p-3 text-left transition", active ? "border-brand bg-pale ring-2 ring-brand/25" : "border-line bg-surface")}
               >
                 <span className="flex items-center gap-2 text-sm font-medium">
                   {bank ? <BankLogo bank={bank} size={20} /> : <span className="size-2.5 rounded-full" style={{ background: a.color }} />}

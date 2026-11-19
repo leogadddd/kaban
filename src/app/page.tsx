@@ -12,6 +12,7 @@ import {
   KeyRound,
   ListChecks,
   LogOut,
+  Moon,
   Plus,
   Scale,
   Share,
@@ -22,7 +23,6 @@ import {
   Split,
   Unplug,
   Users,
-  Zap,
 } from "lucide-react";
 import { InstallButton, InstallSheet } from "@/components/install";
 import { HeroSecondary, HeroVisual, OpenAppButton, Reveal } from "@/components/landing";
@@ -60,7 +60,7 @@ const FAQ = [
   },
   {
     q: "Does Kaban connect to my bank?",
-    a: "No. Kaban never asks for bank, card or e-wallet logins and can't move money. You record transactions yourself, which takes a few seconds with quick add.",
+    a: "No. Kaban never asks for bank, card or e-wallet logins and can't move money. You record transactions yourself: pick the type, pick the account, enter the amount."
   },
   {
     q: "What happens when I'm offline?",
@@ -70,7 +70,7 @@ const FAQ = [
     ? [
         {
           q: "Where is my data stored when I sync?",
-          a: "In a private cloud space tied to your account. Access rules on the database only allow your account to read your records, and you can protect sign-in with an authenticator app. You can delete your cloud data at any time from Sync & backup.",
+          a: "In a private cloud space tied to your account. Access rules on the database only allow your account to read your records, and you can protect sign-in with an authenticator app. You can delete your cloud data at any time from Settings.",
         },
       ]
     : []),
@@ -96,13 +96,14 @@ const JSON_LD = [
     offers: { "@type": "Offer", price: "0", priceCurrency: "PHP" },
     featureList: [
       "Track cash, debit and credit accounts",
-      "Shared family credit card tracking",
+      "Personal finance tracking for cash, bank and e-wallet accounts",
       "Credit card billing cycles and due dates",
       "Instalment and deferred purchase schedules",
       "Pay-later accounts such as Atome, SPayLater and LazPayLater",
       "Split expenses equally or by amount",
       "Who owes me and repayment tracking",
       "Works offline",
+      "Light and dark mode",
       ...(cloudConfigured ? ["Optional cloud sync across devices", "Two-factor sign-in"] : []),
     ],
   },
@@ -116,8 +117,8 @@ const JSON_LD = [
 const FEATURES = [
   {
     icon: CreditCard,
-    title: "Shared credit cards",
-    body: "Outstanding balance, available limit, utilisation and the next due date, even when the whole family uses one card.",
+    title: "Credit cards",
+    body: "Outstanding balance, available limit, utilisation and the next due date for every card you carry.",
   },
   {
     icon: CalendarClock,
@@ -137,7 +138,7 @@ const FEATURES = [
   {
     icon: Users,
     title: "People and totals",
-    body: "See what each family member or friend still owes you, with their full history of charges and repayments in one place.",
+    body: "See what each friend or relative still owes you, with their full history of charges and repayments in one place.",
   },
   {
     icon: BarChart3,
@@ -150,9 +151,9 @@ const FEATURES = [
     body: "One tap masks every amount on screen, including the number of digits, so you can open Kaban in public with confidence.",
   },
   {
-    icon: Zap,
-    title: "Quick add",
-    body: "Set the installed app to open straight on a new transaction, so recording a purchase takes seconds at the counter.",
+    icon: Moon,
+    title: "Light and dark mode",
+    body: "A soft charcoal dark theme that's easy on the eyes at night, or follow your phone's setting automatically.",
   },
 ];
 
@@ -163,7 +164,7 @@ const SECURITY = [
     ? [
         { icon: KeyRound, t: "Two-factor sign-in", d: "Protect your account with an authenticator app. Sync then requires the second factor too." },
         { icon: ShieldCheck, t: "Private by account", d: "Database access rules only let your account read your records. No one else's app can see them." },
-        { icon: LogOut, t: "Clean sign-out", d: "Signing out erases the device copy, and warns you first if anything hasn't synced yet." },
+        { icon: LogOut, t: "Separate ledgers", d: "Each signed-in account keeps its own records on the device, apart from your local-only ledger." },
       ]
     : []),
   { icon: Download, t: "Your data, portable", d: "Export a full backup at any time and import it on another device. No lock-in." },
@@ -183,7 +184,7 @@ function SectionHead({ eyebrow, title, body, className }: { eyebrow: string; tit
 
 export default function Landing() {
   return (
-    <div className="overflow-x-clip bg-bg text-ink">
+    <div className="theme-light overflow-x-clip bg-bg text-ink">
       <script
         type="application/ld+json"
         // JSON-LD must be raw; content is static and escaped against </script> injection.
@@ -220,14 +221,14 @@ export default function Landing() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-medium text-ink-2">
               <span className="size-1.5 rounded-full bg-brand-2" />
-              {cloudConfigured ? "Now with cloud sync and two-factor sign-in" : "Free · Offline-first · Built for the Philippines"}
+              {cloudConfigured ? "New: dark mode, cloud sync and two-factor sign-in" : "Free · Offline-first · Built for the Philippines"}
             </p>
             <h1 className="mt-6 text-[2.6rem] leading-[1.04] font-semibold tracking-tighter text-balance sm:text-6xl lg:text-[4.1rem]">
-              Every peso on the family card, <span className="text-brand-2">accounted for.</span>
+              Every peso, <span className="text-brand-2">accounted for.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg text-pretty text-ink-2">
-              Kaban is a money tracker for Filipino households. Track cash, debit, credit cards and pay-later plans in one place, with billing cycles,
-              instalments, shared expenses and exactly who still owes you.
+              Kaban is a personal finance tracker built for the Philippines. Track cash, bank and e-wallet accounts, credit cards and pay-later plans in
+              one place, with billing cycles, instalments, split bills and exactly who still owes you.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <OpenAppButton className="sm:min-w-56" />
@@ -262,8 +263,8 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHead
             eyebrow="Features"
-            title="Everything a shared household budget needs. Nothing it doesn't."
-            body="Kaban is built around how families in the Philippines actually pay: one card swiped by several people, purchases on instalment, and money lent between relatives."
+            title="Everything your money needs. Nothing it doesn't."
+            body="Kaban is built around how money actually moves in the Philippines: credit cards with billing cycles, purchases on instalment, e-wallets, and money lent to friends."
           />
           <div className="mt-12 grid gap-px overflow-hidden rounded-3xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map(({ icon: Icon, title, body }) => (
@@ -285,13 +286,13 @@ export default function Landing() {
           <SectionHead
             eyebrow="How it works"
             title="One ₱6,000 grocery run, split three ways."
-            body="You pay with the family card and split it with Mama and Kuya. Here is what Kaban records, and what it deliberately doesn't."
+            body="You pay with your credit card and split it with two housemates, Ana and Ben. Here is what Kaban records, and what it deliberately doesn't."
           />
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { k: "Card outstanding", v: "+₱6,000", d: "The whole charge stays on the card. The bank doesn't care who ate what.", dark: true },
-              { k: "Owed to you", v: "+₱4,000", d: "₱2,000 each from Mama and Kuya, tracked under People." },
-              { k: "Mama pays ₱500", v: "−₱500", d: "Her balance drops and your wallet goes up. It isn't counted as income." },
+              { k: "Owed to you", v: "+₱4,000", d: "₱2,000 each from Ana and Ben, tracked under People." },
+              { k: "Ana pays ₱500", v: "−₱500", d: "Her balance drops and your wallet goes up. It isn't counted as income." },
               { k: "You pay the card", v: "−₱5,000", d: "Debit and card outstanding both drop, and your spending stays the same." },
             ].map((s, i) => (
               <Reveal key={s.k} delay={i * 0.08}>
@@ -387,7 +388,7 @@ export default function Landing() {
             {[
               { icon: Share, t: "Open Kaban in your browser", d: "On iPhone use Safari and tap Share. On Android, open the browser menu." },
               { icon: SquarePlus, t: "Add to Home Screen", d: "Choose Add to Home Screen (or Install app). Kaban appears next to your other apps." },
-              { icon: Zap, t: "Optional: turn on quick add", d: "In Settings, choose “Open on the Add screen” so the icon starts a new transaction." },
+              { icon: Smartphone, t: "Open it from your Home Screen", d: "It runs full screen, works offline, and follows your light or dark setting." },
             ].map(({ icon: Icon, t, d }, i) => (
               <Reveal key={t} delay={i * 0.08}>
                 <li className="flex items-start gap-4 rounded-2xl bg-white/6 p-5 ring-1 ring-white/10">
@@ -426,7 +427,7 @@ export default function Landing() {
       {/* CTA */}
       <section className="px-4 pb-20 sm:px-6 sm:pb-24">
         <Reveal className="card-grain mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-ink px-6 py-14 text-center text-white sm:px-12 sm:py-16">
-          <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-5xl">Know what&apos;s on the card before the statement does.</h2>
+          <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-5xl">Know where every peso went, and what&apos;s due next.</h2>
           <p className="mx-auto mt-4 max-w-xl text-white/70">Start in seconds with your own numbers, or explore with sample data first.</p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <OpenAppButton variant="light" />
@@ -449,7 +450,7 @@ export default function Landing() {
               <span className="font-semibold tracking-tight">Kaban</span>
             </Link>
             <p className="mt-3 max-w-sm text-sm text-ink-3">
-              <i>Kaban</i> is Tagalog for coffer, as in <i>kaban ng bayan</i>. A free, offline-first money tracker for Filipino households.
+              <i>Kaban</i> is Tagalog for coffer, as in <i>kaban ng bayan</i>. A free, offline-first personal finance tracker.
             </p>
           </div>
           <div>

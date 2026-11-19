@@ -44,7 +44,7 @@ export function SyncPill() {
   return (
     <Link
       href="/sync"
-      className={cx("flex min-h-10 items-center gap-1.5 rounded-full border bg-white px-3 text-xs font-medium text-ink-2", warn ? "border-gold/50" : "border-line")}
+      className={cx("flex min-h-10 items-center gap-1.5 rounded-full border bg-surface px-3 text-xs font-medium text-ink-2", warn ? "border-gold/50" : "border-line")}
       aria-label={`Sync status: ${label}`}
     >
       {icon}

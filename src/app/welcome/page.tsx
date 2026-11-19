@@ -33,7 +33,7 @@ export default function WelcomePage() {
       <div className="relative flex min-h-0 flex-1 items-center justify-center">
         <div className="relative h-[13rem] w-full max-w-xs origin-center [@media(max-height:740px)]:scale-[0.82] [@media(max-height:640px)]:scale-[0.66]">
           {[
-            { c: "#1F2D27", r: -8, y: 0, label: "Family Card", v: "₱18,440" },
+            { c: "#1F2D27", r: -8, y: 0, label: "Credit Card", v: "₱18,440" },
             { c: "#176B4D", r: 4, y: 44, label: "Savings", v: "₱68,250" },
             { c: "#2D936C", r: -2, y: 88, label: "Wallet", v: "₱4,500" },
           ].map((k, i) => (
@@ -58,9 +58,9 @@ export default function WelcomePage() {
           <span className="font-semibold tracking-tight">Kaban</span>
         </div>
         <h1 className="mt-2.5 text-[2rem] leading-[1.05] font-semibold tracking-tight [@media(max-height:640px)]:text-[1.7rem]">
-          Every peso on the family card, accounted for.
+          Every peso, accounted for.
         </h1>
-        <p className="mt-2 text-[0.95rem] text-ink-2 [@media(max-height:640px)]:hidden">Track cash, debit and shared credit, and who still owes you. Works fully offline.</p>
+        <p className="mt-2 text-[0.95rem] text-ink-2 [@media(max-height:640px)]:hidden">Track cash, bank and e-wallet accounts, credit cards and who owes you. Works fully offline.</p>
       </motion.div>
 
       <div className="mt-5 shrink-0 space-y-2.5">

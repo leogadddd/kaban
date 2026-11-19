@@ -18,10 +18,9 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import { isActiveDatabase, requestPersistence, useLedgerDatabase } from "@/lib/db";
+import { requestPersistence, useLedgerDatabase } from "@/lib/db";
 import { startSync, useSyncState } from "@/lib/sync";
 import { DialogHost } from "./dialog";
-import { getMeta } from "@/lib/repo";
 import { useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
 import { LogoMark } from "@/lib/logo";
@@ -93,23 +92,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Quick add: a fresh launch of the installed app lands on /home (start_url); jump to Add when enabled.
-  // sessionStorage marks the launch so this only happens once, not on every visit to Home.
-  useEffect(() => {
-    if (!database || mode === null || mode === undefined) return;
-    let launched = false;
-    try {
-      launched = sessionStorage.getItem("kaban:launched") === "1";
-      sessionStorage.setItem("kaban:launched", "1");
-    } catch {}
-    if (launched || pathname !== "/home") return;
-    const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
-    if (!standalone) return;
-    Promise.all([getMeta<boolean>("launchToAdd", database), getMeta<string>("launchAccount", database)]).then(([on, acc]) => {
-      if (on && isActiveDatabase(database)) router.replace(acc ? `/add?account=${encodeURIComponent(acc)}` : "/add");
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [database, mode]);
   useEffect(() => notePath(pathname), [pathname]);
 
   useEffect(() => {
@@ -155,7 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className={cx(
                 "min-h-dvh bg-bg",
                 // Desktop: modal-style routes (Add, New account) sit in a centered card instead of a full-height phone screen.
-                MODAL_ROUTES.includes(pathname) && "lg:my-8 lg:min-h-0 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-line lg:bg-white lg:shadow-soft",
+                MODAL_ROUTES.includes(pathname) && "lg:my-8 lg:min-h-0 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-line lg:bg-surface lg:shadow-soft",
               )}
             >
               {children}
@@ -173,7 +155,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               href={href}
               onClick={() => setMoreOpen(false)}
               className={cx(
-                "flex min-h-24 flex-col items-center justify-center gap-2 rounded-3xl border border-line bg-white p-3 text-center text-sm font-medium active:scale-95",
+                "flex min-h-24 flex-col items-center justify-center gap-2 rounded-3xl border border-line bg-surface p-3 text-center text-sm font-medium active:scale-95",
                 pathname.startsWith(href) && "border-brand-2 bg-pale",
               )}
             >
@@ -194,11 +176,11 @@ function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void 
   const moreActive = MORE.some((m) => pathname.startsWith(m.href));
   return (
     <nav aria-label="Primary" style={{ viewTransitionName: "bottom-nav" }} className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 lg:hidden pb-[max(var(--safe-bottom),0.75rem)]">
-      <div className="flex items-center justify-between rounded-[1.75rem] bg-ink/95 px-2 py-2 text-white shadow-float backdrop-blur-xl">
+      <div className="flex items-center justify-between rounded-[1.75rem] bg-night/95 px-2 py-2 text-white shadow-float backdrop-blur-xl dark:bg-[#232a25]/92 dark:ring-1 dark:ring-white/6">
         {NAV.map(({ href, label, icon: Icon }) => {
           if (href === "/add")
             return (
-              <Link key={href} href="/add" aria-label="Add transaction" className="-my-1 grid size-14 place-items-center rounded-[1.35rem] bg-brand-2 text-white shadow-float active:scale-95">
+              <Link key={href} href="/add" aria-label="Add transaction" className="-my-1 grid size-14 place-items-center rounded-[1.35rem] bg-brand-2 text-on-brand shadow-float active:scale-95">
                 <Icon className="size-7" strokeWidth={2.4} />
               </Link>
             );
@@ -225,12 +207,12 @@ function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void 
 function Sidebar({ pathname }: { pathname: string }) {
   const items = [...NAV.filter((n) => n.href !== "/add"), ...MORE];
   return (
-    <aside data-nav-peer style={{ viewTransitionName: "sidebar" }} className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-white/70 px-4 py-6 backdrop-blur-xl lg:flex" aria-label="Primary">
+    <aside data-nav-peer style={{ viewTransitionName: "sidebar" }} className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface/70 px-4 py-6 backdrop-blur-xl lg:flex" aria-label="Primary">
       <Link href="/home" className="mb-6 flex items-center gap-2.5 px-2">
         <LogoMark size={34} />
         <span className="text-lg font-semibold tracking-tight">Kaban</span>
       </Link>
-      <Link href="/add" className="mb-5 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand-2 font-medium text-white shadow-float active:scale-[0.98]">
+      <Link href="/add" className="mb-5 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand-2 font-medium text-on-brand shadow-float active:scale-[0.98]">
         <Plus className="size-5" strokeWidth={2.4} /> Add transaction
       </Link>
       <nav className="flex-1 space-y-0.5 overflow-y-auto">

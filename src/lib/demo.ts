@@ -14,7 +14,7 @@ export async function loadDemoData(db = getDatabase()) {
     const bpi = await account({ type: "debit", name: "Savings", issuer: "BPI", last4: "4821", openingMinor: 68_250_00, openingDate: d(60), color: "#176B4D" });
     const card = await account({
       type: "credit",
-      name: "Family Card",
+      name: "Credit Card",
       issuer: "BDO",
       last4: "9013",
       openingMinor: 12_400_00,
@@ -55,7 +55,7 @@ export async function loadDemoData(db = getDatabase()) {
       instalmentCount: 6,
     });
     await transaction({ type: "expense", accountId: card, amountMinor: 3_250_00, date: d(9), description: "Meralco bill", category: "Bills & Utilities", arrangement: "regular" });
-    await transaction({ type: "expense", accountId: card, amountMinor: 1_890_50, date: d(1), description: "Jollibee family meal", category: "Food & Dining", arrangement: "deferred" });
+    await transaction({ type: "expense", accountId: card, amountMinor: 1_890_50, date: d(1), description: "Jollibee", category: "Food & Dining", arrangement: "deferred" });
     await transaction({ type: "expense", accountId: cash, amountMinor: 185_00, date: d(0), description: "Coffee", category: "Coffee" });
     await transaction({ type: "expense", accountId: cash, amountMinor: 420_00, date: d(2), description: "Grab ride", category: "Transport" });
     await transaction({ type: "expense", accountId: bpi, amountMinor: 1_599_00, date: d(12), description: "PLDT Fiber", category: "Phone & Internet" });

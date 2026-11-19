@@ -38,7 +38,7 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
       <EmptyState
         icon={<CreditCard className="size-6" />}
         title="No credit cards yet"
-        body="Add the family card to track what's owed to the bank, billing cycles and instalments."
+        body="Add a credit card to track what you owe the bank, billing cycles and instalments."
         action={
           <Link href="/accounts/new?type=credit">
             <Button>
@@ -64,7 +64,7 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
         </div>
       )}
 
-      <Card className="overflow-hidden bg-ink p-5 text-white">
+      <Card className="overflow-hidden bg-night p-5 text-white dark:border-white/6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm text-white/60">
@@ -75,7 +75,7 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
             <p className="mt-1 text-xs tracking-wide text-white/50 uppercase">Outstanding</p>
             <BigMoney minor={b.balance} className="block text-[2.4rem] leading-none" centsClass="text-2xl" />
           </div>
-          <div className="rounded-full bg-white p-1">
+          <div className="rounded-full bg-surface p-1">
             <UtilisationRing value={b.utilisation ?? 0} size={92} />
           </div>
         </div>

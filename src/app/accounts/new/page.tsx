@@ -116,7 +116,7 @@ function AccountForm() {
 
   return (
     <>
-      <PageHeader title={editId ? "Edit account" : first ? "Your first account" : "New account"} back={first ? undefined : true} privacy={false} className="lg:mb-5 lg:border-b lg:border-line lg:bg-white lg:px-6 lg:pt-4 lg:pb-3" />
+      <PageHeader title={editId ? "Edit account" : first ? "Your first account" : "New account"} back={first ? undefined : true} privacy={false} className="lg:mb-5 lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:pt-4 lg:pb-3" />
       <form onSubmit={submit} className="space-y-4 px-4 pb-[calc(2rem+var(--safe-bottom))] lg:px-6 lg:pb-6">
         <AccountCard b={preview} />
 
@@ -132,7 +132,7 @@ function AccountForm() {
           />
         )}
 
-        <Field label="Name">{(id) => <input id={id} className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder={credit ? "Family Card" : type === "cash" ? "Wallet" : "Savings"} autoFocus={!editId} />}</Field>
+        <Field label="Name">{(id) => <input id={id} className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder={credit ? "BDO Gold" : type === "cash" ? "Wallet" : "Savings"} autoFocus={!editId} />}</Field>
 
         <Field label={credit ? "Current outstanding debt" : "Opening balance"} hint={credit ? "What you already owe on the card today. Not counted as spending." : "Your balance today. Not counted as income."}>
           {(id) => (
@@ -194,7 +194,7 @@ function AccountForm() {
                         }}
                         className={cx(
                           "flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border p-1.5 text-[0.68rem] leading-tight font-medium transition active:scale-95",
-                          active ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-line bg-white text-ink-2",
+                          active ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-line bg-surface text-ink-2",
                         )}
                       >
                         <BankLogo bank={b} size={32} />
@@ -213,7 +213,7 @@ function AccountForm() {
                       }}
                       className={cx(
                         "flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border p-1.5 text-[0.68rem] font-medium transition active:scale-95",
-                        otherBank ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-dashed border-line bg-white text-ink-2",
+                        otherBank ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-dashed border-line bg-surface text-ink-2",
                       )}
                     >
                       <span className="grid size-8 place-items-center rounded-[9px] bg-pale text-base text-brand">+</span>
