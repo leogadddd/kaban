@@ -184,30 +184,48 @@ function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void 
     <nav aria-label="Primary" style={{ viewTransitionName: "bottom-nav" }} className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 lg:hidden pb-[max(var(--safe-bottom),0.75rem)]">
       {/* Dark mode: fade the page out behind the bar so it doesn't sit on same-toned cards. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 -z-10 hidden bg-gradient-to-t from-bg via-bg/85 to-transparent dark:block" />
-      <div className="flex items-center justify-between rounded-[1.75rem] bg-night/95 px-2 py-2 text-white shadow-float backdrop-blur-xl dark:bg-[#2b332e]/95 dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_18px_40px_-12px_rgb(0_0_0/0.9),0_0_0_1px_rgb(255_255_255/0.1)]">
+      {/* Five equal slots so every highlight is the same size and centred in its slot. */}
+      <div className="grid grid-cols-5 items-center rounded-[1.75rem] border border-white/8 bg-night/95 p-1.5 text-white shadow-float backdrop-blur-xl dark:border-white/10 dark:bg-[#262d29]/95 dark:shadow-[0_18px_40px_-12px_rgb(0_0_0/0.9)]">
         {NAV.map(({ href, label, icon: Icon }) => {
           if (href === "/add")
             return (
-              <HapticLink key={href} href={href} wrapperClassName="-my-1" aria-label="Add transaction" className="grid size-14 place-items-center rounded-[1.35rem] bg-brand-2 text-on-brand shadow-float active:scale-95">
-                <Icon className="size-7" strokeWidth={2.4} />
-              </HapticLink>
+              <div key={href} className="grid place-items-center">
+                <HapticLink href={href} aria-label="Add transaction" className="grid size-14 place-items-center rounded-[1.35rem] bg-brand-2 text-on-brand shadow-[0_6px_16px_-6px_rgb(45_147_108/0.7)] active:scale-95">
+                  <Icon className="size-7" strokeWidth={2.4} />
+                </HapticLink>
+              </div>
             );
-          const active = isActive(href);
-          return (
-            <HapticLink key={href} href={href} aria-current={active ? "page" : undefined} className="relative flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.68rem] font-medium">
-              {active && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-2xl bg-white/10" transition={{ type: "spring", bounce: 0.25, duration: 0.45 }} />}
-              <Icon className={cx("relative size-5", active ? "text-mint" : "text-white/60")} />
-              <span className={cx("relative", active ? "text-white" : "text-white/60")}>{label}</span>
-            </HapticLink>
-          );
+          return <NavItem key={href} href={href} label={label} icon={Icon} active={isActive(href)} />;
         })}
-        <HapticButton type="button" onClick={onMore} aria-label="More" className="relative flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.68rem] font-medium">
-          {moreActive && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-2xl bg-white/10" />}
-          <LayoutGrid className={cx("relative size-5", moreActive ? "text-mint" : "text-white/60")} />
-          <span className={cx("relative", moreActive ? "text-white" : "text-white/60")}>More</span>
-        </HapticButton>
+        <NavItem label="More" icon={LayoutGrid} active={moreActive} onClick={onMore} />
       </div>
     </nav>
+  );
+}
+
+function NavItem({ href, label, icon: Icon, active, onClick }: { href?: string; label: string; icon: typeof Users; active: boolean; onClick?: () => void }) {
+  const cls = "relative mx-auto flex h-14 w-full max-w-[4.5rem] flex-col items-center justify-center gap-0.5 rounded-[1.25rem] text-[0.68rem] font-medium";
+  const inner = (
+    <>
+      {active && (
+        <motion.span
+          layoutId="nav-pill"
+          className="absolute inset-0 rounded-[1.25rem] bg-white/10 ring-1 ring-white/6 ring-inset"
+          transition={{ type: "spring", bounce: 0.25, duration: 0.45 }}
+        />
+      )}
+      <Icon className={cx("relative size-5", active ? "text-mint" : "text-white/60")} />
+      <span className={cx("relative whitespace-nowrap", active ? "text-white" : "text-white/60")}>{label}</span>
+    </>
+  );
+  return (
+    <div className="px-0.5">
+      {href ? (
+        <HapticLink href={href} aria-current={active ? "page" : undefined} wrapperClassName="grid" className={cls}>{inner}</HapticLink>
+      ) : (
+        <HapticButton type="button" onClick={onClick} aria-label={label} wrapperClassName="grid" className={cls}>{inner}</HapticButton>
+      )}
+    </div>
   );
 }
 

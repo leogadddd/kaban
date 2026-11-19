@@ -118,7 +118,7 @@ function AccountForm() {
   return (
     <>
       <PageHeader title={editId ? "Edit account" : first ? "Your first account" : "New account"} back={first ? undefined : true} privacy={false} className="lg:mb-5 lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:pt-4 lg:pb-3" />
-      <form onSubmit={submit} className="space-y-4 px-4 pb-[calc(2rem+var(--safe-bottom))] lg:px-6 lg:pb-6">
+      <form onSubmit={submit} className={cx("space-y-4 px-4 lg:px-6 lg:pb-6", first ? "pb-[calc(10rem+var(--safe-bottom))]" : "pb-[calc(6.5rem+var(--safe-bottom))]")}>
         <AccountCard b={preview} />
 
         {!editId && (
@@ -245,12 +245,15 @@ function AccountForm() {
         </div>
 
         {error && <p className="rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
-        <Button type="submit" wrapperClassName="w-full">{editId ? "Update account" : "Create account"}</Button>
-        {first && (
-          <Button type="button" variant="ghost" wrapperClassName="w-full" onClick={() => router.replace("/home")}>
-            Skip for now
-          </Button>
-        )}
+        {/* Actions stay pinned to the bottom (like Add) so Skip is visible without scrolling. */}
+        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md space-y-1.5 bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-0 lg:pt-2 lg:pb-0">
+          <Button type="submit" wrapperClassName="w-full">{editId ? "Update account" : "Create account"}</Button>
+          {first && (
+            <Button type="button" variant="ghost" wrapperClassName="w-full" className="min-h-10 text-sm" onClick={() => router.replace("/home")}>
+              Skip for now
+            </Button>
+          )}
+        </div>
       </form>
     </>
   );
