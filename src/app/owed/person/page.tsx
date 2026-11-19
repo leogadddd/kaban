@@ -124,7 +124,7 @@ function PersonDebts() {
                     {!txn && s.repaid === 0 && (
                       <Button variant="danger" className="px-4" aria-label="Remove debt" onClick={async () => {
                           const debtId = s.debt.id;
-                          if (!(await confirmDialog({ title: "Remove this debt?", body: s.debt.description || undefined, confirmLabel: "Remove", danger: true }))) return;
+                          if (!(await confirmDialog({ title: "Remove this debt?", body: s.debt.description || undefined, confirmLabel: "Remove debt", danger: true }))) return;
                           await voidDebt(debtId);
                           undoToast("Debt removed", () => voidDebt(debtId, false));
                         }}>
@@ -152,7 +152,7 @@ function PersonDebts() {
                   outstanding > 0
                     ? `${person.name} still owes you. Their debts stay on record, but they'll be hidden from your people list.`
                     : `Their debt history stays on record, but they'll be hidden from your people list.`,
-                confirmLabel: outstanding > 0 ? "Archive anyway" : "Archive",
+                confirmLabel: "Archive person",
               }))
             )
               return;

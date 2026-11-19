@@ -62,7 +62,7 @@ export default function VerifyPage() {
           <Smartphone className="size-6" />
         </div>
         <CodeField value={code} onChange={setCode} error={error} />
-        <Button type="submit" wrapperClassName="w-full" disabled={busy || code.length !== 6}>{busy ? "Checking…" : "Verify"}</Button>
+        <Button type="submit" wrapperClassName="w-full" disabled={busy || code.length !== 6}>{busy ? "Verifying code…" : "Verify sign-in code"}</Button>
       </form>
     </AuthScreen>
   );

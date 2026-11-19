@@ -245,7 +245,7 @@ function AccountForm() {
         </div>
 
         {error && <p className="rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
-        <Button type="submit" wrapperClassName="w-full">{editId ? "Save changes" : "Create account"}</Button>
+        <Button type="submit" wrapperClassName="w-full">{editId ? "Update account" : "Create account"}</Button>
         {first && (
           <Button type="button" variant="ghost" wrapperClassName="w-full" onClick={() => router.replace("/home")}>
             Skip for now

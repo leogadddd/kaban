@@ -47,12 +47,12 @@ function AccountView() {
       <div className="space-y-5 px-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6 lg:gap-y-5 lg:space-y-0 lg:[&>*]:col-start-1">
         {credit ? <CreditOverview ledger={ledger} accountId={acc.id} showSelector={false} /> : <AccountCard b={b} />}
 
-        <div className="grid grid-cols-3 gap-2">
-          <ButtonLink href={`/add?account=${acc.id}`} variant="secondary" className="px-2 text-sm"><Plus className="size-4" />Add</ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink href={`/add?account=${acc.id}`} variant="secondary" wrapperClassName="min-w-max flex-1" className="px-2 text-sm whitespace-nowrap"><Plus className="size-4" />Add transaction</ButtonLink>
           {!credit && (
-            <ButtonLink href={`/add?type=transfer&account=${acc.id}`} variant="secondary" className="px-2 text-sm"><ArrowLeftRight className="size-4" />Transfer</ButtonLink>
+            <ButtonLink href={`/add?type=transfer&account=${acc.id}`} variant="secondary" wrapperClassName="min-w-max flex-1" className="px-2 text-sm whitespace-nowrap"><ArrowLeftRight className="size-4" />Record transfer</ButtonLink>
           )}
-          <ButtonLink href={`/add?type=adjustment&account=${acc.id}`} variant="secondary" className="px-2 text-sm"><SlidersHorizontal className="size-4" />Adjust</ButtonLink>
+          <ButtonLink href={`/add?type=adjustment&account=${acc.id}`} variant="secondary" wrapperClassName="min-w-max flex-1" className="px-2 text-sm whitespace-nowrap"><SlidersHorizontal className="size-4" />Adjust balance</ButtonLink>
         </div>
 
         <Card>
@@ -88,7 +88,7 @@ function AccountView() {
               !(await confirmDialog({
                 title: `Archive ${acc.name}?`,
                 body: "It's hidden from your accounts and pickers, but its full history stays. You can restore it from the archived list.",
-                confirmLabel: "Archive",
+                confirmLabel: "Archive account",
               }))
             )
               return;

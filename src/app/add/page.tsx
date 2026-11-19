@@ -34,6 +34,15 @@ export default function Page() {
 }
 
 const TYPES: TxnType[] = ["expense", "income", "transfer", "card_payment", "refund", "adjustment"];
+const ADD_TRANSACTION_LABEL: Record<TxnType, string> = {
+  expense: "Add expense",
+  income: "Add income",
+  transfer: "Record transfer",
+  card_payment: "Record card payment",
+  refund: "Record refund",
+  adjustment: "Record balance adjustment",
+  reimbursement: "Record reimbursement",
+};
 const INSTALMENT_PRESETS = [3, 6, 9, 12, 18, 24, 36];
 
 /** Step 1 of a new transaction: what kind it is decides which accounts and fields apply. */
@@ -560,7 +569,7 @@ function Editor() {
                 !(await confirmDialog({
                   title: "Void this transaction?",
                   body: "It stays in your history but stops affecting balances. You can restore it later.",
-                  confirmLabel: "Void",
+                  confirmLabel: "Void transaction",
                   danger: true,
                 }))
               )
@@ -579,7 +588,10 @@ function Editor() {
       <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-6 lg:pt-3 lg:pb-6">
         {error && <p className="mb-2 rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         <Button wrapperClassName="w-full" className="text-base" onClick={submit} disabled={saving || voided}>
-          <span className="num">{editId ? "Save changes" : `Save${amountMinor > 0 ? ` ${formatMoney(amountMinor)}` : ""}`}</span>
+          <span>
+            {editId ? "Update transaction" : ADD_TRANSACTION_LABEL[type]}
+            {!editId && amountMinor > 0 && <span className="num"> · {formatMoney(amountMinor)}</span>}
+          </span>
         </Button>
       </div>
     </div>

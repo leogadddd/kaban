@@ -62,7 +62,7 @@ function DebtForm({ onClose, ledger, personId }: { onClose: () => void; ledger: 
       <Field label="What for">{(id) => <input id={id} className={inputCls} placeholder="Borrowed for tuition" value={description} onChange={(e) => setDescription(e.target.value)} />}</Field>
       <Field label="Date">{(id) => <DateField id={id} value={date} onChange={setDate} title="Date of the debt" />}</Field>
       {error && <p className="text-sm text-expense" role="alert">{error}</p>}
-      <Button type="submit" wrapperClassName="w-full">Save debt</Button>
+      <Button type="submit" wrapperClassName="w-full">Record debt</Button>
     </form>
   );
 }
@@ -215,9 +215,10 @@ function RepayForm({ target, onClose, ledger }: { target: NonNullable<RepayTarge
       )}
 
       <Field label="Date received">{(id) => <DateField id={id} value={date} onChange={setDate} title="Date received" />}</Field>
+      {over && <p className="text-sm text-expense">More than they owe</p>}
       {error && <p className="text-sm text-expense" role="alert">{error}</p>}
       <Button type="submit" wrapperClassName="w-full" disabled={saving || over || !(m > 0)}>
-        {over ? "More than they owe" : "Save payment"}
+        Record repayment
       </Button>
       <p className="text-center text-xs text-ink-3">Adds to the account above. Not counted as income.</p>
     </form>

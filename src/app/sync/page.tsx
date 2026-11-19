@@ -137,8 +137,8 @@ export default function SyncPage() {
         <section>
           <SectionTitle>Backup</SectionTitle>
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="secondary" onClick={() => doExport()}><Download className="size-4" /> Export</Button>
-            <Button variant="secondary" onClick={() => fileRef.current?.click()}><Upload className="size-4" /> Import</Button>
+            <Button variant="secondary" className="px-2 text-sm" onClick={() => doExport()}><Download className="size-4 shrink-0" /> Export backup</Button>
+            <Button variant="secondary" className="px-2 text-sm" onClick={() => fileRef.current?.click()}><Upload className="size-4 shrink-0" /> Import backup</Button>
           </div>
           <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => {
             const file = e.currentTarget.files?.[0];

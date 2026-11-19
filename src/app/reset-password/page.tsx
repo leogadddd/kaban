@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
         <PasswordField label="New password" value={password} onChange={setPassword} autoComplete="new-password" hint="At least 8 characters." />
         <PasswordField label="Confirm new password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
         <FormError>{error}</FormError>
-        <Button type="submit" wrapperClassName="w-full" disabled={busy}>{busy ? "Saving…" : "Save password"}</Button>
+        <Button type="submit" wrapperClassName="w-full" disabled={busy}>{busy ? "Updating password…" : "Update password"}</Button>
       </form>
     </AuthScreen>
   );

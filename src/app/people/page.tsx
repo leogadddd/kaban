@@ -100,7 +100,7 @@ export default function PeoplePage() {
         <form onSubmit={add} className="space-y-3">
           <Field label="Name" error={error}>{(id) => <input id={id} className={inputCls} value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="e.g. Mama" />}</Field>
           <Field label="Nickname (optional)">{(id) => <input id={id} className={inputCls} value={nickname} onChange={(e) => setNickname(e.target.value)} />}</Field>
-          <Button type="submit" wrapperClassName="w-full">Add</Button>
+          <Button type="submit" wrapperClassName="w-full">Add person</Button>
         </form>
       </Sheet>
     </>

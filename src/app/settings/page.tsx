@@ -152,7 +152,7 @@ function EraseDevice() {
           const ok = await confirmDialog({
             title: "Erase everything on this device?",
             body: "Every account, transaction and person is deleted from this device. This can't be undone — export a backup first if you might need it.",
-            confirmLabel: "Erase everything",
+            confirmLabel: "Erase all local data",
             danger: true,
             typeToConfirm: "ERASE",
           });
@@ -161,7 +161,7 @@ function EraseDevice() {
           router.replace("/welcome");
         }}
       >
-        <Trash2 className="size-4" /> Erase all data
+        <Trash2 className="size-4" /> Erase all local data
       </Button>
     </Card>
   );
