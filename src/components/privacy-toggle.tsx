@@ -5,7 +5,8 @@ import { useEffect } from "react";
 import { useMeta } from "@/lib/hooks";
 import { setPrivacyOn } from "@/lib/privacy";
 import { setMeta } from "@/lib/repo";
-import { cx } from "./ui";
+// Local helper (not ./ui) so ui.tsx can render this toggle without a circular import.
+const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
 /** Privacy mode: stored on this device; while on, every amount renders as a fixed-length mask (lib/privacy). */
 export function usePrivacy(): [boolean, () => void] {

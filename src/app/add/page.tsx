@@ -222,8 +222,8 @@ function Editor() {
   const voided = existing?.state === "void";
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl">
+    <div className="flex min-h-dvh flex-col lg:min-h-0">
+      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-white lg:px-6 lg:py-3 lg:backdrop-blur-none">
         <button onClick={close} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
           <X className="size-6" />
         </button>
@@ -231,7 +231,7 @@ function Editor() {
         <span className="size-11" />
       </header>
 
-      <div className="flex-1 space-y-5 px-4 pb-40">
+      <div className="flex-1 space-y-5 px-4 pb-40 lg:px-6 lg:pt-5 lg:pb-2">
         {/* Type */}
         {isReimbursement ? (
           <p className="rounded-2xl bg-pale p-3 text-sm text-brand">Reimbursement from {ledger.personById.get(existing?.personId ?? "")?.name ?? "someone"} — linked to a debt in Who Owes Me.</p>
@@ -446,7 +446,7 @@ function Editor() {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t lg:left-64 lg:max-w-xl from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)]">
+      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-6 lg:pt-3 lg:pb-6">
         {error && <p className="mb-2 rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         <Button className="w-full text-base" onClick={submit} disabled={saving || voided}>
           <AnimatePresence mode="wait" initial={false}>

@@ -63,7 +63,8 @@ function PersonDebts() {
         <Segmented value={tab} onChange={setTab} options={[{ value: "open", label: "Unsettled" }, { value: "all", label: "History" }]} />
 
         {shown.length ? (
-          shown.map((s) => {
+          <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+          {shown.map((s) => {
             const txn = s.debt.transactionId ? ledger.txns.find((t) => t.id === s.debt.transactionId) : undefined;
             const acc = txn && ledger.accountById.get(txn.accountId);
             return (
@@ -106,7 +107,8 @@ function PersonDebts() {
                 )}
               </Card>
             );
-          })
+          })}
+          </div>
         ) : (
           <EmptyState icon={<Check className="size-6" />} title={tab === "open" ? `${person.name} is all settled` : "No history yet"} />
         )}

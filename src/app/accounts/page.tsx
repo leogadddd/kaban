@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Archive, ChevronRight, CreditCard, Landmark, Plus, Wallet } from "lucide-react";
 import { useState } from "react";
 import { AccountCard } from "@/components/account-card";
-import { PrivacyToggle } from "@/components/privacy-toggle";
 import { Card, Chip, Loading, Money, PageHeader, Progress } from "@/components/ui";
 import { BankLogo } from "@/components/bank-logo";
 import { bankFor } from "@/lib/banks";
@@ -29,7 +28,6 @@ export default function AccountsPage() {
         title="Accounts"
         action={
           <div className="flex items-center gap-2">
-            <PrivacyToggle className="size-11" />
             <Link href="/accounts/new" className="grid size-11 place-items-center rounded-full bg-brand text-white shadow-soft" aria-label="Add account">
               <Plus className="size-5" />
             </Link>

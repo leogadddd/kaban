@@ -115,8 +115,8 @@ function AccountForm() {
 
   return (
     <>
-      <PageHeader title={editId ? "Edit account" : first ? "Your first account" : "New account"} back={first ? undefined : true} />
-      <form onSubmit={submit} className="space-y-4 px-4 pb-[calc(2rem+var(--safe-bottom))]">
+      <PageHeader title={editId ? "Edit account" : first ? "Your first account" : "New account"} back={first ? undefined : true} privacy={false} className="lg:mb-5 lg:border-b lg:border-line lg:bg-white lg:px-6 lg:pt-4 lg:pb-3" />
+      <form onSubmit={submit} className="space-y-4 px-4 pb-[calc(2rem+var(--safe-bottom))] lg:px-6 lg:pb-6">
         <AccountCard b={preview} />
 
         {!editId && (

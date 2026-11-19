@@ -234,15 +234,31 @@ button,
 @keyframes vt-recede { to { transform: scale(0.94); opacity: 0.4; border-radius: 1.5rem; } }
 @keyframes vt-settle { from { transform: scale(0.94); opacity: 0.4; } }
 
-/* Desktop: content panes are wide, so push/pop travel a short distance with a fade. */
+/* Desktop: wide panes beside a fixed sidebar. Sliding or receding whole pages reads as two pages
+   overlapping, so every direction becomes a sequenced fade: the old page leaves fast, then the new one
+   rises in. Modal routes (Add, New account) pop in slightly scaled, like a dialog. */
 @media (min-width: 1024px) {
-  @keyframes vt-from-right { from { transform: translateX(48px); opacity: 0; } }
-  @keyframes vt-to-left-dim { to { transform: translateX(-24px); opacity: 0; } }
-  @keyframes vt-to-right { to { transform: translateX(48px); opacity: 0; } }
-  @keyframes vt-from-left-dim { from { transform: translateX(-24px); opacity: 0; } }
-  @keyframes vt-from-bottom { from { transform: translateY(40px); opacity: 0; } }
-  @keyframes vt-to-bottom { to { transform: translateY(40px); opacity: 0; } }
+  :root[data-nav]::view-transition-old(.page-out) {
+    animation: 120ms ease-out both vt-fade-out;
+  }
+  :root[data-nav]::view-transition-new(.page-in) {
+    animation: 260ms var(--ease-ios) 90ms both vt-lift-in;
+  }
+  :root[data-nav="up"]::view-transition-new(.page-in) {
+    animation: 280ms var(--ease-ios) 90ms both vt-pop-in;
+  }
+  :root[data-nav]::view-transition-group(.page-out) {
+    z-index: auto;
+  }
+  :root[data-vt-root]::view-transition-old(root) {
+    z-index: auto;
+    animation: 120ms ease-out both vt-fade-out;
+  }
+  :root[data-vt-root]::view-transition-new(root) {
+    animation: 260ms var(--ease-ios) 90ms both vt-lift-in;
+  }
 }
+@keyframes vt-pop-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } }
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),

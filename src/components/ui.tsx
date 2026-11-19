@@ -4,13 +4,22 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
-import { useEffect, useId, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { formatMoney } from "@/lib/money";
 import { useMoney } from "@/lib/privacy";
+import { PrivacyToggle } from "./privacy-toggle";
 import { animatedBack } from "@/lib/nav-direction";
 
 const noopSubscribe = () => () => {};
+/** Ids of currently open sheets, oldest first (for Escape handling). */
+const openSheets: string[] = [];
+const DESKTOP_MQ = "(min-width: 1024px)";
+const subscribeDesktop = (cb: () => void) => {
+  const m = window.matchMedia(DESKTOP_MQ);
+  m.addEventListener("change", cb);
+  return () => m.removeEventListener("change", cb);
+};
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -67,15 +76,20 @@ export function PageHeader({
   back,
   action,
   subtitle,
+  className,
+  privacy = true,
 }: {
   title: string;
   back?: string | true;
   action?: ReactNode;
   subtitle?: ReactNode;
+  className?: string;
+  /** Show the hide-amounts toggle (on by default; off for form screens). */
+  privacy?: boolean;
 }) {
   const router = useRouter();
   return (
-    <header className="pt-safe sticky top-0 z-20 bg-bg/85 px-4 pb-3 backdrop-blur-xl lg:static lg:bg-transparent lg:pt-6 lg:pb-5 lg:backdrop-blur-none">
+    <header className={cx("pt-safe sticky top-0 z-20 bg-bg/85 px-4 pb-3 backdrop-blur-xl lg:static lg:bg-transparent lg:pt-6 lg:pb-5 lg:backdrop-blur-none", className)}>
       <div className="flex min-h-12 items-center gap-2">
         {back &&
           (back === true ? (
@@ -91,6 +105,7 @@ export function PageHeader({
           <h1 className="truncate text-[1.6rem] leading-tight font-semibold tracking-tight lg:text-[2rem]">{title}</h1>
           {subtitle && <div className="text-sm text-ink-3">{subtitle}</div>}
         </div>
+        {privacy && <PrivacyToggle className="size-11" />}
         {action}
       </div>
     </header>
@@ -227,44 +242,78 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   // Rendered into <body> so a sheet can open from inside another sheet (e.g. the date picker in "Record a debt")
   // without being trapped by the parent's transform.
   const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const desktop = useSyncExternalStore(subscribeDesktop, () => window.matchMedia(DESKTOP_MQ).matches, () => false);
+  const sheetId = useId();
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  });
   useEffect(() => {
     if (!open) return;
+    openSheets.push(sheetId);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      e.stopImmediatePropagation(); // only the topmost sheet closes
-      onClose();
+      // Only the most recently opened sheet reacts, so Escape peels nested sheets one at a time.
+      if (e.key !== "Escape" || openSheets[openSheets.length - 1] !== sheetId) return;
+      closeRef.current();
     };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [open, onClose]);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      const i = openSheets.lastIndexOf(sheetId);
+      if (i >= 0) openSheets.splice(i, 1);
+    };
+  }, [open, sheetId]);
   if (!mounted) return null;
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={title}>
-          <motion.div className="absolute inset-0 bg-brand-deep/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
-          <motion.div
-            className="absolute inset-x-0 bottom-0 mx-auto max-h-[88dvh] max-w-md overflow-y-auto rounded-t-[2rem] lg:bottom-8 lg:rounded-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 340 }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.6 }}
-            onDragEnd={(_, i) => (i.offset.y > 110 || i.velocity.y > 600) && onClose()}
-          >
-            <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-line" />
-            {title && (
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">{title}</h2>
-                <button onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale" aria-label="Close">
-                  <X className="size-5" />
-                </button>
-              </div>
-            )}
-            {children}
-          </motion.div>
+        <div className="fixed inset-0 z-50 lg:grid lg:place-items-center lg:p-8" role="dialog" aria-modal="true" aria-label={title}>
+          <motion.div className="absolute inset-0 bg-brand-deep/40 backdrop-blur-[2px] lg:bg-brand-deep/30 lg:backdrop-blur-none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+          {desktop ? (
+            // Desktop: centered dialog that scales in.
+            <motion.div
+              className="relative w-full max-w-md overflow-y-auto rounded-[2rem] bg-bg px-6 pt-5 pb-6 shadow-float"
+              style={{ maxHeight: "min(85dvh, 760px)" }}
+              initial={{ opacity: 0, scale: 0.96, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 8 }}
+              transition={{ type: "spring", damping: 30, stiffness: 380 }}
+            >
+              {title && (
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">{title}</h2>
+                  <button onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale hover:bg-mint" aria-label="Close">
+                    <X className="size-5" />
+                  </button>
+                </div>
+              )}
+              {children}
+            </motion.div>
+          ) : (
+            // Phone: bottom sheet, drag down to dismiss.
+            <motion.div
+              className="absolute inset-x-0 bottom-0 mx-auto max-h-[88dvh] max-w-md overflow-y-auto rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 32, stiffness: 340 }}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.6 }}
+              onDragEnd={(_, i) => (i.offset.y > 110 || i.velocity.y > 600) && onClose()}
+            >
+              <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-line" />
+              {title && (
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">{title}</h2>
+                  <button onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale" aria-label="Close">
+                    <X className="size-5" />
+                  </button>
+                </div>
+              )}
+              {children}
+            </motion.div>
+          )}
         </div>
       )}
     </AnimatePresence>,

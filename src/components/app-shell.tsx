@@ -45,6 +45,8 @@ const MORE: { href: string; label: string; short?: string; icon: typeof Users }[
 ];
 
 const HIDE_NAV = ["/welcome", "/add", "/accounts/new"];
+/** Screens presented like modals: full screen on phones, a centered card on desktop. */
+const MODAL_ROUTES = ["/add", "/accounts/new"];
 /** Form-like pages that read better as a single column on desktop. */
 const NARROW = ["/welcome", "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", "/payments"];
 /** Public pages that render without the app chrome or the onboarding gate. */
@@ -136,7 +138,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           // Keyed by path: each navigation exits the old page and enters the new one as a view transition.
           <ViewTransition key={pathname} enter="page-in" exit="page-out" default="none">
             {/* Opaque, full-height surface so a page never shows the previous one through it mid-transition. */}
-            <div className="min-h-dvh bg-bg">{children}</div>
+            <div
+              className={cx(
+                "min-h-dvh bg-bg",
+                // Desktop: modal-style routes (Add, New account) sit in a centered card instead of a full-height phone screen.
+                MODAL_ROUTES.includes(pathname) && "lg:my-8 lg:min-h-0 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-line lg:bg-white lg:shadow-soft",
+              )}
+            >
+              {children}
+            </div>
           </ViewTransition>
         )}</main>
 
