@@ -9,9 +9,9 @@
 
 export type NavDirection = "forward" | "back" | "up" | "down" | "tab";
 
-const TABS = ["/home", "/accounts", "/activity"];
+const TABS = ["/home", "/accounts", "/people", "/owed", "/activity", "/payments", "/instalments", "/analytics"];
 const MODALS = ["/add", "/accounts/new", "/welcome"];
-const MORE = ["/people", "/owed", "/instalments", "/payments", "/analytics", "/sync", "/settings"];
+const MORE = ["/sync", "/settings"];
 
 function depth(path: string): number {
   if (TABS.includes(path)) return 1;

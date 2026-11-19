@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionTabs } from "@/components/section-tabs";
+
 import { HapticLink } from "@/components/haptic-button";
 import Link from "next/link";
 import { Archive, ChevronRight, CreditCard, Landmark, Plus, Wallet } from "lucide-react";
@@ -35,6 +37,7 @@ export default function AccountsPage() {
           </div>
         }
       />
+      <SectionTabs group="accounts" />
       {!ledger.ready ? (
         <Loading />
       ) : (

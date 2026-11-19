@@ -3,14 +3,13 @@
 import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, ViewTransition, type ReactNode } from "react";
+import { useEffect, ViewTransition, type ReactNode } from "react";
 import {
   BarChart3,
   CalendarClock,
   HandCoins,
   History,
   Home,
-  LayoutGrid,
   List,
   Plus,
   RefreshCw,
@@ -28,14 +27,17 @@ import { LogoMark } from "@/lib/logo";
 import { PrivacySync, PrivacyToggle } from "./privacy-toggle";
 import { PullToRefresh } from "./pull-to-refresh";
 import { SyncPill } from "./sync-pill";
-import { cx, Sheet } from "./ui";
-import { HapticButton, HapticLink } from "./haptic-button";
+import { cx } from "./ui";
+import { HapticLink } from "./haptic-button";
+import { groupHrefs } from "./section-tabs";
 
+/** Bottom tabs. `match` lists the pages that light a tab up (its section tabs live on those pages). */
 const NAV = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/accounts", label: "Accounts", icon: WalletCards },
-  { href: "/add", label: "Add", icon: Plus },
-  { href: "/activity", label: "Activity", icon: List },
+  { href: "/home", label: "Home", icon: Home, match: ["/home"] },
+  { href: "/accounts", label: "Accounts", icon: WalletCards, match: groupHrefs("accounts") },
+  { href: "/add", label: "Add", icon: Plus, match: [] },
+  { href: "/activity", label: "Activity", icon: List, match: groupHrefs("activity") },
+  { href: "/analytics", label: "Analytics", icon: BarChart3, match: ["/analytics"] },
 ] as const;
 
 const MORE: { href: string; label: string; short?: string; icon: typeof Users }[] = [
@@ -43,7 +45,6 @@ const MORE: { href: string; label: string; short?: string; icon: typeof Users }[
   { href: "/owed", label: "Who Owes Me", short: "Owed to me", icon: HandCoins },
   { href: "/instalments", label: "Instalments", icon: CalendarClock },
   { href: "/payments", label: "Payment History", short: "Payments", icon: History },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/sync", label: "Sync & Backup", short: "Backup", icon: RefreshCw },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -68,7 +69,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const mode = useMeta<string>("mode");
   const database = useLedgerDatabase();
   const { phase, userId } = useSyncState();
-  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     if (pathname === "/welcome" && database && userId) router.replace("/home");
@@ -151,42 +151,21 @@ export function AppShell({ children }: { children: ReactNode }) {
           </ViewTransition>
         )}</main>
 
-      {!hideNav && !gated && <BottomNav pathname={pathname} onMore={() => setMoreOpen(true)} />}
+      {!hideNav && !gated && <BottomNav pathname={pathname} />}
 
-      <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="More">
-        <nav className="grid grid-cols-3 gap-2 pb-2">
-          {MORE.map(({ href, label, short, icon: Icon }) => (
-            <HapticLink
-              key={href}
-              href={href}
-              onClick={() => setMoreOpen(false)}
-              className={cx(
-                "flex min-h-24 flex-col items-center justify-center gap-2 rounded-3xl border border-line bg-surface p-3 text-center text-sm font-medium active:scale-95",
-                pathname.startsWith(href) && "border-brand-2 bg-pale",
-              )}
-            >
-              <span className="grid size-10 place-items-center rounded-2xl bg-pale text-brand">
-                <Icon className="size-5" />
-              </span>
-              <span className="whitespace-nowrap">{short ?? label}</span>
-            </HapticLink>
-          ))}
-        </nav>
-      </Sheet>
     </div>
   );
 }
 
-function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void }) {
-  const isActive = (href: string) => pathname.startsWith(href);
-  const moreActive = MORE.some((m) => pathname.startsWith(m.href));
+function BottomNav({ pathname }: { pathname: string }) {
+  const isActive = (match: readonly string[]) => match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
   return (
     <nav aria-label="Primary" style={{ viewTransitionName: "bottom-nav" }} className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 lg:hidden pb-[max(var(--safe-bottom),0.75rem)]">
       {/* Dark mode: fade the page out behind the bar so it doesn't sit on same-toned cards. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 -z-10 hidden bg-gradient-to-t from-bg via-bg/85 to-transparent dark:block" />
       {/* Five equal slots so every highlight is the same size and centred in its slot. */}
       <div className="grid grid-cols-5 items-center rounded-[1.75rem] border border-white/8 bg-night/95 p-1.5 text-white shadow-float backdrop-blur-xl dark:border-white/10 dark:bg-[#262d29]/95 dark:shadow-[0_18px_40px_-12px_rgb(0_0_0/0.9)]">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {NAV.map(({ href, label, icon: Icon, match }) => {
           if (href === "/add")
             return (
               <div key={href} className="grid place-items-center">
@@ -195,15 +174,14 @@ function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void 
                 </HapticLink>
               </div>
             );
-          return <NavItem key={href} href={href} label={label} icon={Icon} active={isActive(href)} />;
+          return <NavItem key={href} href={href} label={label} icon={Icon} active={isActive(match)} />;
         })}
-        <NavItem label="More" icon={LayoutGrid} active={moreActive} onClick={onMore} />
       </div>
     </nav>
   );
 }
 
-function NavItem({ href, label, icon: Icon, active, onClick }: { href?: string; label: string; icon: typeof Users; active: boolean; onClick?: () => void }) {
+function NavItem({ href, label, icon: Icon, active }: { href: string; label: string; icon: typeof Users; active: boolean }) {
   const cls = "relative mx-auto flex h-14 w-full max-w-[4.5rem] flex-col items-center justify-center gap-0.5 rounded-[1.25rem] text-[0.68rem] font-medium";
   const inner = (
     <>
@@ -220,11 +198,7 @@ function NavItem({ href, label, icon: Icon, active, onClick }: { href?: string; 
   );
   return (
     <div className="px-0.5">
-      {href ? (
-        <HapticLink href={href} aria-current={active ? "page" : undefined} wrapperClassName="grid" className={cls}>{inner}</HapticLink>
-      ) : (
-        <HapticButton type="button" onClick={onClick} aria-label={label} wrapperClassName="grid" className={cls}>{inner}</HapticButton>
-      )}
+      <HapticLink href={href} aria-current={active ? "page" : undefined} wrapperClassName="grid" className={cls}>{inner}</HapticLink>
     </div>
   );
 }

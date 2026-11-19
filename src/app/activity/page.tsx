@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionTabs } from "@/components/section-tabs";
+
 import { HapticButton } from "@/components/haptic-button";
 import { DateField } from "@/components/date-field";
 import { Search, SlidersHorizontal, X } from "lucide-react";
@@ -57,6 +59,7 @@ export default function ActivityPage() {
   return (
     <>
       <PageHeader title="Activity" />
+      <SectionTabs group="activity" />
       <div className="space-y-4 px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-x-6 lg:gap-y-4 lg:space-y-0">
         <div className="flex gap-2 lg:col-start-1 lg:row-start-1">
           <div className="relative flex-1">

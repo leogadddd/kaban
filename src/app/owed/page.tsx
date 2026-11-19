@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionTabs } from "@/components/section-tabs";
+
 import { HapticButton } from "@/components/haptic-button";
 import Link from "next/link";
 import { ChevronRight, HandCoins, Plus } from "lucide-react";
@@ -29,9 +31,10 @@ export default function OwedPage() {
     <>
       <PageHeader
         title="Who Owes Me"
-        back="/home"
+
         action={<HapticButton onClick={() => setAdding(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand" aria-label="Add debt"><Plus className="size-5" /></HapticButton>}
       />
+      <SectionTabs group="accounts" />
       <div className="space-y-4 px-4">
         <Card className="bg-brand-2 text-on-brand">
           <p className="text-sm text-on-brand/75">Total owed to you</p>

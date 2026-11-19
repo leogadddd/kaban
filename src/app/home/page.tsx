@@ -10,6 +10,7 @@ import { SpendTrend } from "@/components/charts";
 import { CreditOverview } from "@/components/credit-overview";
 import { PrivacyToggle } from "@/components/privacy-toggle";
 import { SyncPill } from "@/components/sync-pill";
+import { ProfileButton } from "@/components/profile-menu";
 import { TxnRow } from "@/components/txn-row";
 import { BigMoney, ButtonLink, Card, EmptyState, Loading, Money, SectionTitle, Segmented } from "@/components/ui";
 import { dailySpend } from "@/lib/finance";
@@ -82,6 +83,7 @@ export default function HomePage() {
         <div className="flex items-center gap-2">
           <PrivacyToggle />
           <SyncPill />
+          <ProfileButton />
         </div>
       </header>
 

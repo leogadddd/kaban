@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionTabs } from "@/components/section-tabs";
+
 import { History } from "lucide-react";
 import { useState } from "react";
 import { GroupedTxns } from "@/components/txn-row";
@@ -14,7 +16,8 @@ export default function PaymentsPage() {
 
   return (
     <>
-      <PageHeader title="Payment history" back="/home" />
+      <PageHeader title="Payment history" />
+      <SectionTabs group="activity" />
       <div className="space-y-4 px-4">
         <Segmented value={kind} onChange={setKind} options={[{ value: "card", label: "Card payments" }, { value: "received", label: "Received" }]} />
         <Card className="flex items-center justify-between">

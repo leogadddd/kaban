@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionTabs } from "@/components/section-tabs";
+
 import { HapticButton } from "@/components/haptic-button";
 import Link from "next/link";
 import { ChevronRight, UserPlus, Users } from "lucide-react";
@@ -32,10 +34,11 @@ export default function PeoplePage() {
     <>
       <PageHeader
         title="People"
-        back="/home"
+
         subtitle="People you split bills with or lend to. They don't need an account."
         action={<HapticButton onClick={() => setOpen(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand" aria-label="Add person"><UserPlus className="size-5" /></HapticButton>}
       />
+      <SectionTabs group="accounts" />
       <div className="space-y-4 px-4">
         {ledger.ready && people.length > 0 && (
           <div className="grid grid-cols-2 gap-3">
