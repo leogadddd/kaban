@@ -77,12 +77,7 @@ export default function WelcomePage() {
             variant="ghost"
             className="min-h-10 w-full text-sm"
             disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              await setMeta("mode", "local");
-              await setMeta("startedAt", Date.now());
-              router.replace("/sync");
-            }}
+            onClick={() => router.push("/login")}
           >
             <Cloud className="size-4" /> I have an account — sign in
           </Button>

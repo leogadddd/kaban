@@ -335,21 +335,31 @@ function sb() {
   return c;
 }
 
-const redirect = () => `${window.location.origin}/sync`;
+const origin = () => window.location.origin;
 
 export async function signUp(email: string, password: string): Promise<{ needsConfirm: boolean }> {
-  const { data, error } = await sb().auth.signUp({ email, password, options: { emailRedirectTo: redirect() } });
+  const { data, error } = await sb().auth.signUp({ email, password, options: { emailRedirectTo: `${origin()}/login` } });
   if (error) throw error;
+  // Supabase hides "already registered" (no identities, no error) to prevent email probing; treat it the same.
   return { needsConfirm: !data.session };
 }
 
-export async function signIn(email: string, password: string) {
-  const { error } = await sb().auth.signInWithPassword({ email, password });
+export async function resendConfirmation(email: string) {
+  const { error } = await sb().auth.resend({ type: "signup", email, options: { emailRedirectTo: `${origin()}/login` } });
   if (error) throw error;
 }
 
+/** Password sign-in. Returns whether a second factor is still needed before the session can sync. */
+export async function signIn(email: string, password: string): Promise<{ mfa: boolean }> {
+  const c = sb();
+  const { error } = await c.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  const { data } = await c.auth.mfa.getAuthenticatorAssuranceLevel();
+  return { mfa: !!data && data.nextLevel === "aal2" && data.currentLevel !== "aal2" };
+}
+
 export async function sendPasswordReset(email: string) {
-  const { error } = await sb().auth.resetPasswordForEmail(email, { redirectTo: redirect() });
+  const { error } = await sb().auth.resetPasswordForEmail(email, { redirectTo: `${origin()}/reset-password` });
   if (error) throw error;
 }
 
@@ -357,6 +367,27 @@ export async function setNewPassword(password: string) {
   const { error } = await sb().auth.updateUser({ password });
   if (error) throw error;
   set({ recovering: false });
+}
+
+/** Mark the device as set up so the onboarding gate lets the user into the app after signing in. */
+export async function finishSignIn() {
+  if (!(await getMeta<string>("mode"))) {
+    await setMeta("mode", "local");
+    await setMeta("startedAt", Date.now());
+  }
+}
+
+/** Turn Supabase / fetch errors into something a person can act on. */
+export function friendlyAuthError(err: unknown) {
+  const m = (err as Error)?.message ?? String(err);
+  if (/failed to fetch|networkerror|load failed/i.test(m)) return "Can't reach the server. Check your connection and try again.";
+  if (/invalid login credentials/i.test(m)) return "That email and password don't match.";
+  if (/email not confirmed/i.test(m)) return "Confirm your email first — check your inbox for the link.";
+  if (/invalid totp|invalid.*code|code.*(expired|invalid)/i.test(m)) return "That code didn't work. Try the newest one from your app.";
+  if (/rate limit|too many/i.test(m)) return "Too many attempts. Wait a minute and try again.";
+  if (/password.*(at least|short|weak)/i.test(m)) return "Choose a longer password (at least 8 characters).";
+  if (/same.*password|different from the old/i.test(m)) return "Pick a password you haven't used here before.";
+  return m;
 }
 
 /** Unsynced changes that signing out would destroy. */

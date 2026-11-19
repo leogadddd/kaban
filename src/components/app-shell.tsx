@@ -45,11 +45,15 @@ const MORE: { href: string; label: string; short?: string; icon: typeof Users }[
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-const HIDE_NAV = ["/welcome", "/add", "/accounts/new"];
+/** Sign-in flow: full-screen, no app chrome, reachable before onboarding (a new device signs in from Welcome). */
+export const AUTH_ROUTES = ["/login", "/login/verify", "/signup", "/forgot-password", "/reset-password"];
+/** Pages that render before the device has been set up. */
+const UNGATED = ["/welcome", ...AUTH_ROUTES];
+const HIDE_NAV = ["/welcome", "/add", "/accounts/new", ...AUTH_ROUTES];
 /** Screens presented like modals: full screen on phones, a centered card on desktop. */
 const MODAL_ROUTES = ["/add", "/accounts/new"];
 /** Form-like pages that read better as a single column on desktop. */
-const NARROW = ["/welcome", "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", "/payments"];
+const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", "/payments"];
 /** Public pages that render without the app chrome or the onboarding gate. */
 const BARE = ["/"];
 
@@ -60,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
-    if (mode === undefined && pathname !== "/welcome" && !BARE.includes(pathname)) router.replace("/welcome");
+    if (mode === undefined && !UNGATED.includes(pathname) && !BARE.includes(pathname)) router.replace("/welcome");
   }, [mode, pathname, router]);
 
   useEffect(() => installNavDirection(), []);
@@ -126,8 +130,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   const hideNav = HIDE_NAV.includes(pathname);
-  const gated = mode === null || (mode === undefined && pathname !== "/welcome");
-  const showSidebar = pathname !== "/welcome" && !gated;
+  const gated = mode === null || (mode === undefined && !UNGATED.includes(pathname));
+  const showSidebar = !UNGATED.includes(pathname) && !gated;
 
   if (BARE.includes(pathname)) return <>{children}</>;
 

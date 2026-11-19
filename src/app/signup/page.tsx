@@ -1,0 +1,106 @@
+"use client";
+
+import { MailCheck } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import { useLeaveWhenSignedIn } from "@/components/auth-redirect";
+import { AuthScreen, EmailField, FormError, PasswordField } from "@/components/auth-ui";
+import { Button } from "@/components/ui";
+import { finishSignIn, friendlyAuthError, resendConfirmation, signUp } from "@/lib/sync";
+
+export default function SignupPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const [sentTo, setSentTo] = useState<string>();
+  const [resent, setResent] = useState(false);
+  useLeaveWhenSignedIn();
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(undefined);
+    if (password.length < 8) return setError("Use at least 8 characters for your password.");
+    if (password !== confirm) return setError("The passwords don't match.");
+    setBusy(true);
+    try {
+      const { needsConfirm } = await signUp(email.trim(), password);
+      if (needsConfirm) {
+        setSentTo(email.trim());
+        setBusy(false);
+        return;
+      }
+      await finishSignIn();
+      router.replace("/home");
+    } catch (err) {
+      setError(friendlyAuthError(err));
+      setBusy(false);
+    }
+  }
+
+  if (sentTo) {
+    return (
+      <AuthScreen
+        title="Check your email"
+        subtitle={<>We sent a confirmation link to <b className="text-ink">{sentTo}</b>. Open it, then sign in.</>}
+        back="/signup"
+        footer={
+          <>
+            Wrong email?{" "}
+            <button type="button" className="font-medium text-brand" onClick={() => setSentTo(undefined)}>Start over</button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-pale text-brand">
+            <MailCheck className="size-6" />
+          </div>
+          <Link href="/login" replace className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-white shadow-soft">
+            I&apos;ve confirmed — sign in
+          </Link>
+          <Button
+            variant="ghost"
+            className="w-full"
+            disabled={resent}
+            onClick={async () => {
+              try {
+                await resendConfirmation(sentTo);
+                setResent(true);
+              } catch (err) {
+                setError(friendlyAuthError(err));
+              }
+            }}
+          >
+            {resent ? "Sent again" : "Resend the email"}
+          </Button>
+          <FormError>{error}</FormError>
+          <p className="text-center text-xs text-ink-3">On iPhone the link opens in Safari. Come back to the Kaban app and sign in there.</p>
+        </div>
+      </AuthScreen>
+    );
+  }
+
+  return (
+    <AuthScreen
+      title="Create your account"
+      subtitle="Back up your records and use Kaban on more than one device."
+      footer={
+        <>
+          Already have an account? <Link href="/login" replace className="font-medium text-brand">Sign in</Link>
+        </>
+      }
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <EmailField value={email} onChange={setEmail} autoFocus />
+        <PasswordField value={password} onChange={setPassword} autoComplete="new-password" hint="At least 8 characters." />
+        <PasswordField label="Confirm password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
+        <FormError>{error}</FormError>
+        <Button type="submit" className="w-full" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
+        <p className="text-center text-xs text-ink-3">Records already on this device are added to your account.</p>
+      </form>
+    </AuthScreen>
+  );
+}

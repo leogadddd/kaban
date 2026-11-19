@@ -1,28 +1,26 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { AlertTriangle, Cloud, CloudOff, Download, HardDrive, KeyRound, LogOut, RefreshCw, ShieldCheck, Smartphone, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Cloud, CloudOff, Download, HardDrive, LogOut, RefreshCw, ShieldCheck, Smartphone, Trash2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Button, Card, cx, Field, inputCls, PageHeader, Progress, SectionTitle } from "@/components/ui";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { CodeField } from "@/components/auth-ui";
+import { Button, Card, cx, PageHeader, Progress, SectionTitle } from "@/components/ui";
 import { db } from "@/lib/db";
 import { useMeta, useOnline } from "@/lib/hooks";
 import { exportBackup, importBackup, setMeta } from "@/lib/repo";
 import {
   confirmAuthenticator,
   deleteCloudData,
+  friendlyAuthError,
   listAuthenticators,
   removeAuthenticator,
   runSync,
-  sendPasswordReset,
-  setNewPassword,
-  signIn,
   signOut,
-  signUp,
   startAuthenticatorEnrollment,
   unsyncedCount,
   useSyncState,
-  verifySignInCode,
   type SyncState,
 } from "@/lib/sync";
 
@@ -153,177 +151,36 @@ function CloudSection({ sync }: { sync: SyncState }) {
       </Card>
     );
   }
-  if (sync.recovering) return <NewPasswordCard />;
-  if (sync.phase === "mfa") return <MfaCard />;
-  if (!sync.userId) return <AuthCard />;
+  if (sync.phase === "mfa") return <FinishSignInCard />;
+  if (!sync.userId) return <SignedOutCard />;
   return <AccountCard sync={sync} />;
 }
 
 // ---------- Signed out ----------
 
-function AuthCard() {
-  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
-  const [note, setNote] = useState<string>();
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    setError(undefined);
-    setNote(undefined);
-    setBusy(true);
-    try {
-      if (mode === "signin") await signIn(email.trim(), password);
-      else if (mode === "signup") {
-        if (password.length < 8) throw new Error("Use at least 8 characters");
-        const { needsConfirm } = await signUp(email.trim(), password);
-        if (needsConfirm) setNote("Check your email to confirm your account, then sign in here.");
-      } else {
-        await sendPasswordReset(email.trim());
-        setNote("If that email has an account, a reset link is on its way.");
-      }
-    } catch (err) {
-      setError(friendly(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
+function SignedOutCard() {
   return (
     <Card className="space-y-3">
       <div>
         <p className="flex items-center gap-2 font-semibold"><Cloud className="size-4 text-brand" /> Cloud sync</p>
         <p className="mt-1 text-sm text-ink-3">
-          Sign in to back up and sync across devices. Kaban stays just as fast — it still saves to this device first and uploads in the background.
+          Back up your records and use Kaban on more than one device. It stays just as fast — everything still saves here first and uploads in the background.
         </p>
       </div>
-      <form onSubmit={submit} className="space-y-3">
-        <Field label="Email">
-          {(id) => <input id={id} type="email" autoComplete="email" required className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} />}
-        </Field>
-        {mode !== "reset" && (
-          <Field label="Password">
-            {(id) => (
-              <input
-                id={id}
-                type="password"
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                required
-                minLength={mode === "signup" ? 8 : undefined}
-                className={inputCls}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            )}
-          </Field>
-        )}
-        {error && <p className="px-1 text-sm text-expense" role="alert">{error}</p>}
-        {note && <p className="rounded-2xl bg-pale p-3 text-sm text-brand" role="status">{note}</p>}
-        <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? "Please wait…" : mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link"}
-        </Button>
-      </form>
-      <div className="flex justify-between gap-2 text-sm">
-        <button type="button" className="min-h-10 text-brand" onClick={() => setMode(mode === "signup" ? "signin" : "signup")}>
-          {mode === "signup" ? "Have an account? Sign in" : "Create an account"}
-        </button>
-        {mode !== "reset" && (
-          <button type="button" className="min-h-10 text-ink-3" onClick={() => setMode("reset")}>Forgot password?</button>
-        )}
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/signup" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-white shadow-soft">Create account</Link>
+        <Link href="/login" className="flex min-h-12 items-center justify-center rounded-2xl bg-pale font-medium text-brand">Sign in</Link>
       </div>
-      <p className="text-xs text-ink-3">Records already on this device are uploaded to your account when you first sign in.</p>
     </Card>
   );
 }
 
-function NewPasswordCard() {
-  const [pw, setPw] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
+function FinishSignInCard() {
   return (
     <Card className="space-y-3">
-      <p className="flex items-center gap-2 font-semibold"><KeyRound className="size-4 text-brand" /> Set a new password</p>
-      <form
-        className="space-y-3"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError(undefined);
-          try {
-            if (pw.length < 8) throw new Error("Use at least 8 characters");
-            await setNewPassword(pw);
-          } catch (err) {
-            setError(friendly(err));
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <Field label="New password" error={error}>
-          {(id) => <input id={id} type="password" autoComplete="new-password" minLength={8} required className={inputCls} value={pw} onChange={(e) => setPw(e.target.value)} />}
-        </Field>
-        <Button type="submit" className="w-full" disabled={busy}>Save password</Button>
-      </form>
-    </Card>
-  );
-}
-
-function CodeInput({ value, onChange, id }: { value: string; onChange: (v: string) => void; id: string }) {
-  return (
-    <input
-      id={id}
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      pattern="[0-9]{6}"
-      maxLength={6}
-      required
-      className={cx(inputCls, "num text-center text-xl tracking-[0.4em]")}
-      value={value}
-      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
-    />
-  );
-}
-
-function MfaCard() {
-  const router = useRouter();
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
-  return (
-    <Card className="space-y-3">
-      <p className="flex items-center gap-2 font-semibold"><Smartphone className="size-4 text-brand" /> Two-factor check</p>
-      <p className="text-sm text-ink-3">Enter the 6-digit code from your authenticator app to finish signing in.</p>
-      <form
-        className="space-y-3"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError(undefined);
-          try {
-            await verifySignInCode(code);
-          } catch (err) {
-            setError(friendly(err));
-            setCode("");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <Field label="Code" error={error}>{(id) => <CodeInput id={id} value={code} onChange={setCode} />}</Field>
-        <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>Verify</Button>
-      </form>
-      <Button
-        variant="ghost"
-        className="w-full"
-        onClick={async () => {
-          await signOut();
-          router.replace("/welcome");
-        }}
-      >
-        Cancel and sign out
-      </Button>
+      <p className="flex items-center gap-2 font-semibold"><Smartphone className="size-4 text-brand" /> Finish signing in</p>
+      <p className="text-sm text-ink-3">Your account uses two-step verification. Enter the code from your authenticator app to start syncing.</p>
+      <Link href="/login/verify" className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-white shadow-soft">Enter code</Link>
     </Card>
   );
 }
@@ -437,7 +294,7 @@ function TwoFactorCard() {
               setCode("");
               await refresh();
             } catch (err) {
-              setError(friendly(err));
+              setError(friendlyAuthError(err));
             } finally {
               setBusy(false);
             }
@@ -448,7 +305,7 @@ function TwoFactorCard() {
           <p className="text-center text-xs text-ink-3">
             Scan it, or enter this key: <span className="num break-all text-ink-2 select-all">{enroll.secret}</span>
           </p>
-          <Field label="Code from the app" error={error}>{(id) => <CodeInput id={id} value={code} onChange={setCode} />}</Field>
+          <CodeField value={code} onChange={setCode} error={error} />
           <div className="grid grid-cols-2 gap-3">
             <Button type="button" variant="secondary" onClick={() => setEnroll(undefined)}>Cancel</Button>
             <Button type="submit" disabled={busy || code.length !== 6}>Turn on</Button>
@@ -466,7 +323,7 @@ function TwoFactorCard() {
               for (const f of factors!) await removeAuthenticator(f.id);
               await refresh();
             } catch (err) {
-              setError(friendly(err));
+              setError(friendlyAuthError(err));
             } finally {
               setBusy(false);
             }
@@ -485,7 +342,7 @@ function TwoFactorCard() {
             try {
               setEnroll(await startAuthenticatorEnrollment());
             } catch (err) {
-              setError(friendly(err));
+              setError(friendlyAuthError(err));
             } finally {
               setBusy(false);
             }
@@ -497,16 +354,6 @@ function TwoFactorCard() {
       {error && !enroll && <p className="px-1 text-sm text-expense" role="alert">{error}</p>}
     </Card>
   );
-}
-
-/** Turn Supabase / fetch errors into something a person can act on. */
-function friendly(err: unknown) {
-  const m = (err as Error)?.message ?? String(err);
-  if (/failed to fetch|networkerror|load failed/i.test(m)) return "Can't reach the server. Check your connection and try again.";
-  if (/invalid login credentials/i.test(m)) return "That email and password don't match.";
-  if (/email not confirmed/i.test(m)) return "Confirm your email first — check your inbox for the link.";
-  if (/invalid totp|invalid.*code/i.test(m)) return "That code didn't work. Try the newest one from your app.";
-  return m;
 }
 
 function mb(bytes: number) {
