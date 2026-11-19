@@ -13,6 +13,7 @@ const MAX = 128;
 /** Keep the loading animation up long enough to read as "refreshed", even when sync is instant or local-only. */
 const MIN_SPIN = 900;
 const RING = 2 * Math.PI * 21;
+const HAPTIC_MS = 8;
 
 /**
  * Touch-only pull-to-refresh, Reddit style: drag down from the top and the page slides down to reveal
@@ -47,6 +48,7 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
     let tracking = false;
     let pulling = false;
     let wasArmed = false;
+    let requestedVibration = false;
 
     const reset = () => {
       tracking = pulling = false;
@@ -63,6 +65,7 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
       startY = e.touches[0].clientY;
       tracking = true;
       pulling = false;
+      requestedVibration = false;
     };
 
     const onMove = (e: TouchEvent) => {
@@ -87,11 +90,11 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
       if (nowArmed !== wasArmed) {
         wasArmed = nowArmed;
         setArmed(nowArmed);
-        if (nowArmed) navigator.vibrate?.(8);
+        if (nowArmed) requestedVibration = navigator.vibrate?.(HAPTIC_MS) ?? false;
       }
     };
 
-    const onEnd = () => {
+    const onEnd = (e: TouchEvent) => {
       if (!tracking) return;
       const go = pulling && pull.get() >= THRESHOLD;
       reset();
@@ -99,6 +102,8 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
         animate(pull, 0, { type: "spring", stiffness: 420, damping: 38 });
         return;
       }
+      // A first pull can reach the threshold before the browser grants activation on touchend.
+      if (e.type === "touchend" && !requestedVibration) navigator.vibrate?.(HAPTIC_MS);
       busy.current = true;
       lid.current?.removeAttribute("transform"); // hand the lid to the CSS loading animation
       setRefreshing(true);
