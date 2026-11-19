@@ -43,22 +43,24 @@ export default function OwedPage() {
         {!ledger.ready ? (
           <Loading />
         ) : byPerson.length ? (
-          <Card className="divide-y divide-line p-0 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-px lg:overflow-hidden lg:bg-line [&>a]:bg-white">
+          <ul className="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-surface shadow-soft">
             {byPerson.map((r) => (
-              <Link key={r.person.id} href={`/owed/person?id=${r.person.id}`} className="flex items-center gap-3 px-4 py-3.5 active:bg-pale">
-                <Avatar name={r.person.name} color={r.person.color} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex justify-between">
-                    <p className="font-medium">{r.person.name}</p>
-                    <Money minor={r.outstanding} className="font-semibold" />
+              <li key={r.person.id}>
+                <Link href={`/owed/person?id=${r.person.id}`} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-pale focus-visible:bg-pale active:bg-pale">
+                  <Avatar name={r.person.name} color={r.person.color} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="truncate font-medium">{r.person.name}</p>
+                      <Money minor={r.outstanding} className="shrink-0 font-semibold" />
+                    </div>
+                    <Progress value={r.total ? ((r.total - r.outstanding) / r.total) * 100 : 0} className="mt-1.5 h-1.5" />
+                    <p className="mt-1 text-xs text-ink-3">{r.open ? `${r.open} open item${r.open === 1 ? "" : "s"}` : "All settled"} · <span className="num">{Math.round(r.total ? ((r.total - r.outstanding) / r.total) * 100 : 0)}%</span> repaid</p>
                   </div>
-                  <Progress value={r.total ? ((r.total - r.outstanding) / r.total) * 100 : 0} className="mt-1.5 h-1.5" />
-                  <p className="mt-1 text-xs text-ink-3">{r.open ? `${r.open} open item${r.open === 1 ? "" : "s"}` : "All settled"} · <span className="num">{Math.round(r.total ? ((r.total - r.outstanding) / r.total) * 100 : 0)}%</span> repaid</p>
-                </div>
-                <ChevronRight className="size-4 text-ink-3" />
-              </Link>
+                  <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden="true" />
+                </Link>
+              </li>
             ))}
-          </Card>
+          </ul>
         ) : (
           <EmptyState
             icon={<HandCoins className="size-6" />}
