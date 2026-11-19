@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #176b4d;
+  --color-brand-2: #2d936c;
+  --color-brand-deep: #0f3d2e;
+  --color-pale: #e8f4ec;
+  --color-mint: #cfe8d8;
+  --color-bg: #f7faf7;
+  --color-ink: #17241d;
+  --color-ink-2: #4c5c53;
+  --color-ink-3: #85948b;
+  --color-line: #e1ebe4;
+  --color-expense: #c94b4b;
+  --color-income: #1f8a5b;
+  --color-gold: #c9a227;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-card: 1.75rem;
+  --shadow-float: 0 18px 40px -18px rgb(15 61 46 / 0.45), 0 2px 6px -2px rgb(15 61 46 / 0.12);
+  --shadow-soft: 0 1px 2px rgb(15 61 46 / 0.06), 0 6px 20px -10px rgb(15 61 46 / 0.18);
+}
+
+:root {
+  color-scheme: light;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1, "ss01" 1;
+  }
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+
+.pt-safe {
+  padding-top: max(var(--safe-top), 0.75rem);
+}
+
+.pb-nav {
+  padding-bottom: calc(6.5rem + var(--safe-bottom));
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Inputs get 16px via `inputCls` (prevents iOS zoom on focus); not set globally so utilities can override. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-2);
+  outline-offset: 2px;
+}
+
+/* Subtle dotted texture used on cards */
+.card-grain {
+  background-image: radial-gradient(rgb(255 255 255 / 0.09) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

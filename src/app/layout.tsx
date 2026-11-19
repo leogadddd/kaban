@@ -1,0 +1,32 @@
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { AppShell } from "@/components/app-shell";
+import "./globals.css";
+
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: { default: "Kaban", template: "%s · Kaban" },
+  description: "Offline-first tracker for cash, debit and a shared family credit card.",
+  applicationName: "Kaban",
+  appleWebApp: { capable: true, title: "Kaban", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#F7FAF7",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className="min-h-dvh">
+        <AppShell>{children}</AppShell>
+      </body>
+    </html>
+  );
+}
