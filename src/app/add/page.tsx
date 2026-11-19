@@ -4,6 +4,7 @@
 import { confirmDialog } from "@/components/dialog";
 import { useMoney } from "@/lib/privacy";
 import { DateField } from "@/components/date-field";
+import { SaveSuccess } from "@/components/save-success";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Ban, Check, ChevronDown, ChevronLeft, ChevronRight, CreditCard, Minus, Plus, Receipt, RotateCcw, Scale, Split, TrendingUp, Undo2, UserPlus, X, type LucideIcon } from "lucide-react";
@@ -225,17 +226,12 @@ function Editor() {
 
   if (saved)
     return (
-      <div className="grid min-h-dvh place-items-center lg:min-h-80">
-        <p className="sr-only" role="status">Transaction saved</p>
-        <button
-          type="button"
-          aria-label="Go to Home"
-          onClick={() => router.replace("/home")}
-          className="grid size-24 place-items-center rounded-full bg-income/10 text-income active:scale-95"
-        >
-          <Check className="size-12" aria-hidden="true" />
-        </button>
-      </div>
+      <SaveSuccess
+        title={editId ? "Changes saved" : `${TYPE_LABEL[type]} added`}
+        amount={amountMinor > 0 ? fmtMoney(amountMinor) : undefined}
+        subtitle={description.trim() || defaultDescription(type, category, ledger.accountById.get(toAccountId))}
+        onDone={() => router.replace("/home")}
+      />
     );
 
   if (!ledger.ready || existing === undefined) return <Loading />;
