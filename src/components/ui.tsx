@@ -240,7 +240,20 @@ export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; ti
   );
 }
 
-export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: string; children: ReactNode }) {
+export function Sheet({
+  open,
+  onClose,
+  title,
+  children,
+  appear = true,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: ReactNode;
+  /** False: if it mounts already open, show it in place instead of sliding in (e.g. restoring it on back). */
+  appear?: boolean;
+}) {
   // Rendered into <body> so a sheet can open from inside another sheet (e.g. the date picker in "Record a debt")
   // without being trapped by the parent's transform.
   const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
@@ -267,7 +280,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   }, [open, sheetId]);
   if (!mounted) return null;
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence initial={appear}>
       {open && (
         <div className="fixed inset-0 z-50 lg:grid lg:place-items-center lg:p-8" role="dialog" aria-modal="true" aria-label={title}>
           <motion.div className="absolute inset-0 bg-brand-deep/40 backdrop-blur-[2px] lg:bg-brand-deep/30 lg:backdrop-blur-none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />

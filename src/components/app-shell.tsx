@@ -63,6 +63,10 @@ const PULL_TO_REFRESH = ["/home", "/accounts", "/accounts/view", "/activity", "/
 /** Public pages that render without the app chrome or the onboarding gate. */
 const BARE = ["/", "/terms", "/privacy"];
 
+/** Pages that are panes of one swipeable screen share a key, so swiping between them never remounts the screen. */
+const ACCOUNT_PANES = groupHrefs("accounts");
+const viewKey = (path: string) => (ACCOUNT_PANES.includes(path) ? "/accounts" : path);
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -137,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className={cx("mx-auto max-w-md lg:px-6", NARROW.includes(pathname) ? "lg:max-w-2xl" : "lg:max-w-6xl", !hideNav ? "pb-nav lg:pb-16" : "lg:pb-16")}>{gated ? (phase === "error" && !database ? <p role="alert" className="p-4">The ledger could not be opened. Reload Kaban to try again.</p> : null) : (
           // Keyed by path: each navigation exits the old page and enters the new one as a view transition.
-          <ViewTransition key={`${database?.name ?? "auth"}:${pathname}`} enter="page-in" exit="page-out" default="none">
+          <ViewTransition key={`${database?.name ?? "auth"}:${viewKey(pathname)}`} enter="page-in" exit="page-out" default="none">
             {/* Opaque, full-height surface so a page never shows the previous one through it mid-transition. */}
             <div
               className={cx(

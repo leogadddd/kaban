@@ -2,23 +2,30 @@
 
 import { ChevronRight, CircleUserRound, LogIn, RefreshCw, Settings, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cloudConfigured } from "@/lib/supabase";
 import { useSyncState } from "@/lib/sync";
 import { HapticButton } from "./haptic-button";
 import { Sheet } from "./ui";
 
+// Marks Home's own history entry, so only returning to that entry (swipe or Back) reopens the sheet.
+const FLAG = "kabanProfileOpen";
+const restoreOnReturn = () => typeof window !== "undefined" && !!(window.history.state as Record<string, unknown> | null)?.[FLAG];
+
 /** Top-right avatar on Home: account status plus the less-used pages (Sync & Backup, Settings). */
 export function ProfileButton() {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  // Coming back (swipe or Back) from a page opened here: the sheet is still open, matching the
+  // snapshot the phone shows during the back gesture. Any other arrival on Home starts closed.
+  const [open, setOpen] = useState(restoreOnReturn);
+  // Clear the mark once shown, so a later Back to this entry after closing the sheet stays closed.
+  useEffect(() => {
+    if (!open && restoreOnReturn()) window.history.replaceState({ ...window.history.state, [FLAG]: false }, "");
+  }, [open]);
 
-  // Let the sheet finish sliding away before leaving Home. Otherwise the browser's snapshot of this page
-  // (what an iOS/Android back-swipe shows) still has the sheet open, and it flashes on the way back.
   function openPage(href: string) {
-    setOpen(false);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.setTimeout(() => router.push(href), reduce ? 0 : 340);
+    window.history.replaceState({ ...window.history.state, [FLAG]: true }, "");
+    router.push(href);
   }
   const { email, userId } = useSyncState();
   const initial = email?.[0]?.toUpperCase();
@@ -39,7 +46,7 @@ export function ProfileButton() {
         {userId && initial ? initial : <CircleUserRound className="size-5" />}
       </HapticButton>
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="You">
+      <Sheet open={open} onClose={() => setOpen(false)} title="You" appear={false}>
         <div className="space-y-4 pb-2">
           <div className="flex items-center gap-3 rounded-3xl border border-line bg-surface p-4">
             <span className="grid size-12 shrink-0 place-items-center rounded-full bg-pale text-lg font-semibold text-brand">
