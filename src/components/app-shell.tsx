@@ -23,6 +23,7 @@ import { getMeta } from "@/lib/repo";
 import { useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
 import { LogoMark } from "@/lib/logo";
+import { PrivacySync, PrivacyToggle } from "./privacy-toggle";
 import { SyncPill } from "./sync-pill";
 import { cx, Sheet } from "./ui";
 
@@ -60,6 +61,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [mode, pathname, router]);
 
   useEffect(() => installNavDirection(), []);
+
+  // iOS Safari ignores user-scalable=no; cancelling its gesture events blocks pinch-zoom there too.
+  useEffect(() => {
+    const block = (e: Event) => e.preventDefault();
+    const opts = { passive: false } as const;
+    document.addEventListener("gesturestart", block, opts);
+    document.addEventListener("gesturechange", block, opts);
+    document.addEventListener("gestureend", block, opts);
+    // Trackpad / ctrl+wheel zoom on desktop browsers
+    const wheel = (e: WheelEvent) => e.ctrlKey && e.preventDefault();
+    window.addEventListener("wheel", wheel, opts);
+    return () => {
+      document.removeEventListener("gesturestart", block);
+      document.removeEventListener("gesturechange", block);
+      document.removeEventListener("gestureend", block);
+      window.removeEventListener("wheel", wheel);
+    };
+  }, []);
 
   // Quick add: a fresh launch of the installed app lands on /home (start_url); jump to Add when enabled.
   // sessionStorage marks the launch so this only happens once, not on every visit to Home.
@@ -110,9 +129,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
+      <PrivacySync />
       {showSidebar && <Sidebar pathname={pathname} />}
 
-      <main className={cx("mx-auto max-w-md lg:px-6 lg:pt-4", NARROW.includes(pathname) ? "lg:max-w-xl" : "lg:max-w-5xl", !hideNav ? "pb-nav lg:pb-12" : "lg:pb-12")}>{gated ? null : (
+      <main className={cx("mx-auto max-w-md lg:px-6", NARROW.includes(pathname) ? "lg:max-w-2xl" : "lg:max-w-6xl", !hideNav ? "pb-nav lg:pb-16" : "lg:pb-16")}>{gated ? null : (
           // Keyed by path: each navigation exits the old page and enters the new one as a view transition.
           <ViewTransition key={pathname} enter="page-in" exit="page-out" default="none">
             {/* Opaque, full-height surface so a page never shows the previous one through it mid-transition. */}
@@ -209,8 +229,9 @@ function Sidebar({ pathname }: { pathname: string }) {
           );
         })}
       </nav>
-      <div className="px-1 pt-4">
+      <div className="flex items-center gap-2 px-1 pt-4">
         <SyncPill />
+        <PrivacyToggle />
       </div>
     </aside>
   );

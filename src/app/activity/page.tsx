@@ -56,15 +56,15 @@ export default function ActivityPage() {
   return (
     <>
       <PageHeader title="Activity" />
-      <div className="space-y-4 px-4">
-        <div className="flex gap-2">
+      <div className="space-y-4 px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-x-6 lg:gap-y-4 lg:space-y-0">
+        <div className="flex gap-2 lg:col-start-1 lg:row-start-1">
           <div className="relative flex-1">
             <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-3" />
             <input className={cx(inputCls, "pl-10")} placeholder="Search description, category, notes" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search transactions" type="search" />
           </div>
           <button
             onClick={() => setFiltersOpen((v) => !v)}
-            className={cx("relative grid size-12 shrink-0 place-items-center rounded-2xl border", filtersOpen || activeFilters ? "border-brand bg-brand text-white" : "border-line bg-white")}
+            className={cx("relative grid size-12 shrink-0 place-items-center rounded-2xl border lg:hidden", filtersOpen || activeFilters ? "border-brand bg-brand text-white" : "border-line bg-white")}
             aria-label="Filters"
             aria-expanded={filtersOpen}
           >
@@ -73,8 +73,9 @@ export default function ActivityPage() {
           </button>
         </div>
 
-        {filtersOpen && (
-          <Card className="space-y-3">
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <Card className={cx("space-y-3", !filtersOpen && "hidden lg:block")}>
+            <p className="hidden text-sm font-semibold lg:block">Filters</p>
             <Segmented<Range>
               size="sm"
               value={range}
@@ -111,14 +112,16 @@ export default function ActivityPage() {
               {activeFilters > 0 && <button onClick={clear} className="flex items-center gap-1 text-sm text-brand"><X className="size-4" /> Clear</button>}
             </div>
           </Card>
-        )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="p-3"><p className="text-xs text-ink-3">Spent</p><Money minor={spent} className="font-semibold" /></Card>
-          <Card className="p-3"><p className="text-xs text-ink-3">Earned</p><Money minor={earned} className="font-semibold text-income" /></Card>
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="p-3"><p className="text-xs text-ink-3">Spent</p><Money minor={spent} className="font-semibold" /></Card>
+            <Card className="p-3"><p className="text-xs text-ink-3">Earned</p><Money minor={earned} className="font-semibold text-income" /></Card>
+          </div>
+        </aside>
+
+        <div className="lg:col-start-1 lg:row-start-2">
+          {!ledger.ready ? <Loading /> : filtered.length ? <GroupedTxns txns={filtered} ledger={ledger} /> : <EmptyState icon={<Search className="size-6" />} title="No matching transactions" body="Try a different search or clear filters." />}
         </div>
-
-        {!ledger.ready ? <Loading /> : filtered.length ? <GroupedTxns txns={filtered} ledger={ledger} /> : <EmptyState icon={<Search className="size-6" />} title="No matching transactions" body="Try a different search or clear filters." />}
       </div>
     </>
   );

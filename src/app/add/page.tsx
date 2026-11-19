@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect -- form state is initialised from async IndexedDB reads and deep-link params */
 
+import { useMoney } from "@/lib/privacy";
 import { DateField } from "@/components/date-field";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -471,6 +472,7 @@ function defaultDescription(type: TxnType, category: string, to?: Account) {
 }
 
 function AccountPicker({ label, accounts, value, onChange, ledger }: { label: string; accounts: Account[]; value: string; onChange: (id: string) => void; ledger: ReturnType<typeof useLedger> }) {
+  const { fmt } = useMoney();
   return (
     <div>
       <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">{label}</p>
@@ -496,8 +498,8 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
                 })()}
                 {a.name}
               </span>
-              <span className={cx("num block text-xs", active ? "text-white/75" : "text-ink-3")}>
-                {a.type === "credit" ? `${formatMoney(b?.available ?? 0, { compact: true })} available` : formatMoney(b?.balance ?? 0)}
+              <span className={cx("num amount block text-xs", active ? "text-white/75" : "text-ink-3")}>
+                {a.type === "credit" ? `${fmt(b?.available ?? 0, { compact: true })} available` : fmt(b?.balance ?? 0)}
               </span>
             </button>
           );

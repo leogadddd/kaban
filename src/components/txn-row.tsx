@@ -6,7 +6,7 @@ import { Split } from "lucide-react";
 import { iconFor, TYPE_LABEL } from "@/lib/categories";
 import { formatDay, relativeDayLabel } from "@/lib/dates";
 import type { Ledger } from "@/lib/hooks";
-import { formatMoney } from "@/lib/money";
+import { useMoney } from "@/lib/privacy";
 import type { Account, Txn } from "@/lib/types";
 import { cx } from "./ui";
 
@@ -52,6 +52,7 @@ export function TxnRow({ t, ledger, perspective, showDate = true }: { t: Txn; le
   const acc = ledger.accountById.get(t.accountId);
   const to = t.toAccountId ? ledger.accountById.get(t.toAccountId) : undefined;
   const { amount, tone } = displayAmount(t, ledger.accountById, perspective);
+  const { fmt } = useMoney();
   const split = ledger.splits.some((s) => s.transactionId === t.id);
   const voided = t.state === "void";
   const sub = [
@@ -74,7 +75,7 @@ export function TxnRow({ t, ledger, perspective, showDate = true }: { t: Txn; le
         </p>
       </div>
       <div className="text-right">
-        <p className={cx("num font-semibold", tone === "expense" ? "text-ink" : tone === "income" ? "text-income" : "text-ink-2")}>{formatMoney(amount, { sign: true })}</p>
+        <p className={cx("num amount font-semibold", tone === "expense" ? "text-ink" : tone === "income" ? "text-income" : "text-ink-2")}>{fmt(amount, { sign: true })}</p>
         <p className="text-[0.68rem] text-ink-3">{voided ? "Voided" : TYPE_LABEL[t.type]}</p>
       </div>
     </Link>

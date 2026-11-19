@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatDay, formatMonth, formatMonthShort } from "@/lib/dates";
 import type { MonthFlow } from "@/lib/finance";
-import { formatMoney } from "@/lib/money";
+import { useMoney } from "@/lib/privacy";
 import { cx } from "./ui";
 
 const INK3 = "#85948B";
@@ -18,6 +18,7 @@ function Tip({ children }: { children: React.ReactNode }) {
 
 /** Single-series daily spend trend (title names the series; no legend needed). */
 export function SpendTrend({ data, height = 140 }: { data: { day: string; amount: number }[]; height?: number }) {
+  const { fmt } = useMoney();
   const total = data.reduce((s, d) => s + d.amount, 0);
   return (
     <figure>
@@ -38,7 +39,7 @@ export function SpendTrend({ data, height = 140 }: { data: { day: string; amount
                 active && payload?.[0] ? (
                   <Tip>
                     <p className="text-ink-3">{formatDay(payload[0].payload.day)}</p>
-                    <p className="num font-semibold">{formatMoney(payload[0].payload.amount)}</p>
+                    <p className="num amount font-semibold">{fmt(payload[0].payload.amount)}</p>
                   </Tip>
                 ) : null
               }
@@ -48,7 +49,7 @@ export function SpendTrend({ data, height = 140 }: { data: { day: string; amount
         </ResponsiveContainer>
       </div>
       <figcaption className="sr-only">
-        Daily spending over the last {data.length} days, total {formatMoney(total)}.
+        Daily spending over the last {data.length} days, total {fmt(total)}.
       </figcaption>
     </figure>
   );
@@ -56,6 +57,7 @@ export function SpendTrend({ data, height = 140 }: { data: { day: string; amount
 
 /** Income vs expense by month: two series, legend + table fallback. */
 export function FlowChart({ data, height = 200 }: { data: MonthFlow[]; height?: number }) {
+  const { fmt } = useMoney();
   return (
     <figure>
       <div className="mb-2 flex gap-4 text-xs text-ink-2">
@@ -67,15 +69,15 @@ export function FlowChart({ data, height = 200 }: { data: MonthFlow[]; height?: 
           <BarChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }} barGap={2} barCategoryGap="28%">
             <CartesianGrid vertical={false} stroke={LINE} />
             <XAxis dataKey="month" tickFormatter={formatMonthShort} tickLine={false} axisLine={false} tick={{ fill: INK3, fontSize: 11 }} />
-            <YAxis width={44} tickFormatter={(v) => formatMoney(v, { compact: true })} tickLine={false} axisLine={false} tick={{ fill: INK3, fontSize: 10 }} />
+            <YAxis width={44} tickFormatter={(v) => fmt(v, { compact: true })} tickLine={false} axisLine={false} tick={{ fill: INK3, fontSize: 10 }} />
             <Tooltip
               cursor={{ fill: "rgba(23,107,77,0.06)" }}
               content={({ active, payload }) =>
                 active && payload?.[0] ? (
                   <Tip>
                     <p className="mb-1 text-ink-3">{formatMonth(payload[0].payload.month)}</p>
-                    <p className="num">Income <b>{formatMoney(payload[0].payload.income)}</b></p>
-                    <p className="num">Expenses <b>{formatMoney(payload[0].payload.expense)}</b></p>
+                    <p className="num">Income <b className="amount">{fmt(payload[0].payload.income)}</b></p>
+                    <p className="num">Expenses <b className="amount">{fmt(payload[0].payload.expense)}</b></p>
                   </Tip>
                 ) : null
               }
@@ -95,8 +97,8 @@ export function FlowChart({ data, height = 200 }: { data: MonthFlow[]; height?: 
             {data.map((d) => (
               <tr key={d.month} className="border-t border-line">
                 <td className="py-1">{formatMonth(d.month)}</td>
-                <td className="text-right">{formatMoney(d.income)}</td>
-                <td className="text-right">{formatMoney(d.expense)}</td>
+                <td className="amount text-right">{fmt(d.income)}</td>
+                <td className="amount text-right">{fmt(d.expense)}</td>
               </tr>
             ))}
           </tbody>
@@ -108,6 +110,7 @@ export function FlowChart({ data, height = 200 }: { data: MonthFlow[]; height?: 
 
 /** Ranked category spend as labelled horizontal bars (single hue = magnitude). */
 export function CategoryBars({ data, max = 6 }: { data: { category: string; amount: number }[]; max?: number }) {
+  const { fmt } = useMoney();
   const rows = data.slice(0, max);
   const rest = data.slice(max).reduce((s, d) => s + d.amount, 0);
   if (rest > 0) rows.push({ category: "Everything else", amount: rest });
@@ -120,7 +123,7 @@ export function CategoryBars({ data, max = 6 }: { data: { category: string; amou
           <div className="mb-1 flex justify-between text-sm">
             <span className="font-medium">{r.category}</span>
             <span className="num text-ink-2">
-              {formatMoney(r.amount)} <span className="text-ink-3">· {Math.round((r.amount / total) * 100)}%</span>
+              <span className="amount">{fmt(r.amount)}</span> <span className="text-ink-3">· {Math.round((r.amount / total) * 100)}%</span>
             </span>
           </div>
           <div className="h-2.5 overflow-hidden rounded-full bg-pale">

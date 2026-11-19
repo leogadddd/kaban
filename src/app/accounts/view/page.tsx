@@ -41,7 +41,7 @@ function AccountView() {
           </Link>
         }
       />
-      <div className="space-y-5 px-4">
+      <div className="space-y-5 px-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6 lg:gap-y-5 lg:space-y-0 lg:[&>*]:col-start-1">
         {credit ? <CreditOverview ledger={ledger} accountId={acc.id} showSelector={false} /> : <AccountCard b={b} />}
 
         <div className="grid grid-cols-3 gap-2">
@@ -80,7 +80,7 @@ function AccountView() {
           </dl>
         </Card>
 
-        <section>
+        <section className="lg:col-start-2! lg:row-span-6 lg:row-start-1">
           <SectionTitle>All transactions</SectionTitle>
           {txns.length ? <GroupedTxns txns={txns} ledger={ledger} perspective={acc.id} /> : <Card className="text-sm text-ink-3">No transactions yet.</Card>}
         </section>

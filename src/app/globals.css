@@ -36,6 +36,7 @@
     color: var(--color-ink);
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
+    touch-action: manipulation; /* no double-tap zoom anywhere */
   }
 
   body {

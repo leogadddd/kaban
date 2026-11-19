@@ -23,6 +23,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // App-like: no pinch or double-tap zoom (inputs are 16px so iOS never auto-zooms on focus).
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
   themeColor: "#F7FAF7",
 };

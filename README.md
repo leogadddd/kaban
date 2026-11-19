@@ -30,6 +30,8 @@ To try it on an iPhone, serve it over HTTPS, open it in Safari, then **Share →
 | Analytics | Income vs expense (with a table view), category ranking, utilisation rings. |
 | iPhone | Standalone manifest, apple icon, safe areas, and an "Open on the Add screen" launch setting for one-tap entry. |
 | Backup | JSON export and import. Import merges by id, newest version wins. |
+| Privacy | Eye toggle (Home, Accounts, desktop sidebar) swaps every amount for a fixed-length `₱••••••` mask, so neither values nor digit counts show. Remembered per device. |
+| Banks | Bank / e-wallet / BNPL picker (BDO, BPI, Metrobank, GCash, Maya, Atome…) with bundled logos and brand colours. |
 | Sync queue | Every write also enqueues an outbox mutation (stable id + version) in the same IndexedDB transaction. |
 
 ### Not yet built

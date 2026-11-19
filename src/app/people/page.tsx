@@ -39,7 +39,7 @@ export default function PeoplePage() {
         {!ledger.ready ? (
           <Loading />
         ) : people.length ? (
-          <Card className="divide-y divide-line p-0">
+          <Card className="divide-y divide-line p-0 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-px lg:overflow-hidden lg:bg-line [&>a]:bg-white">
             {people.map((p) => {
               const owes = ledger.debtStatus.filter((d) => d.debt.personId === p.id).reduce((s, d) => s + Math.max(0, d.outstanding), 0);
               return (

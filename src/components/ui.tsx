@@ -7,6 +7,7 @@ import { ChevronLeft, X } from "lucide-react";
 import { useEffect, useId, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { formatMoney } from "@/lib/money";
+import { useMoney } from "@/lib/privacy";
 import { animatedBack } from "@/lib/nav-direction";
 
 const noopSubscribe = () => () => {};
@@ -30,15 +31,31 @@ export function Money({
 }) {
   const color =
     tone === "expense" ? "text-expense" : tone === "income" ? "text-income" : tone === "auto" ? (minor < 0 ? "text-expense" : minor > 0 ? "text-income" : "") : "";
-  return <span className={cx("num", color, className)}>{formatMoney(minor, { sign, compact })}</span>;
+  return <MoneyText minor={minor} sign={sign} compact={compact} className={cx("num amount", color, className)} />;
+}
+
+function MoneyText({ minor, sign, compact, className }: { minor: number; sign?: boolean; compact?: boolean; className?: string }) {
+  const { fmt, hidden } = useMoney();
+  return (
+    <span className={className} aria-label={hidden ? "Amount hidden" : undefined}>
+      {fmt(minor, { sign, compact })}
+    </span>
+  );
 }
 
 /** Big balance number with smaller centavos, in the oversized style of the brief. */
 export function BigMoney({ minor, className, centsClass }: { minor: number; className?: string; centsClass?: string }) {
+  const { hidden } = useMoney();
+  if (hidden)
+    return (
+      <span className={cx("num amount font-semibold", className)} aria-label="Amount hidden">
+        ₱<span className="tracking-[0.12em] opacity-70">••••••</span>
+      </span>
+    );
   const s = formatMoney(minor);
   const dot = s.lastIndexOf(".");
   return (
-    <span className={cx("num font-semibold", className)} aria-label={s}>
+    <span className={cx("num amount font-semibold", className)} aria-label={s}>
       {s.slice(0, dot)}
       <span className={cx("opacity-50", centsClass)}>{s.slice(dot)}</span>
     </span>
@@ -58,7 +75,7 @@ export function PageHeader({
 }) {
   const router = useRouter();
   return (
-    <header className="pt-safe sticky top-0 z-20 bg-bg/85 px-4 pb-3 backdrop-blur-xl">
+    <header className="pt-safe sticky top-0 z-20 bg-bg/85 px-4 pb-3 backdrop-blur-xl lg:static lg:bg-transparent lg:pt-6 lg:pb-5 lg:backdrop-blur-none">
       <div className="flex min-h-12 items-center gap-2">
         {back &&
           (back === true ? (
@@ -66,12 +83,12 @@ export function PageHeader({
               <ChevronLeft className="size-6" />
             </button>
           ) : (
-            <Link href={back} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
+            <Link href={back} className={cx("-ml-2 grid size-11 place-items-center rounded-full active:bg-pale lg:hover:bg-pale", back === "/home" && "lg:hidden")} aria-label="Back">
               <ChevronLeft className="size-6" />
             </Link>
           ))}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[1.6rem] leading-tight font-semibold tracking-tight">{title}</h1>
+          <h1 className="truncate text-[1.6rem] leading-tight font-semibold tracking-tight lg:text-[2rem]">{title}</h1>
           {subtitle && <div className="text-sm text-ink-3">{subtitle}</div>}
         </div>
         {action}

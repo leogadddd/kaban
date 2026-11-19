@@ -43,7 +43,7 @@ export default function OwedPage() {
         {!ledger.ready ? (
           <Loading />
         ) : byPerson.length ? (
-          <Card className="divide-y divide-line p-0">
+          <Card className="divide-y divide-line p-0 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-px lg:overflow-hidden lg:bg-line [&>a]:bg-white">
             {byPerson.map((r) => (
               <Link key={r.person.id} href={`/owed/person?id=${r.person.id}`} className="flex items-center gap-3 px-4 py-3.5 active:bg-pale">
                 <Avatar name={r.person.name} color={r.person.color} />

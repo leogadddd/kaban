@@ -21,7 +21,7 @@ export default function InstalmentsPage() {
   return (
     <>
       <PageHeader title="Instalments" back="/home" subtitle={<>Still to be billed <Money minor={totalRemaining} className="font-semibold text-ink" /></>} />
-      <div className="space-y-4 px-4">
+      <div className="space-y-4 px-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
         {!ledger.ready ? (
           <Loading />
         ) : plans.length ? (

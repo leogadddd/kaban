@@ -1,5 +1,6 @@
 "use client";
 
+import { useMoney } from "@/lib/privacy";
 import { useState } from "react";
 import { todayISO } from "@/lib/dates";
 import type { DebtStatus } from "@/lib/finance";
@@ -74,6 +75,7 @@ export function RepaySheet({ status, onClose, ledger }: { status: DebtStatus | n
 
 function RepayForm({ status, onClose, ledger }: { status: DebtStatus; onClose: () => void; ledger: Ledger }) {
   const funds = ledger.activeAccounts.filter((a) => a.type !== "credit");
+  const { fmt } = useMoney();
   const [amount, setAmount] = useState(minorToInput(status.outstanding));
   const [accountId, setAccountId] = useState(funds[0]?.id ?? "");
   const [date, setDate] = useState(todayISO());
@@ -96,7 +98,7 @@ function RepayForm({ status, onClose, ledger }: { status: DebtStatus; onClose: (
   return (
     <form onSubmit={submit} className="space-y-3">
       <p className="text-sm text-ink-2">
-        {status.debt.description} · <span className="num font-semibold">{formatMoney(status.outstanding)}</span> left
+        {status.debt.description} · <span className="num amount font-semibold">{fmt(status.outstanding)}</span> left
       </p>
       <Field label="Amount received">{(id) => <input id={id} className={cx(inputCls, "num text-lg")} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
       <div className="flex gap-2">

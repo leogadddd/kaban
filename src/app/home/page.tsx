@@ -2,16 +2,18 @@
 
 import { motion, type PanInfo } from "motion/react";
 import Link from "next/link";
-import { ArrowRight, HandCoins, Plus, WalletCards } from "lucide-react";
+import { ArrowRight, CreditCard, HandCoins, Landmark, Plus, Wallet, WalletCards } from "lucide-react";
 import { useState } from "react";
 import { CardStack } from "@/components/account-card";
 import { SpendTrend } from "@/components/charts";
 import { CreditOverview } from "@/components/credit-overview";
+import { PrivacyToggle } from "@/components/privacy-toggle";
 import { SyncPill } from "@/components/sync-pill";
 import { TxnRow } from "@/components/txn-row";
 import { BigMoney, Button, Card, EmptyState, Loading, Money, SectionTitle, Segmented } from "@/components/ui";
 import { dailySpend } from "@/lib/finance";
 import { useIsDesktop, useLedger } from "@/lib/hooks";
+import { loadDemoData } from "@/lib/demo";
 import { LogoMark } from "@/lib/logo";
 
 type Pane = "money" | "credit";
@@ -37,14 +39,25 @@ export default function HomePage() {
             <p className="font-semibold tracking-tight">Kaban</p>
           </div>
         </div>
-        <SyncPill />
+        <div className="flex items-center gap-2">
+          <PrivacyToggle />
+          <SyncPill />
+        </div>
       </header>
 
-      <div className="hidden items-end justify-between px-4 pt-2 pb-5 lg:flex">
+      <div className="hidden items-end justify-between px-4 pt-6 pb-5 lg:flex">
         <div>
           <p className="text-sm text-ink-3">{greeting()}</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Overview</h1>
+          <h1 className="text-[2rem] leading-tight font-semibold tracking-tight">Overview</h1>
         </div>
+        {ledger.activeAccounts.length > 0 && (
+          <div className="flex items-center gap-2">
+          <PrivacyToggle withLabel />
+          <Link href="/accounts/new" className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-white px-4 text-sm font-medium hover:bg-pale">
+            <Plus className="size-4" /> Add account
+          </Link>
+          </div>
+        )}
       </div>
 
       <div className="px-4 pb-3 lg:hidden">
@@ -60,6 +73,8 @@ export default function HomePage() {
 
       {!ledger.ready ? (
         <Loading />
+      ) : desktop && !ledger.activeAccounts.length ? (
+        <DesktopSetup />
       ) : desktop ? (
         <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-start gap-6 px-4">
           <section aria-label="Money">
@@ -67,7 +82,13 @@ export default function HomePage() {
           </section>
           <section id="credit-col" aria-label="Credit" className="sticky top-6">
             <h2 className="mb-3 px-1 text-sm font-semibold text-ink-2">Credit</h2>
-            <CreditOverview ledger={ledger} />
+            {ledger.activeAccounts.some((a) => a.type === "credit") ? (
+              <CreditOverview ledger={ledger} />
+            ) : (
+              <Card className="p-2">
+                <CreditOverview ledger={ledger} />
+              </Card>
+            )}
           </section>
         </div>
       ) : (
@@ -172,6 +193,54 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
           )}
         </Card>
       </section>
+    </div>
+  );
+}
+
+/** Desktop first-run: one setup panel instead of two empty columns. */
+function DesktopSetup() {
+  const [busy, setBusy] = useState(false);
+  const options = [
+    { href: "/accounts/new?type=cash", icon: Wallet, title: "Cash wallet", body: "Money in your pocket or at home." },
+    { href: "/accounts/new?type=debit", icon: Landmark, title: "Bank or e-wallet", body: "Savings, payroll, GCash, Maya…" },
+    { href: "/accounts/new?type=credit", icon: CreditCard, title: "Credit card", body: "The family card: limit, billing cycle, due date." },
+  ];
+  return (
+    <div className="px-4">
+      <div className="rounded-[2rem] border border-line bg-white p-10 shadow-soft">
+        <div className="max-w-xl">
+          <span className="grid size-12 place-items-center rounded-2xl bg-pale text-brand">
+            <WalletCards className="size-6" />
+          </span>
+          <h2 className="mt-5 text-2xl font-semibold tracking-tight">Add your first account</h2>
+          <p className="mt-2 text-ink-2">Start with whatever you use most. You can add the rest any time, and each one gets its own card on the Overview.</p>
+        </div>
+        <div className="mt-8 grid grid-cols-3 gap-4">
+          {options.map(({ href, icon: Icon, title, body }) => (
+            <Link key={href} href={href} className="group rounded-3xl border border-line bg-bg p-5 transition hover:-translate-y-0.5 hover:border-brand-2 hover:bg-pale">
+              <span className="grid size-11 place-items-center rounded-2xl bg-white text-brand ring-1 ring-line">
+                <Icon className="size-5" />
+              </span>
+              <p className="mt-4 font-semibold">{title}</p>
+              <p className="mt-1 text-sm text-ink-3">{body}</p>
+              <p className="mt-4 flex items-center gap-1 text-sm font-medium text-brand">
+                Add <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+              </p>
+            </Link>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            await loadDemoData();
+          }}
+          className="mt-6 text-sm font-medium text-ink-3 hover:text-brand disabled:opacity-50"
+        >
+          {busy ? "Loading sample data…" : "Or explore with sample data first"}
+        </button>
+      </div>
     </div>
   );
 }

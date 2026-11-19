@@ -29,12 +29,13 @@ export default function AnalyticsPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 lg:gap-4">
             <Card className="p-3"><p className="text-[0.7rem] text-ink-3">Income</p><Money minor={thisMonth.income} compact className="font-semibold text-income" /></Card>
             <Card className="p-3"><p className="text-[0.7rem] text-ink-3">Spent</p><Money minor={thisMonth.expense} compact className="font-semibold" /></Card>
             <Card className="p-3"><p className="text-[0.7rem] text-ink-3">Net</p><Money minor={thisMonth.income - thisMonth.expense} compact tone="auto" className="font-semibold" /></Card>
           </div>
 
+          <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
           <Card>
             <SectionTitle>Income vs expenses · 6 months</SectionTitle>
             <FlowChart data={flow} />
@@ -65,6 +66,7 @@ export default function AnalyticsPage() {
               </div>
             </Card>
           )}
+          </div>
           <p className="px-1 pb-2 text-xs text-ink-3">Spending counts expenses only. Card payments, transfers, reimbursements and instalment schedules are excluded to avoid double counting.</p>
         </div>
       )}

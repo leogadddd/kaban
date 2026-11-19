@@ -34,6 +34,8 @@ export const BANKS: Bank[] = [
   { id: "maribank", name: "MariBank (SeaBank)", short: "MariBank", kind: "digital", color: "#EE6A1F", logo: "/banks/maribank.png" },
   { id: "cimb", name: "CIMB", short: "CIMB", kind: "digital", color: "#C8102E" },
   { id: "tonik", name: "Tonik", short: "Tonik", kind: "digital", color: "#7B61FF", logo: "/banks/tonik.png" },
+  // Buy-now-pay-later: tracked like a credit line (limit, statements, instalments).
+  { id: "atome", name: "Atome", short: "Atome", kind: "digital", color: "#F0FF5F", logo: "/banks/atome.png" },
 ];
 
 const byId = new Map(BANKS.map((b) => [b.id, b]));

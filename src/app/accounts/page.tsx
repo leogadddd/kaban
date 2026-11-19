@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Archive, ChevronRight, CreditCard, Landmark, Plus, Wallet } from "lucide-react";
 import { useState } from "react";
+import { AccountCard } from "@/components/account-card";
+import { PrivacyToggle } from "@/components/privacy-toggle";
 import { Card, Chip, Loading, Money, PageHeader, Progress } from "@/components/ui";
 import { BankLogo } from "@/components/bank-logo";
 import { bankFor } from "@/lib/banks";
@@ -26,16 +28,20 @@ export default function AccountsPage() {
       <PageHeader
         title="Accounts"
         action={
-          <Link href="/accounts/new" className="grid size-11 place-items-center rounded-full bg-brand text-white shadow-soft" aria-label="Add account">
-            <Plus className="size-5" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <PrivacyToggle className="size-11" />
+            <Link href="/accounts/new" className="grid size-11 place-items-center rounded-full bg-brand text-white shadow-soft" aria-label="Add account">
+              <Plus className="size-5" />
+            </Link>
+          </div>
         }
       />
       {!ledger.ready ? (
         <Loading />
       ) : (
         <div className="space-y-5 px-4">
-          <div className="grid grid-cols-2 gap-3">
+          <DesktopAccounts ledger={ledger} list={list} />
+          <div className="grid grid-cols-2 gap-3 lg:hidden">
             <Card className="bg-pale">
               <p className="text-xs text-ink-3">Available funds</p>
               <Money minor={ledger.totals.availableFunds} className="text-xl font-semibold" />
@@ -50,7 +56,7 @@ export default function AccountsPage() {
             const items = list.filter((a) => a.type === type);
             if (!items.length) return null;
             return (
-              <section key={type}>
+              <section key={type} className="lg:hidden">
                 <h2 className="mb-2 flex items-center gap-1.5 px-1 text-sm font-semibold text-ink-2">
                   <Icon className="size-4" /> {label}
                 </h2>
@@ -102,5 +108,42 @@ export default function AccountsPage() {
         </div>
       )}
     </>
+  );
+}
+
+/** Desktop: summary tiles plus the visual account cards in a grid, grouped by type. */
+function DesktopAccounts({ ledger, list }: { ledger: ReturnType<typeof useLedger>; list: ReturnType<typeof useLedger>["accounts"] }) {
+  const owed = ledger.debtStatus.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
+  const tiles = [
+    { label: "Available funds", value: ledger.totals.availableFunds, cls: "bg-pale" },
+    { label: "Credit outstanding", value: ledger.totals.creditOutstanding, cls: "bg-ink text-white", sub: "text-white/60" },
+    { label: "Net position", value: ledger.totals.netPosition, cls: "bg-white" },
+    { label: "Owed to you", value: owed, cls: "bg-brand-2 text-white", sub: "text-white/75" },
+  ];
+  return (
+    <div className="hidden space-y-8 lg:block">
+      <div className="grid grid-cols-4 gap-4">
+        {tiles.map((t) => (
+          <Card key={t.label} className={t.cls}>
+            <p className={t.sub ?? "text-sm text-ink-3"}>{t.label}</p>
+            <Money minor={t.value} className="mt-1 block text-2xl font-semibold" />
+          </Card>
+        ))}
+      </div>
+      {/* One grid sorted by type: each card already says Cash / Debit / Credit. */}
+      <div className="grid grid-cols-2 gap-5 xl:grid-cols-3">
+        {GROUPS.flatMap(({ type }) => list.filter((a) => a.type === type)).map((a) => (
+          <Link key={a.id} href={`/accounts/view?id=${a.id}`} className={a.archived ? "opacity-60" : "transition hover:-translate-y-1"}>
+            <AccountCard b={ledger.balances.get(a.id)!} />
+          </Link>
+        ))}
+        <Link
+          href="/accounts/new"
+          className="flex h-48 flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 border-dashed border-line text-sm font-medium text-ink-3 transition hover:border-brand-2 hover:bg-pale hover:text-brand"
+        >
+          <Plus className="size-6" /> Add account
+        </Link>
+      </div>
+    </div>
   );
 }

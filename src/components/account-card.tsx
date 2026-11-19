@@ -7,6 +7,7 @@ import { useState } from "react";
 import type { AccountBalance } from "@/lib/finance";
 import { bankFor } from "@/lib/banks";
 import { formatMoney } from "@/lib/money";
+import { useMoney } from "@/lib/privacy";
 import { BankLogo } from "./bank-logo";
 import { cx } from "./ui";
 
@@ -30,6 +31,7 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
   const fg = textOn(a.color);
   const credit = a.type === "credit";
   const util = b.utilisation ?? 0;
+  const { fmt, hidden } = useMoney();
   const s = formatMoney(b.balance);
   const dot = s.lastIndexOf(".");
   return (
@@ -53,16 +55,24 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
       </div>
       <div className="relative">
         <p className="text-xs font-medium tracking-wide uppercase opacity-70">{credit ? "Outstanding" : "Balance"}</p>
-        <p className="num text-[2.1rem] leading-none font-semibold">
-          {s.slice(0, dot)}
-          <span className="text-xl opacity-60">{s.slice(dot)}</span>
+        <p className="num amount text-[2.1rem] leading-none font-semibold" aria-label={hidden ? "Balance hidden" : s}>
+          {hidden ? (
+            <>
+              ₱<span className="tracking-[0.12em] opacity-70">••••••</span>
+            </>
+          ) : (
+            <>
+              {s.slice(0, dot)}
+              <span className="text-xl opacity-60">{s.slice(dot)}</span>
+            </>
+          )}
         </p>
         {credit ? (
           <div className="mt-3 flex items-center gap-3 text-xs">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: `color-mix(in oklab, ${fg} 22%, transparent)` }}>
               <div className="h-full rounded-full" style={{ width: `${Math.min(100, util)}%`, background: fg }} />
             </div>
-            <span className="num opacity-80">{formatMoney(b.available ?? 0, { compact: true })} left</span>
+            <span className="num amount opacity-80">{fmt(b.available ?? 0, { compact: true })} left</span>
             {a.last4 && <span className="num opacity-80">•••• {a.last4}</span>}
           </div>
         ) : (
