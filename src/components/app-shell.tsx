@@ -51,8 +51,8 @@ const MORE: { href: string; label: string; short?: string; icon: typeof Users }[
 /** Sign-in flow: full-screen, no app chrome, reachable before onboarding (a new device signs in from Welcome). */
 export const AUTH_ROUTES = ["/login", "/login/verify", "/signup", "/forgot-password", "/reset-password"];
 /** Pages that render before the device has been set up. */
-const UNGATED = ["/welcome", ...AUTH_ROUTES];
-const HIDE_NAV = ["/welcome", "/add", "/accounts/new", ...AUTH_ROUTES];
+const UNGATED = ["/welcome", "/ready", ...AUTH_ROUTES];
+const HIDE_NAV = ["/welcome", "/ready", "/add", "/accounts/new", ...AUTH_ROUTES];
 /** Screens presented like modals: full screen on phones, a centered card on desktop. */
 const MODAL_ROUTES = ["/add", "/accounts/new"];
 /** Form-like pages that read better as a single column on desktop. */
@@ -60,7 +60,7 @@ const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", 
 /** Read-only screens where pulling down from the top syncs with the cloud now (phones only). */
 const PULL_TO_REFRESH = ["/home", "/accounts", "/accounts/view", "/activity", "/people", "/owed", "/owed/person", "/instalments", "/payments", "/analytics"];
 /** Public pages that render without the app chrome or the onboarding gate. */
-const BARE = ["/"];
+const BARE = ["/", "/terms", "/privacy"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();

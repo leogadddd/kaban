@@ -14,7 +14,6 @@ import { TxnRow } from "@/components/txn-row";
 import { BigMoney, ButtonLink, Card, EmptyState, Loading, Money, SectionTitle, Segmented } from "@/components/ui";
 import { dailySpend } from "@/lib/finance";
 import { useIsDesktop, useLedger } from "@/lib/hooks";
-import { loadDemoData } from "@/lib/demo";
 import { LogoMark } from "@/lib/logo";
 
 type Pane = "money" | "credit";
@@ -239,7 +238,6 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
 
 /** Desktop first-run: one setup panel instead of two empty columns. */
 function DesktopSetup() {
-  const [busy, setBusy] = useState(false);
   const options = [
     { href: "/accounts/new?type=cash", icon: Wallet, title: "Cash wallet", body: "Money in your pocket or at home." },
     { href: "/accounts/new?type=debit", icon: Landmark, title: "Bank or e-wallet", body: "Savings, payroll, GCash, Maya…" },
@@ -269,18 +267,6 @@ function DesktopSetup() {
             </Link>
           ))}
         </div>
-        <HapticButton
-          type="button"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            await loadDemoData();
-          }}
-          wrapperClassName="mt-6"
-          className="text-sm font-medium text-ink-3 hover:text-brand disabled:opacity-50"
-        >
-          {busy ? "Loading sample data…" : "Or explore with sample data first"}
-        </HapticButton>
       </div>
     </div>
   );

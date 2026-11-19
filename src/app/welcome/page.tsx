@@ -1,34 +1,85 @@
 "use client";
 
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Cloud, HardDrive, ShieldAlert, Sparkles } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, CloudUpload, LogIn, MonitorSmartphone, ShieldAlert, ShieldCheck, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui";
-import { loadDemoData } from "@/lib/demo";
+import { HapticButton } from "@/components/haptic-button";
+import { Button, cx } from "@/components/ui";
 import { LogoMark } from "@/lib/logo";
 import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
 import { setMeta } from "@/lib/repo";
 import { cloudConfigured } from "@/lib/supabase";
 
-export default function WelcomePage() {
-  const router = useRouter();
-  const db = useLedgerDatabase();
-  const [busy, setBusy] = useState(false);
+type Step = "intro" | "account" | "local";
 
-  async function start(demo: boolean) {
-    if (!db) return;
-    setBusy(true);
-    await setMeta("mode", "local", db);
-    await setMeta("startedAt", Date.now(), db);
-    if (demo) await loadDemoData(db);
-    if (!isActiveDatabase(db)) return;
-    router.replace(demo ? "/home" : "/accounts/new?first=1");
+const BENEFITS = [
+  { icon: CloudUpload, t: "Automatic backup", d: "Your records are saved to the cloud, so a lost phone or cleared browser doesn't lose them." },
+  { icon: MonitorSmartphone, t: "Use it on every device", d: "Phone, tablet and computer stay in sync." },
+  { icon: ShieldCheck, t: "Private and protected", d: "Only your account can read your records. Add two-factor sign-in any time." },
+];
+
+export default function WelcomePage() {
+  const [step, setStep] = useState<Step>("intro");
+  const [dir, setDir] = useState(1);
+
+  function go(next: Step, d = 1) {
+    setDir(d);
+    setStep(next);
   }
 
   return (
-    // Exactly one screen tall, no scrolling: the hero flexes to fill whatever height is left.
-    <div className="pt-safe flex h-dvh flex-col overflow-hidden px-5 pb-[max(var(--safe-bottom),1rem)]">
+    // Exactly one screen tall, no scrolling: each step flexes to fill whatever height is left.
+    <div className="pt-safe relative flex h-dvh flex-col overflow-hidden px-5 pb-[max(var(--safe-bottom),1rem)]">
+      <AnimatePresence mode="wait" initial={false} custom={dir}>
+        <motion.div
+          key={step}
+          custom={dir}
+          className="flex min-h-0 flex-1 flex-col"
+          initial={{ opacity: 0, x: 24 * dir }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 * dir }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {step === "intro" && <Intro onContinue={() => go(cloudConfigured ? "account" : "local")} />}
+          {step === "account" && <AccountChoice onBack={() => go("intro", -1)} onSkip={() => go("local")} />}
+          {step === "local" && <LocalConsent onBack={() => go(cloudConfigured ? "account" : "intro", -1)} />}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <HapticButton
+      type="button"
+      onClick={onClick}
+      wrapperClassName="-ml-2 mt-2 self-start"
+      className="grid size-11 place-items-center rounded-full active:bg-pale lg:hover:bg-pale"
+      aria-label="Back"
+    >
+      <ChevronLeft className="size-6" />
+    </HapticButton>
+  );
+}
+
+function StepDots({ active, total }: { active: number; total: number }) {
+  return (
+    <div className="flex justify-center gap-1.5" aria-hidden="true">
+      {Array.from({ length: total }, (_, i) => (
+        <span key={i} className={cx("h-1.5 rounded-full transition-all", i === active ? "w-5 bg-brand" : "w-1.5 bg-line")} />
+      ))}
+    </div>
+  );
+}
+
+/* ---------- Step 1: welcome ---------- */
+
+function Intro({ onContinue }: { onContinue: () => void }) {
+  return (
+    <>
       {/* Floating stacked cards hero */}
       <div className="relative flex min-h-0 flex-1 items-center justify-center">
         <div className="relative h-[13rem] w-full max-w-xs origin-center [@media(max-height:740px)]:scale-[0.82] [@media(max-height:640px)]:scale-[0.66]">
@@ -60,37 +111,129 @@ export default function WelcomePage() {
         <h1 className="mt-2.5 text-[2rem] leading-[1.05] font-semibold tracking-tight [@media(max-height:640px)]:text-[1.7rem]">
           Every peso, accounted for.
         </h1>
-        <p className="mt-2 text-[0.95rem] text-ink-2 [@media(max-height:640px)]:hidden">Track cash, bank and e-wallet accounts, credit cards and who owes you. Works fully offline.</p>
+        <p className="mt-2 text-[0.95rem] text-ink-2">Track cash, bank and e-wallet accounts, credit cards and who owes you. Works fully offline.</p>
       </motion.div>
 
-      <div className="mt-5 shrink-0 space-y-2.5">
-        <div className="flex gap-2.5 rounded-2xl bg-gold/10 p-3 text-xs text-ink-2">
-          <ShieldAlert className="size-4 shrink-0 text-gold" />
-          <p>
-            <b className="text-ink">Data stays on this device.</b> Clearing Safari data or losing the phone erases it, so export backups from Sync & Backup.
-          </p>
-        </div>
-        <Button wrapperClassName="w-full" onClick={() => start(false)} disabled={busy}>
-          <HardDrive className="size-4" /> Start on this device
+      <div className="mt-6 shrink-0 space-y-4">
+        <Button wrapperClassName="w-full" onClick={onContinue}>
+          Continue <ArrowRight className="size-4" />
         </Button>
-        <Button variant="secondary" wrapperClassName="w-full" onClick={() => start(true)} disabled={busy}>
-          <Sparkles className="size-4" /> Explore with sample data
-        </Button>
-        {cloudConfigured ? (
-          <Button
-            variant="ghost"
-            wrapperClassName="w-full" className="min-h-10 text-sm"
-            disabled={busy}
-            onClick={() => router.push("/login")}
-          >
-            <Cloud className="size-4" /> I have an account — sign in
-          </Button>
-        ) : (
-          <p className="flex items-center justify-center gap-1.5 text-[0.7rem] text-ink-3 [@media(max-height:700px)]:hidden">
-            <Cloud className="size-3.5" /> Cloud backup is optional and can be turned on later.
-          </p>
-        )}
+        <StepDots active={0} total={cloudConfigured ? 3 : 2} />
       </div>
-    </div>
+    </>
+  );
+}
+
+/* ---------- Step 2: create an account, sign in, or skip ---------- */
+
+function AccountChoice({ onBack, onSkip }: { onBack: () => void; onSkip: () => void }) {
+  const router = useRouter();
+  return (
+    <>
+      <BackButton onClick={onBack} />
+      <div className="mt-4 min-h-0 flex-1">
+        <span className="grid size-12 place-items-center rounded-2xl bg-pale text-brand">
+          <UserPlus className="size-6" />
+        </span>
+        <h1 className="mt-5 text-[1.9rem] leading-tight font-semibold tracking-tight">Keep your records safe</h1>
+        <p className="mt-1.5 text-[0.95rem] text-ink-2">A free account is optional, but it means you never lose your data.</p>
+
+        <ul className="mt-6 space-y-4 [@media(max-height:640px)]:mt-4 [@media(max-height:640px)]:space-y-3">
+          {BENEFITS.map(({ icon: Icon, t, d }, i) => (
+            <motion.li
+              key={t}
+              className="flex gap-3"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 + i * 0.07 }}
+            >
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface text-brand ring-1 ring-line">
+                <Icon className="size-4.5" />
+              </span>
+              <div>
+                <p className="font-medium">{t}</p>
+                <p className="text-sm text-ink-3 [@media(max-height:640px)]:hidden">{d}</p>
+              </div>
+            </motion.li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-5 shrink-0 space-y-2.5">
+        <Button wrapperClassName="w-full" onClick={() => router.push("/signup")}>
+          <UserPlus className="size-4" /> Create an account
+        </Button>
+        <Button variant="secondary" wrapperClassName="w-full" onClick={() => router.push("/login")}>
+          <LogIn className="size-4" /> I have an account — sign in
+        </Button>
+        <Button variant="ghost" wrapperClassName="w-full" className="min-h-10 text-sm" onClick={onSkip}>
+          Skip for now
+        </Button>
+        <StepDots active={1} total={3} />
+      </div>
+    </>
+  );
+}
+
+/* ---------- Step 3: local-only notice + terms ---------- */
+
+function LocalConsent({ onBack }: { onBack: () => void }) {
+  const router = useRouter();
+  const db = useLedgerDatabase();
+  const [agreed, setAgreed] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function start() {
+    if (!db || !agreed) return;
+    setBusy(true);
+    const now = Date.now();
+    await setMeta("termsAcceptedAt", now, db);
+    await setMeta("mode", "local", db);
+    await setMeta("startedAt", now, db);
+    if (!isActiveDatabase(db)) return;
+    router.replace("/ready");
+  }
+
+  return (
+    <>
+      <BackButton onClick={onBack} />
+      <div className="mt-4 min-h-0 flex-1">
+        <span className="grid size-12 place-items-center rounded-2xl bg-gold/15 text-gold">
+          <ShieldAlert className="size-6" />
+        </span>
+        <h1 className="mt-5 text-[1.9rem] leading-tight font-semibold tracking-tight">Your data stays on this device</h1>
+        <p className="mt-1.5 text-[0.95rem] text-ink-2">Without an account, Kaban keeps everything in this browser only.</p>
+
+        <div className="mt-6 space-y-3 rounded-2xl bg-gold/10 p-4 text-sm text-ink-2">
+          <p>
+            <b className="text-ink">Clearing Safari data or losing the phone erases it.</b> Export backups regularly from Sync & Backup.
+          </p>
+          {cloudConfigured && <p>You can create an account later from Settings, and your records will be added to it.</p>}
+        </div>
+      </div>
+
+      <div className="mt-5 shrink-0 space-y-3">
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-surface p-3.5 text-sm text-ink-2">
+          <span className="relative mt-0.5 grid size-5 shrink-0 place-items-center">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="peer size-5 appearance-none rounded-md border-2 border-line bg-field checked:border-brand checked:bg-brand"
+            />
+            <Check className="pointer-events-none absolute size-3.5 text-on-brand opacity-0 peer-checked:opacity-100" strokeWidth={3} />
+          </span>
+          <span>
+            I agree to the{" "}
+            <Link href="/terms" className="font-medium text-brand underline-offset-2 hover:underline">Terms and Conditions</Link> and{" "}
+            <Link href="/privacy" className="font-medium text-brand underline-offset-2 hover:underline">Privacy Policy</Link>.
+          </span>
+        </label>
+        <Button wrapperClassName="w-full" onClick={start} disabled={!agreed || busy || !db}>
+          Continue <ArrowRight className="size-4" />
+        </Button>
+        <StepDots active={cloudConfigured ? 2 : 1} total={cloudConfigured ? 3 : 2} />
+      </div>
+    </>
   );
 }

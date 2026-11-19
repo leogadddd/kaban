@@ -429,7 +429,7 @@ export default function Landing() {
       <section className="px-4 pb-20 sm:px-6 sm:pb-24">
         <Reveal className="card-grain mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-ink px-6 py-14 text-center text-white sm:px-12 sm:py-16">
           <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-5xl">Know where every peso went, and what&apos;s due next.</h2>
-          <p className="mx-auto mt-4 max-w-xl text-white/70">Start in seconds with your own numbers, or explore with sample data first.</p>
+          <p className="mx-auto mt-4 max-w-xl text-white/70">Start in seconds with your own numbers. No sign-up required.</p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <OpenAppButton variant="light" />
             {cloudConfigured && (

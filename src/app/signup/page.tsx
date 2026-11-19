@@ -17,7 +17,8 @@ export default function SignupPage() {
   const [error, setError] = useState<string>();
   const [sentTo, setSentTo] = useState<string>();
   const [resent, setResent] = useState(false);
-  useLeaveWhenSignedIn();
+  // A brand-new account ends onboarding on the welcome screen.
+  useLeaveWhenSignedIn("/ready");
 
   async function submit(e: FormEvent) {
     e.preventDefault();
