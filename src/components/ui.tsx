@@ -132,7 +132,7 @@ export function Field({ label, children, hint, error }: { label: string; childre
 }
 
 export const inputCls =
-  "w-full min-h-12 text-[16px] rounded-2xl border border-line bg-white px-4 text-ink outline-none placeholder:text-ink-3 focus:border-brand-2 focus:ring-4 focus:ring-brand-2/15";
+  "w-full min-h-12 text-[16px] rounded-2xl border border-line bg-white px-4 text-ink outline-none placeholder:text-ink-3";
 
 export function Segmented<T extends string>({
   value,

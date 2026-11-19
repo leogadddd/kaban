@@ -1,13 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, ViewTransition, type ReactNode } from "react";
 import {
   BarChart3,
   CalendarClock,
-  CloudOff,
   HandCoins,
   History,
   Home,
@@ -20,7 +19,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { requestPersistence } from "@/lib/db";
-import { useMeta, useOnline } from "@/lib/hooks";
+import { useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
 import { LogoMark } from "@/lib/logo";
 import { SyncPill } from "./sync-pill";
@@ -53,7 +52,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const mode = useMeta<string>("mode");
-  const online = useOnline();
   const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
@@ -94,21 +92,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
       {showSidebar && <Sidebar pathname={pathname} />}
-      <AnimatePresence>
-        {!online && (
-          <motion.div
-            initial={{ y: -40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -40, opacity: 0 }}
-            className="pointer-events-none fixed inset-x-0 top-[max(var(--safe-top),0.5rem)] z-40 flex justify-center"
-            role="status"
-          >
-            <span className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-medium text-white shadow-float">
-              <CloudOff className="size-3.5" /> Offline — everything still saves on this device
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <main className={cx("mx-auto max-w-md lg:px-6 lg:pt-4", NARROW.includes(pathname) ? "lg:max-w-xl" : "lg:max-w-5xl", !hideNav ? "pb-nav lg:pb-12" : "lg:pb-12")}>{gated ? null : (
           // Keyed by path: each navigation exits the old page and enters the new one as a view transition.

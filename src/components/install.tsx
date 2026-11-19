@@ -252,7 +252,7 @@ export function ShortcutBuilder() {
             value={account}
             onChange={(e) => setAccount(e.target.value)}
             placeholder={preset === "card_payment" ? "e.g. Savings" : "e.g. Family Card"}
-            className="min-h-12 w-full rounded-2xl border border-line bg-bg px-4 text-[16px] outline-none focus:border-brand-2 focus:ring-4 focus:ring-brand-2/15"
+            className="min-h-12 w-full rounded-2xl border border-line bg-bg px-4 text-[16px] outline-none"
           />
           <span className="mt-1 block text-xs text-ink-3">Matches the name you gave the account in Kaban, ignoring case.</span>
         </label>
