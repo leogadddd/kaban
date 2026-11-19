@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
-import { DebtSheet, RepaySheet } from "@/components/debt-sheets";
+import { DebtSheet, RepaySheet, type RepayTarget } from "@/components/debt-sheets";
 import { Avatar, BigMoney, Button, Card, EmptyState, Loading, Money, PageHeader, Progress, Segmented } from "@/components/ui";
 import { formatDay } from "@/lib/dates";
-import type { DebtStatus } from "@/lib/finance";
 import { useLedger } from "@/lib/hooks";
 import { setPersonArchived, voidDebt } from "@/lib/repo";
 
@@ -23,7 +22,7 @@ function PersonDebts() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const ledger = useLedger();
-  const [repay, setRepay] = useState<DebtStatus | null>(null);
+  const [repay, setRepay] = useState<RepayTarget>(null);
   const [adding, setAdding] = useState(false);
   const [tab, setTab] = useState<"open" | "all">("open");
 
@@ -35,18 +34,42 @@ function PersonDebts() {
   const shown = tab === "open" ? all.filter((d) => !d.settled) : all;
   const outstanding = all.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
   const total = all.reduce((s, d) => s + d.debt.amountMinor, 0);
+  const repaid = all.reduce((s, d) => s + d.repaid, 0);
+  const openCount = all.filter((d) => !d.settled).length;
 
   return (
     <>
       <PageHeader title={person.name} back="/owed" />
       <div className="space-y-4 px-4">
-        <Card className="flex items-center gap-4">
-          <Avatar name={person.name} color={person.color} size={56} />
-          <div className="flex-1">
-            <p className="text-sm text-ink-3">Owes you</p>
-            <BigMoney minor={outstanding} className="block text-3xl" centsClass="text-xl" />
-            <Progress value={total ? ((total - outstanding) / total) * 100 : 0} className="mt-2" />
+        <Card className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Avatar name={person.name} color={person.color} size={56} />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-ink-3">{outstanding > 0 ? "Owes you" : "All settled"}</p>
+              <BigMoney minor={outstanding} className="block text-3xl" centsClass="text-xl" />
+            </div>
           </div>
+          <Progress value={total ? (repaid / total) * 100 : 0} />
+          {/* Totals: everything they've been charged, what they've paid back, what's open */}
+          <dl className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-2xl bg-bg p-2">
+              <dt className="text-[0.7rem] text-ink-3">Total shared</dt>
+              <dd><Money minor={total} className="text-sm font-semibold" /></dd>
+            </div>
+            <div className="rounded-2xl bg-bg p-2">
+              <dt className="text-[0.7rem] text-ink-3">Paid back</dt>
+              <dd><Money minor={repaid} className="text-sm font-semibold text-income" /></dd>
+            </div>
+            <div className="rounded-2xl bg-bg p-2">
+              <dt className="text-[0.7rem] text-ink-3">Open items</dt>
+              <dd className="num text-sm font-semibold">{openCount}</dd>
+            </div>
+          </dl>
+          {outstanding > 0 && (
+            <Button className="w-full" onClick={() => setRepay({ personId: person.id })}>
+              <HandCoins className="size-4" /> Record payment from {person.name.split(" ")[0]}
+            </Button>
+          )}
         </Card>
 
         <div className="grid grid-cols-2 gap-2">
@@ -97,7 +120,7 @@ function PersonDebts() {
                   <p className="flex items-center gap-1.5 text-sm font-medium text-income"><Check className="size-4" /> Settled</p>
                 ) : (
                   <div className="flex gap-2">
-                    <Button className="flex-1" onClick={() => setRepay(s)}><HandCoins className="size-4" /> Record repayment</Button>
+                    <Button className="flex-1" onClick={() => setRepay({ personId: person.id, debtId: s.debt.id })}><HandCoins className="size-4" /> Record repayment</Button>
                     {!txn && s.repaid === 0 && (
                       <Button variant="danger" className="px-4" aria-label="Remove debt" onClick={() => confirm("Remove this debt?") && voidDebt(s.debt.id)}>
                         <Trash2 className="size-4" />
@@ -125,7 +148,7 @@ function PersonDebts() {
           <Archive className="size-4" /> Archive person
         </Button>
       </div>
-      <RepaySheet status={repay} onClose={() => setRepay(null)} ledger={ledger} />
+      <RepaySheet target={repay} onClose={() => setRepay(null)} ledger={ledger} />
       <DebtSheet open={adding} onClose={() => setAdding(false)} ledger={ledger} personId={person.id} />
     </>
   );

@@ -36,6 +36,7 @@ function Editor() {
   const params = useSearchParams();
   const ledger = useLedger();
   const editId = params.get("edit") ?? undefined;
+  const { fmt: fmtMoney } = useMoney();
 
   const [existing, setExisting] = useState<Txn | null | undefined>(editId ? undefined : null);
   const [type, setType] = useState<TxnType>(() => (TYPES.includes(params.get("type") as TxnType) ? (params.get("type") as TxnType) : "expense"));
@@ -393,7 +394,20 @@ function Editor() {
                         return (
                           <li key={a.personId} className="flex items-center gap-3 py-2">
                             <Avatar name={person?.name ?? "?"} color={person?.color ?? "#999"} size={32} />
-                            <span className="flex-1 text-sm font-medium">{person?.name}{a.personId !== ME && <span className="block text-xs font-normal text-ink-3">will owe you</span>}</span>
+                            <span className="min-w-0 flex-1 text-sm font-medium">
+                              {person?.name}
+                              {a.personId !== ME && (
+                                <span className="block text-xs font-normal text-ink-3">
+                                  {(() => {
+                                    // Running total: what they already owe you before this split
+                                    const already = ledger.debtStatus
+                                      .filter((d) => d.debt.personId === a.personId && d.debt.transactionId !== editId)
+                                      .reduce((sum, d) => sum + Math.max(0, d.outstanding), 0);
+                                    return already > 0 ? <>will owe you · already <span className="amount">{fmtMoney(already)}</span></> : "will owe you";
+                                  })()}
+                                </span>
+                              )}
+                            </span>
                             {splitMode === "equal" ? (
                               <span className="num font-semibold">{formatMoney(a.amountMinor)}</span>
                             ) : (

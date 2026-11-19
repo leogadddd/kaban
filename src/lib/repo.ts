@@ -146,7 +146,12 @@ function buildSchedule(acc: Account, t: Txn): InstalmentEntry[] {
 }
 
 export async function saveTransaction(input: TxnInput, id?: string): Promise<string> {
-  return db.transaction("rw", ALL_TABLES(), async () => {
+  return db.transaction("rw", ALL_TABLES(), () => writeTransaction(input, id));
+}
+
+/** The body of saveTransaction. Must run inside an open rw transaction over ALL_TABLES (no nesting needed). */
+async function writeTransaction(input: TxnInput, id?: string): Promise<string> {
+  {
     const accounts = new Map((await db.accounts.toArray()).map((a) => [a.id, a]));
     validateTxn(input, accounts);
     const now = Date.now();
@@ -172,7 +177,7 @@ export async function saveTransaction(input: TxnInput, id?: string): Promise<str
     // repayments stay linked when a split is edited.
     if (splits !== undefined) await applySplits(txn, splits);
     return txn.id;
-  });
+  }
 }
 
 async function applySplits(txn: Txn, splits: SplitInput[]) {
@@ -322,6 +327,58 @@ export async function recordRepayment(input: { debtId: string; amountMinor: numb
     notes: input.notes,
     debtId: debt.id,
     personId: debt.personId,
+  });
+}
+
+/** Split a lump payment across a person's open debts, oldest first. Pure: used for the preview and the write. */
+export function allocatePayment(amountMinor: number, debts: { debtId: string; outstanding: number }[]) {
+  let left = amountMinor;
+  const parts: { debtId: string; amountMinor: number; settles: boolean }[] = [];
+  for (const d of debts) {
+    if (left <= 0) break;
+    if (d.outstanding <= 0) continue;
+    const take = Math.min(left, d.outstanding);
+    parts.push({ debtId: d.debtId, amountMinor: take, settles: take === d.outstanding });
+    left -= take;
+  }
+  return { parts, unallocated: left };
+}
+
+/**
+ * Record money received from a person. One reimbursement per debt it pays down, all committed together,
+ * so the receiving account and every debt update atomically.
+ */
+export async function recordPersonPayment(input: { personId: string; amountMinor: number; accountId: string; date?: string; debtIds?: string[] }) {
+  if (!(input.amountMinor > 0)) throw new Error("Enter an amount greater than zero");
+  if (!input.accountId) throw new Error("Choose where the money went");
+  return db.transaction("rw", ALL_TABLES(), async () => {
+    const person = await db.people.get(input.personId);
+    const debts = (await db.debts.where("personId").equals(input.personId).toArray())
+      .filter((d) => d.state === "active" && (!input.debtIds || input.debtIds.includes(d.id)))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+    const repaid = new Map<string, number>();
+    for (const t of await db.transactions.where("personId").equals(input.personId).toArray()) {
+      if (t.type === "reimbursement" && t.state === "active" && t.debtId) repaid.set(t.debtId, (repaid.get(t.debtId) ?? 0) + t.amountMinor);
+    }
+    const open = debts.map((d) => ({ debtId: d.id, outstanding: d.amountMinor - (repaid.get(d.id) ?? 0) }));
+    const { parts, unallocated } = allocatePayment(input.amountMinor, open);
+    if (unallocated > 0) throw new Error("That's more than they owe you");
+    const ids: string[] = [];
+    for (const part of parts) {
+      ids.push(
+        await writeTransaction({
+          type: "reimbursement",
+          accountId: input.accountId,
+          amountMinor: part.amountMinor,
+          date: input.date ?? todayISO(),
+          description: `Repayment from ${person?.name ?? "someone"}`,
+          category: "Reimbursement",
+          debtId: part.debtId,
+          personId: input.personId,
+        }),
+      );
+    }
+    return ids;
   });
 }
 

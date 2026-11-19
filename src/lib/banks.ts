@@ -4,7 +4,8 @@ export interface Bank {
   id: string;
   name: string;
   short: string;
-  kind: "bank" | "wallet" | "digital";
+  /** paylater = buy-now-pay-later / credit lines, tracked with the credit account type. */
+  kind: "bank" | "wallet" | "digital" | "paylater";
   /** Brand colour, used for the account card and the fallback badge. */
   color: string;
   /** Text inside the fallback badge (defaults to `short`). */
@@ -34,13 +35,17 @@ export const BANKS: Bank[] = [
   { id: "maribank", name: "MariBank (SeaBank)", short: "MariBank", kind: "digital", color: "#EE6A1F", logo: "/banks/maribank.png" },
   { id: "cimb", name: "CIMB", short: "CIMB", kind: "digital", color: "#C8102E" },
   { id: "tonik", name: "Tonik", short: "Tonik", kind: "digital", color: "#7B61FF", logo: "/banks/tonik.png" },
-  // Buy-now-pay-later: tracked like a credit line (limit, statements, instalments).
-  { id: "atome", name: "Atome", short: "Atome", kind: "digital", color: "#F0FF5F", logo: "/banks/atome.png" },
+  // Pay later: tracked like a credit card (limit, monthly statement, due date, instalments).
+  { id: "atome", name: "Atome", short: "Atome", kind: "paylater", color: "#F0FF5F", logo: "/banks/atome.png" },
+  { id: "spaylater", name: "SPayLater", short: "SPayLater", kind: "paylater", color: "#EE4D2D", logo: "/banks/shopee.png" },
+  { id: "sloan", name: "SLoan", short: "SLoan", kind: "paylater", color: "#C8341C", logo: "/banks/shopee.png" },
+  { id: "lazpaylater", name: "LazPayLater", short: "LazPayLater", kind: "paylater", color: "#F5114A", logo: "/banks/lazada.png" },
+  { id: "mariloan", name: "MariBank Loan", short: "Mari Loan", kind: "paylater", color: "#EE6A1F", logo: "/banks/maribank.png" },
 ];
 
 const byId = new Map(BANKS.map((b) => [b.id, b]));
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-const ALIASES: Record<string, string> = { seabank: "maribank", bdounibank: "bdo", metropolitanbank: "metrobank", landbankofthephilippines: "landbank", paymaya: "maya", unionbankph: "unionbank", ub: "unionbank" };
+const ALIASES: Record<string, string> = { shopeepaylater: "spaylater", lazadapaylater: "lazpaylater", mariloan: "mariloan", seabank: "maribank", bdounibank: "bdo", metropolitanbank: "metrobank", landbankofthephilippines: "landbank", paymaya: "maya", unionbankph: "unionbank", ub: "unionbank" };
 
 export function bankById(id?: string): Bank | undefined {
   return id ? byId.get(id) : undefined;

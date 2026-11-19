@@ -35,21 +35,51 @@ export default function PeoplePage() {
         subtitle="Family & friends you split with — they don't need an account."
         action={<button onClick={() => setOpen(true)} className="grid size-11 place-items-center rounded-full bg-brand text-white" aria-label="Add person"><UserPlus className="size-5" /></button>}
       />
-      <div className="px-4">
+      <div className="space-y-4 px-4">
+        {ledger.ready && people.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="p-3">
+              <p className="text-xs text-ink-3">Owed to you</p>
+              <Money minor={ledger.debtStatus.reduce((s, d) => s + Math.max(0, d.outstanding), 0)} className="text-lg font-semibold" />
+            </Card>
+            <Card className="p-3">
+              <p className="text-xs text-ink-3">Paid back so far</p>
+              <Money minor={ledger.debtStatus.reduce((s, d) => s + d.repaid, 0)} className="text-lg font-semibold text-income" />
+            </Card>
+          </div>
+        )}
         {!ledger.ready ? (
           <Loading />
         ) : people.length ? (
           <Card className="divide-y divide-line p-0 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-px lg:overflow-hidden lg:bg-line [&>a]:bg-white">
             {people.map((p) => {
-              const owes = ledger.debtStatus.filter((d) => d.debt.personId === p.id).reduce((s, d) => s + Math.max(0, d.outstanding), 0);
+              const ds = ledger.debtStatus.filter((d) => d.debt.personId === p.id);
+              const owes = ds.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
+              const shared = ds.reduce((s, d) => s + d.debt.amountMinor, 0);
+              const paid = ds.reduce((s, d) => s + d.repaid, 0);
               return (
                 <Link key={p.id} href={`/owed/person?id=${p.id}`} className="flex min-h-16 items-center gap-3 px-4 py-3 active:bg-pale">
                   <Avatar name={p.name} color={p.color} />
                   <div className="flex-1">
                     <p className="font-medium">{p.name}</p>
-                    {p.nickname && <p className="text-xs text-ink-3">{p.nickname}</p>}
+                    <p className="truncate text-xs text-ink-3">
+                      {shared === 0 ? (
+                        p.nickname || "No shared expenses yet"
+                      ) : paid > 0 ? (
+                        <>
+                          Paid back <Money minor={paid} className="text-income" />
+                        </>
+                      ) : (
+                        <>
+                          Shared <Money minor={shared} />
+                        </>
+                      )}
+                    </p>
                   </div>
-                  {owes > 0 ? <Money minor={owes} className="font-semibold" /> : <span className="text-xs text-ink-3">Settled</span>}
+                  <div className="text-right">
+                    {owes > 0 ? <Money minor={owes} className="font-semibold" /> : <span className="text-xs font-medium text-income">{shared > 0 ? "Settled" : ""}</span>}
+                    {owes > 0 && <p className="text-[0.68rem] text-ink-3">owes you</p>}
+                  </div>
                   <ChevronRight className="size-4 text-ink-3" />
                 </Link>
               );

@@ -167,48 +167,61 @@ function AccountForm() {
 
         {type !== "cash" && (
           <div>
-            <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">{credit ? "Card issuer" : "Bank or e-wallet"} (optional)</p>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-5" role="radiogroup" aria-label="Bank">
-              {BANKS.filter((b) => !credit || b.kind !== "wallet").map((b) => {
-                const active = bankId === b.id;
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => {
-                      setBankId(active ? "" : b.id);
-                      setOtherBank(false);
-                      if (!active) setColor(b.color);
-                    }}
-                    className={cx(
-                      "flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border p-1.5 text-[0.68rem] leading-tight font-medium transition active:scale-95",
-                      active ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-line bg-white text-ink-2",
-                    )}
-                  >
-                    <BankLogo bank={b} size={32} />
-                    <span className="line-clamp-1 text-center">{b.short}</span>
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                role="radio"
-                aria-checked={otherBank}
-                onClick={() => {
-                  setOtherBank((v) => !v);
-                  setBankId("");
-                }}
-                className={cx(
-                  "flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border p-1.5 text-[0.68rem] font-medium transition active:scale-95",
-                  otherBank ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-dashed border-line bg-white text-ink-2",
-                )}
-              >
-                <span className="grid size-8 place-items-center rounded-[9px] bg-pale text-base text-brand">+</span>
-                Other
-              </button>
-            </div>
+            <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">{credit ? "Issuer" : "Bank or e-wallet"} (optional)</p>
+            {(credit
+              ? [
+                  { title: "Banks & cards", items: BANKS.filter((b) => b.kind === "bank" || b.kind === "digital") },
+                  { title: "Pay later", items: BANKS.filter((b) => b.kind === "paylater") },
+                ]
+              : [{ title: "", items: BANKS.filter((b) => b.kind !== "paylater") }]
+            ).map((section, si, all) => (
+              <div key={section.title || "all"} className={si > 0 ? "mt-3" : undefined}>
+                {section.title && <p className="mb-1.5 px-1 text-xs font-semibold tracking-wide text-ink-3 uppercase">{section.title}</p>}
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5" role="radiogroup" aria-label={section.title || "Bank"}>
+                  {section.items.map((b) => {
+                    const active = bankId === b.id;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => {
+                          setBankId(active ? "" : b.id);
+                          setOtherBank(false);
+                          if (!active) setColor(b.color);
+                        }}
+                        className={cx(
+                          "flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border p-1.5 text-[0.68rem] leading-tight font-medium transition active:scale-95",
+                          active ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-line bg-white text-ink-2",
+                        )}
+                      >
+                        <BankLogo bank={b} size={32} />
+                        <span className="line-clamp-1 text-center">{b.short}</span>
+                      </button>
+                    );
+                  })}
+                  {si === all.length - 1 && (
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={otherBank}
+                      onClick={() => {
+                        setOtherBank((v) => !v);
+                        setBankId("");
+                      }}
+                      className={cx(
+                        "flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border p-1.5 text-[0.68rem] font-medium transition active:scale-95",
+                        otherBank ? "border-brand bg-pale text-ink ring-2 ring-brand/30" : "border-dashed border-line bg-white text-ink-2",
+                      )}
+                    >
+                      <span className="grid size-8 place-items-center rounded-[9px] bg-pale text-base text-brand">+</span>
+                      Other
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
             {otherBank && (
               <input className={cx(inputCls, "mt-2")} value={issuer} onChange={(e) => setIssuer(e.target.value)} placeholder="Bank name" aria-label="Bank name" autoFocus />
             )}

@@ -42,7 +42,7 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
       <div className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full opacity-20" style={{ background: fg }} />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium opacity-75">{meta.label}{a.issuer ? ` · ${a.issuer}` : ""}</p>
+          <p className="text-sm font-medium opacity-75">{bank?.kind === "paylater" ? "Pay later" : meta.label}{a.issuer ? ` · ${a.issuer}` : ""}</p>
           <p className="text-lg font-semibold tracking-tight">{a.name}</p>
         </div>
         {bank ? (

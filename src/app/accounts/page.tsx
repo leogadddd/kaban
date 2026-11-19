@@ -13,7 +13,7 @@ import type { AccountType } from "@/lib/types";
 const GROUPS: { type: AccountType; label: string; icon: typeof Wallet }[] = [
   { type: "cash", label: "Cash", icon: Wallet },
   { type: "debit", label: "Debit & bank", icon: Landmark },
-  { type: "credit", label: "Credit cards", icon: CreditCard },
+  { type: "credit", label: "Credit & pay later", icon: CreditCard },
 ];
 
 export default function AccountsPage() {
