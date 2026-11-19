@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/dialog";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
@@ -122,7 +123,9 @@ function PersonDebts() {
                   <div className="flex gap-2">
                     <Button className="flex-1" onClick={() => setRepay({ personId: person.id, debtId: s.debt.id })}><HandCoins className="size-4" /> Record repayment</Button>
                     {!txn && s.repaid === 0 && (
-                      <Button variant="danger" className="px-4" aria-label="Remove debt" onClick={() => confirm("Remove this debt?") && voidDebt(s.debt.id)}>
+                      <Button variant="danger" className="px-4" aria-label="Remove debt" onClick={async () => {
+                          if (await confirmDialog({ title: "Remove this debt?", body: s.debt.description || undefined, confirmLabel: "Remove", danger: true })) await voidDebt(s.debt.id);
+                        }}>
                         <Trash2 className="size-4" />
                       </Button>
                     )}
@@ -140,7 +143,15 @@ function PersonDebts() {
           variant="ghost"
           className="w-full"
           onClick={async () => {
-            if (outstanding > 0 && !confirm(`${person.name} still owes you. Archive anyway?`)) return;
+            if (
+              outstanding > 0 &&
+              !(await confirmDialog({
+                title: `Archive ${person.name}?`,
+                body: `${person.name} still owes you. Their debts stay on record, but they'll be hidden from your people list.`,
+                confirmLabel: "Archive anyway",
+              }))
+            )
+              return;
             await setPersonArchived(person.id, true);
             router.replace("/people");
           }}

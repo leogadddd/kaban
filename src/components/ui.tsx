@@ -117,7 +117,7 @@ export function Button({
   variant = "primary",
   className,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger" }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger" | "destructive" }) {
   return (
     <button
       {...props}
@@ -127,6 +127,7 @@ export function Button({
         variant === "secondary" && "bg-pale text-brand",
         variant === "ghost" && "text-brand active:bg-pale",
         variant === "danger" && "bg-expense/10 text-expense",
+        variant === "destructive" && "bg-expense text-white shadow-soft",
         className,
       )}
     >

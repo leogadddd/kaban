@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect -- form state is initialised from async IndexedDB reads and deep-link params */
 
+import { confirmDialog } from "@/components/dialog";
 import { useMoney } from "@/lib/privacy";
 import { DateField } from "@/components/date-field";
 import { AnimatePresence, motion } from "motion/react";
@@ -450,7 +451,16 @@ function Editor() {
             variant={voided ? "secondary" : "danger"}
             className="w-full"
             onClick={async () => {
-              if (!voided && !confirm("Void this transaction? It stays in history but stops affecting balances.")) return;
+              if (
+                !voided &&
+                !(await confirmDialog({
+                  title: "Void this transaction?",
+                  body: "It stays in your history but stops affecting balances. You can restore it later.",
+                  confirmLabel: "Void",
+                  danger: true,
+                }))
+              )
+                return;
               await setTransactionVoid(existing.id, !voided);
               close();
             }}

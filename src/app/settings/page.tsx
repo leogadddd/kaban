@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog, confirmSignOut } from "@/components/dialog";
 import { useRouter } from "next/navigation";
 import { Trash2, Zap } from "lucide-react";
 import { useSyncExternalStore } from "react";
@@ -83,15 +84,19 @@ export default function SettingsPage() {
             className="w-full"
             onClick={async () => {
               if (signedIn) {
-                const n = await unsyncedCount();
-                const warn = n ? ` ${n} change${n === 1 ? " hasn't" : "s haven't"} reached the cloud yet and will be lost.` : "";
-                if (!confirm(`Sign out and erase Kaban data on this device?${warn}`)) return;
+                if (!(await confirmSignOut(await unsyncedCount()))) return;
                 await signOut();
                 router.replace("/welcome");
                 return;
               }
-              if (!confirm("Erase all Kaban data on this device? This cannot be undone.")) return;
-              if (!confirm("Really erase everything?")) return;
+              const ok = await confirmDialog({
+                title: "Erase everything on this device?",
+                body: "Every account, transaction and person is deleted from this device. This can't be undone — export a backup first if you might need it.",
+                confirmLabel: "Erase everything",
+                danger: true,
+                typeToConfirm: "ERASE",
+              });
+              if (!ok) return;
               await wipeAll();
               router.replace("/welcome");
             }}

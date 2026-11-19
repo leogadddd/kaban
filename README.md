@@ -43,10 +43,11 @@ To try it on an iPhone, serve it over HTTPS, open it in Safari, then **Share →
 
 Without keys the app is local-only, exactly as before. To turn sync on:
 
-1. Create a Supabase project and run `supabase/migrations/20261119000000_cloud_sync.sql` (SQL editor, or `supabase db push`).
-2. Auth → URL configuration: set the Site URL to your domain and add `https://<your-domain>/sync` (and `http://localhost:3000/sync`) to the redirect URLs, for confirmation and password-reset emails.
-3. Auth → Multi-factor: make sure TOTP is enabled (it is by default).
-4. Add to `.env.local` (and your host's env), then rebuild — `NEXT_PUBLIC_` values are inlined at build time:
+1. Create a Supabase project and run every file in `supabase/migrations/` in name order (SQL editor, or `supabase db push`).
+2. Auth → URL Configuration: set the **Site URL** to your domain (not localhost) and add `https://<your-domain>/login` and `https://<your-domain>/reset-password` (plus the `http://localhost:3000/…` equivalents for dev) to the redirect URLs. Links not on this list fall back to the Site URL.
+3. Auth → Sign In / Providers → Email: keep **Confirm email** on, so accounts can't sync until the address is verified.
+4. Auth → Multi-factor: make sure TOTP is enabled (it is by default).
+5. Add to `.env.local` (and your host's env), then rebuild — `NEXT_PUBLIC_` values are inlined at build time:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co

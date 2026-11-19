@@ -1,5 +1,6 @@
 "use client";
 
+import { alertDialog, confirmDialog, confirmSignOut } from "@/components/dialog";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AlertTriangle, Cloud, CloudOff, Download, HardDrive, LogOut, RefreshCw, ShieldCheck, Smartphone, Trash2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -194,20 +195,24 @@ function AccountCard({ sync }: { sync: SyncState }) {
   const bytePct = q ? (q.bytes / q.maxBytes) * 100 : 0;
 
   async function doSignOut() {
-    const n = await unsyncedCount();
-    const warn = n ? `\n\n${n} change${n === 1 ? " hasn't" : "s haven't"} reached the cloud yet and will be lost.` : "";
-    if (!confirm(`Sign out? Kaban data will be erased from this device; your cloud copy stays.${warn}`)) return;
+    if (!(await confirmSignOut(await unsyncedCount()))) return;
     await signOut();
     router.replace("/welcome");
   }
 
   async function doDeleteCloud() {
-    if (!confirm("Delete everything stored in the cloud for this account? This device keeps its data as a local-only copy and signs out.")) return;
-    if (!confirm("This can't be undone. Delete cloud data?")) return;
+    const ok = await confirmDialog({
+      title: "Delete your cloud data?",
+      body: "Everything stored in the cloud for this account is deleted, and this device signs out. Your records stay here as a local-only copy. This can't be undone.",
+      confirmLabel: "Delete cloud data",
+      danger: true,
+      typeToConfirm: "DELETE",
+    });
+    if (!ok) return;
     try {
       await deleteCloudData();
     } catch (e) {
-      alert((e as Error).message);
+      await alertDialog({ title: "Couldn't delete cloud data", body: friendlyAuthError(e), danger: true });
     }
   }
 
@@ -317,7 +322,15 @@ function TwoFactorCard() {
           className="w-full"
           disabled={busy}
           onClick={async () => {
-            if (!confirm("Turn off two-factor sign-in?")) return;
+            if (
+              !(await confirmDialog({
+                title: "Turn off two-factor sign-in?",
+                body: "Signing in will only need your password again.",
+                confirmLabel: "Turn off",
+                danger: true,
+              }))
+            )
+              return;
             setBusy(true);
             try {
               for (const f of factors!) await removeAuthenticator(f.id);

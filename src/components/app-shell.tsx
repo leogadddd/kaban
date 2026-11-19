@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { requestPersistence } from "@/lib/db";
 import { startSync } from "@/lib/sync";
+import { DialogHost } from "./dialog";
 import { getMeta } from "@/lib/repo";
 import { useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
@@ -138,6 +139,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
       <PrivacySync />
+      <DialogHost />
       {showSidebar && <Sidebar pathname={pathname} />}
 
       <main className={cx("mx-auto max-w-md lg:px-6", NARROW.includes(pathname) ? "lg:max-w-2xl" : "lg:max-w-6xl", !hideNav ? "pb-nav lg:pb-16" : "lg:pb-16")}>{gated ? null : (
