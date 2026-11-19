@@ -99,7 +99,7 @@ export default function HomePage() {
         )}
       </div>
 
-      <div className="px-4 pb-3 lg:hidden">
+      <div className="px-4 pt-4 pb-3 lg:hidden">
         <Segmented<Pane>
           value={pane}
           onChange={setPane}
@@ -185,10 +185,10 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
 
   return (
     <div className="space-y-5">
-      <div>
+      <div className="pb-4 pt-5">
         <p className="text-sm text-ink-3">Available funds · cash & debit</p>
-        <motion.div key={totals.availableFunds} initial={{ opacity: 0.4, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-          <BigMoney minor={totals.availableFunds} className="block text-[3rem] leading-[1.05] tracking-tighter" centsClass="text-3xl" />
+        <motion.div key={totals.availableFunds} initial={{ opacity: 0.4, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
+          <BigMoney minor={totals.availableFunds} className="block text-[3.5rem] leading-none tracking-tighter" centsClass="text-[2rem]" />
         </motion.div>
       </div>
 

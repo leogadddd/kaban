@@ -201,7 +201,9 @@ function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void 
   const moreActive = MORE.some((m) => pathname.startsWith(m.href));
   return (
     <nav aria-label="Primary" style={{ viewTransitionName: "bottom-nav" }} className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 lg:hidden pb-[max(var(--safe-bottom),0.75rem)]">
-      <div className="flex items-center justify-between rounded-[1.75rem] bg-night/95 px-2 py-2 text-white shadow-float backdrop-blur-xl dark:bg-[#232a25]/92 dark:ring-1 dark:ring-white/6">
+      {/* Dark mode: fade the page out behind the bar so it doesn't sit on same-toned cards. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 -z-10 hidden bg-gradient-to-t from-bg via-bg/85 to-transparent dark:block" />
+      <div className="flex items-center justify-between rounded-[1.75rem] bg-night/95 px-2 py-2 text-white shadow-float backdrop-blur-xl dark:bg-[#2b332e]/95 dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_18px_40px_-12px_rgb(0_0_0/0.9),0_0_0_1px_rgb(255_255_255/0.1)]">
         {NAV.map(({ href, label, icon: Icon }) => {
           if (href === "/add")
             return (
