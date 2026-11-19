@@ -57,7 +57,13 @@ function Editor() {
   const linkedType = TYPES.includes(params.get("type") as TxnType) ? (params.get("type") as TxnType) : undefined;
   const [type, setType] = useState<TxnType>(linkedType ?? "expense");
   // New records walk type → account → details; edits and fully deep-linked records open on the form.
-  const [step, setStep] = useState<Step>(() => (editId ? "form" : !linkedType ? "type" : params.get("account") ? "form" : "account"));
+  const [step, setStepState] = useState<Step>(() => (editId ? "form" : !linkedType ? "type" : params.get("account") ? "form" : "account"));
+  // The page itself already animates in as a sheet; only animate step content once the user moves between steps.
+  const [stepMoved, setStepMoved] = useState(false);
+  const setStep = (next: Step) => {
+    setStepMoved(true);
+    setStepState(next);
+  };
   const linkedAmountMinor = parseMinor(params.get("amount") ?? "") ?? 0;
   const [amount, setAmount] = useState(() => linkedAmountMinor > 0 ? minorToInput(linkedAmountMinor) : "");
   const [adjSign, setAdjSign] = useState<1 | -1>(1);
@@ -259,13 +265,13 @@ function Editor() {
 
   if (step === "type")
     return (
-      <StepScreen title="New transaction" subtitle="What kind of transaction is this?" onClose={close}>
+      <StepScreen title="New transaction" subtitle="What kind of transaction is this?" onClose={close} animateIn={stepMoved}>
         <div className="grid grid-cols-2 gap-3">
           {TYPE_CHOICES.map(({ type: t, icon: Icon, body, tone }, i) => (
             <motion.button
               key={t}
               type="button"
-              initial={{ opacity: 0, y: 10 }}
+              initial={stepMoved ? { opacity: 0, y: 10 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
               onClick={() => chooseType(t)}
@@ -287,6 +293,7 @@ function Editor() {
   if (step === "account")
     return (
       <StepScreen
+        animateIn={stepMoved}
         title={TYPE_LABEL[type]}
         subtitle={type === "card_payment" ? "Which account are you paying from?" : type === "transfer" ? "Which account is the money leaving?" : type === "income" || type === "refund" ? "Which account received it?" : "Which account or card did you use?"}
         onBack={() => setStep("type")}
@@ -617,7 +624,7 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
 }
 
 /** Full-screen step of the new-transaction flow (type, then account), before the form. */
-function StepScreen({ title, subtitle, onBack, onClose, children }: { title: string; subtitle: string; onBack?: () => void; onClose: () => void; children: React.ReactNode }) {
+function StepScreen({ title, subtitle, onBack, onClose, animateIn = true, children }: { title: string; subtitle: string; onBack?: () => void; onClose: () => void; animateIn?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col lg:min-h-0">
       <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
@@ -633,7 +640,7 @@ function StepScreen({ title, subtitle, onBack, onClose, children }: { title: str
           <X className="size-6" />
         </button>
       </header>
-      <motion.div key={title} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 380, damping: 34 }} className="flex-1 px-4 pt-2 pb-10 lg:px-6 lg:pt-5">
+      <motion.div key={title} initial={animateIn ? { opacity: 0, x: 24 } : false} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 380, damping: 34 }} className="flex-1 px-4 pt-2 pb-10 lg:px-6 lg:pt-5">
         <p className="mb-4 px-1 text-[1.35rem] leading-tight font-semibold tracking-tight">{subtitle}</p>
         {children}
       </motion.div>
