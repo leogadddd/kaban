@@ -102,10 +102,15 @@ function AccountSection({ signedIn, email }: { signedIn: boolean; email?: string
         </div>
       </Card>
       <TwoFactorCard />
-      <div className="grid grid-cols-2 gap-3">
-        <Button variant="secondary" onClick={doSignOut}><LogOut className="size-4" /> Sign out</Button>
-        <Button variant="danger" onClick={doDeleteCloud}><Trash2 className="size-4" /> Delete cloud data</Button>
-      </div>
+      <Button variant="secondary" wrapperClassName="w-full" className="w-full" onClick={doSignOut}><LogOut className="size-4 shrink-0" /> Sign out</Button>
+      <Card className="flex items-center gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-expense/10 text-expense"><Trash2 className="size-5" /></span>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium">Delete cloud data</p>
+          <p className="text-sm text-ink-3">Removes the synced copy on all devices.</p>
+        </div>
+        <Button variant="danger" wrapperClassName="shrink-0" className="min-h-10 px-4 text-sm" onClick={doDeleteCloud}>Delete</Button>
+      </Card>
     </section>
   );
 }

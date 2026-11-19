@@ -120,7 +120,7 @@ export default function HomePage() {
           <section aria-label="Money">
             <MoneyPane ledger={ledger} onCredit={() => document.getElementById("credit-col")?.scrollIntoView({ behavior: "smooth" })} />
           </section>
-          <section id="credit-col" aria-label="Credit" className="sticky top-6">
+          <section id="credit-col" aria-label="Credit" className="intro-stagger sticky top-6">
             <h2 className="mb-3 px-1 text-sm font-semibold text-ink-2">Credit</h2>
             {ledger.activeAccounts.some((a) => a.type === "credit") ? (
               <CreditOverview ledger={ledger} />
@@ -147,7 +147,7 @@ export default function HomePage() {
             <MoneyPane ledger={ledger} onCredit={() => setPane("credit")} />
           </section>
           <section className="w-1/2 px-4" aria-hidden={pane !== "credit"} inert={pane !== "credit"}>
-            <CreditOverview ledger={ledger} />
+            <div className="intro-stagger"><div><CreditOverview ledger={ledger} /></div></div>
           </section>
         </motion.div>
         </div>
@@ -183,7 +183,7 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
     );
 
   return (
-    <div className="space-y-5">
+    <div className="intro-stagger space-y-5">
       <div className="pb-4 pt-5">
         <p className="text-sm text-ink-3">Available funds · cash & debit</p>
         <motion.div key={totals.availableFunds} initial={{ opacity: 0.4, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3">

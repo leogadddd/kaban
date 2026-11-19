@@ -18,7 +18,7 @@ const HAPTIC_MS = 8;
 /**
  * Touch-only pull-to-refresh, Reddit style: drag down from the top and the page slides down to reveal
  * the Kaban coffer. Its lid opens and a ring fills as you pull; let go past the line and the coffer hops
- * while the cloud sync runs. (The browser's own gesture is off: html/body use `overscroll-behavior-y: none`.)
+ * while the cloud sync runs. (The page keeps its native rubber-band scroll; only a downward pull from the very top is taken over here.)
  */
 export function PullToRefresh({ enabled, children }: { enabled: boolean; children: ReactNode }) {
   const pull = useMotionValue(0);
@@ -75,6 +75,8 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
       if (!pulling) {
         if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) return reset(); // horizontal swipe (Money/Credit pager)
         if (dy < -4 || window.scrollY > 0) return reset(); // scrolling the page instead
+        // Claim a downward pull at the top on its first move, before the native bounce/refresh takes it.
+        if (dy > 0 && dy >= Math.abs(dx) && e.cancelable) e.preventDefault();
         if (dy < 10) return;
         pulling = true;
         pull.stop(); // a spring-back still in flight would fight the finger

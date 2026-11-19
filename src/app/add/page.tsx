@@ -484,7 +484,7 @@ function Editor() {
                     </div>
                     <div className="flex gap-2">
                       <input className={cx(inputCls, "min-h-11")} placeholder="Add a person" value={newPerson} onChange={(e) => setNewPerson(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPerson())} />
-                      <Button type="button" variant="secondary" className="min-h-11 px-3" onClick={addPerson} aria-label="Add person"><UserPlus className="size-4" /></Button>
+                      <Button type="button" variant="secondary" wrapperClassName="shrink-0" className="min-h-11 gap-1.5 px-4 text-sm whitespace-nowrap" onClick={addPerson} aria-label="Add person"><UserPlus className="size-[18px] shrink-0" /> Add</Button>
                     </div>
                     <Segmented<"equal" | "custom">
                       size="sm"

@@ -93,7 +93,6 @@
     background: var(--color-bg);
     color: var(--color-ink);
     -webkit-tap-highlight-color: transparent;
-    overscroll-behavior-y: none;
     touch-action: manipulation; /* no double-tap zoom anywhere */
   }
 
@@ -374,4 +373,18 @@ button,
 @keyframes ptr-ring-spin { to { transform: rotate(360deg); } } /* on top of the -rotate-90 utility */
 @media (prefers-reduced-motion: reduce) {
   .ptr-hop, .ptr-lid, .ptr-leaf, .ptr-pop { animation: none; }
+}
+
+/* ---------- Dashboard intro: sections rise in one after another on first paint ---------- */
+@keyframes intro-rise { from { opacity: 0; transform: translateY(14px); } }
+.intro-stagger > * {
+  animation: intro-rise 560ms var(--ease-ios) backwards;
+}
+.intro-stagger > :nth-child(2) { animation-delay: 60ms; }
+.intro-stagger > :nth-child(3) { animation-delay: 120ms; }
+.intro-stagger > :nth-child(4) { animation-delay: 180ms; }
+.intro-stagger > :nth-child(5) { animation-delay: 240ms; }
+.intro-stagger > :nth-child(n + 6) { animation-delay: 300ms; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-stagger > * { animation: none; }
 }
