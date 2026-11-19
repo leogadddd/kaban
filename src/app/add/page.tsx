@@ -3,6 +3,7 @@
 
 import { HapticButton } from "@/components/haptic-button";
 import { confirmDialog } from "@/components/dialog";
+import { undoToast } from "@/components/undo-toast";
 import { useMoney } from "@/lib/privacy";
 import { DateField } from "@/components/date-field";
 import { SaveSuccess } from "@/components/save-success";
@@ -564,8 +565,10 @@ function Editor() {
                 }))
               )
                 return;
-              await setTransactionVoid(existing.id, !voided);
+              const id = existing.id;
+              await setTransactionVoid(id, !voided);
               close();
+              if (!voided) undoToast("Transaction voided", () => setTransactionVoid(id, false));
             }}
           >
             {voided ? <><RotateCcw className="size-4" /> Restore transaction</> : <><Ban className="size-4" /> Void transaction</>}

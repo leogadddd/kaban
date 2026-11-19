@@ -1,6 +1,7 @@
 "use client";
 
 import { confirmDialog } from "@/components/dialog";
+import { undoToast } from "@/components/undo-toast";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
@@ -122,7 +123,10 @@ function PersonDebts() {
                     <Button wrapperClassName="flex-1" onClick={() => setRepay({ personId: person.id, debtId: s.debt.id })}><HandCoins className="size-4" /> Record repayment</Button>
                     {!txn && s.repaid === 0 && (
                       <Button variant="danger" className="px-4" aria-label="Remove debt" onClick={async () => {
-                          if (await confirmDialog({ title: "Remove this debt?", body: s.debt.description || undefined, confirmLabel: "Remove", danger: true })) await voidDebt(s.debt.id);
+                          const debtId = s.debt.id;
+                          if (!(await confirmDialog({ title: "Remove this debt?", body: s.debt.description || undefined, confirmLabel: "Remove", danger: true }))) return;
+                          await voidDebt(debtId);
+                          undoToast("Debt removed", () => voidDebt(debtId, false));
                         }}>
                         <Trash2 className="size-4" />
                       </Button>
@@ -142,16 +146,20 @@ function PersonDebts() {
           wrapperClassName="w-full"
           onClick={async () => {
             if (
-              outstanding > 0 &&
               !(await confirmDialog({
                 title: `Archive ${person.name}?`,
-                body: `${person.name} still owes you. Their debts stay on record, but they'll be hidden from your people list.`,
-                confirmLabel: "Archive anyway",
+                body:
+                  outstanding > 0
+                    ? `${person.name} still owes you. Their debts stay on record, but they'll be hidden from your people list.`
+                    : `Their debt history stays on record, but they'll be hidden from your people list.`,
+                confirmLabel: outstanding > 0 ? "Archive anyway" : "Archive",
               }))
             )
               return;
-            await setPersonArchived(person.id, true);
+            const personId = person.id;
+            await setPersonArchived(personId, true);
             router.replace("/people");
+            undoToast(`${person.name} archived`, () => setPersonArchived(personId, false));
           }}
         >
           <Archive className="size-4" /> Archive person

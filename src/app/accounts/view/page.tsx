@@ -7,6 +7,8 @@ import { Archive, ArchiveRestore, ArrowLeftRight, Pencil, Plus, SlidersHorizonta
 import { Suspense } from "react";
 import { AccountCard } from "@/components/account-card";
 import { CreditOverview } from "@/components/credit-overview";
+import { confirmDialog } from "@/components/dialog";
+import { undoToast } from "@/components/undo-toast";
 import { GroupedTxns } from "@/components/txn-row";
 import { Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, SectionTitle } from "@/components/ui";
 import { formatDayLong } from "@/lib/dates";
@@ -80,7 +82,20 @@ function AccountView() {
           {txns.length ? <GroupedTxns txns={txns} ledger={ledger} perspective={acc.id} /> : <Card className="text-sm text-ink-3">No transactions yet.</Card>}
         </section>
 
-        <Button variant="ghost" wrapperClassName="w-full" onClick={() => setAccountArchived(acc.id, !acc.archived)}>
+        <Button variant="ghost" wrapperClassName="w-full" onClick={async () => {
+            if (
+              !acc.archived &&
+              !(await confirmDialog({
+                title: `Archive ${acc.name}?`,
+                body: "It's hidden from your accounts and pickers, but its full history stays. You can restore it from the archived list.",
+                confirmLabel: "Archive",
+              }))
+            )
+              return;
+            const accId = acc.id;
+            await setAccountArchived(accId, !acc.archived);
+            if (!acc.archived) undoToast(`${acc.name} archived`, () => setAccountArchived(accId, false));
+          }}>
           {acc.archived ? <><ArchiveRestore className="size-4" /> Restore account</> : <><Archive className="size-4" /> Archive account</>}
         </Button>
         <p className="-mt-3 text-center text-xs text-ink-3">Archiving hides the account but keeps its full history.</p>

@@ -305,12 +305,12 @@ export async function saveDebt(input: { personId: string; amountMinor: number; d
   });
 }
 
-export async function voidDebt(id: string) {
+export async function voidDebt(id: string, voided = true) {
   const db = getDatabase();
   await db.transaction("rw", allTables(db), async () => {
     const d = await db.debts.get(id);
     if (!d) return;
-    const next = { ...d, state: "void" as const, updatedAt: Date.now(), version: d.version + 1 };
+    const next = { ...d, state: voided ? ("void" as const) : ("active" as const), updatedAt: Date.now(), version: d.version + 1 };
     await db.debts.put(next);
     await enqueue(db, "debt", id, next.version, next);
   });

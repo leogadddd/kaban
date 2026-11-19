@@ -21,6 +21,7 @@ import {
 import { requestPersistence, useLedgerDatabase } from "@/lib/db";
 import { startSync, useSyncState } from "@/lib/sync";
 import { DialogHost } from "./dialog";
+import { UndoToaster } from "./undo-toast";
 import { useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
 import { LogoMark } from "@/lib/logo";
@@ -131,6 +132,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
       <PrivacySync />
       <DialogHost />
+      <UndoToaster aboveNav={!hideNav} />
       {showSidebar && <Sidebar pathname={pathname} />}
 
       <main className={cx("mx-auto max-w-md lg:px-6", NARROW.includes(pathname) ? "lg:max-w-2xl" : "lg:max-w-6xl", !hideNav ? "pb-nav lg:pb-16" : "lg:pb-16")}>{gated ? (phase === "error" && !database ? <p role="alert" className="p-4">The ledger could not be opened. Reload Kaban to try again.</p> : null) : (
@@ -154,7 +156,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="More">
         <nav className="grid grid-cols-3 gap-2 pb-2">
           {MORE.map(({ href, label, short, icon: Icon }) => (
-            <Link
+            <HapticLink
               key={href}
               href={href}
               onClick={() => setMoreOpen(false)}
@@ -167,7 +169,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Icon className="size-5" />
               </span>
               <span className="whitespace-nowrap">{short ?? label}</span>
-            </Link>
+            </HapticLink>
           ))}
         </nav>
       </Sheet>
