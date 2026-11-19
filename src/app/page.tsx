@@ -14,14 +14,50 @@ import {
   WifiOff,
   Zap,
 } from "lucide-react";
-import { InstallButton, InstallSheet, ShortcutBuilder } from "@/components/install";
+import { InstallButton, InstallSheet } from "@/components/install";
 import { HeroSecondary, HeroVisual, OpenAppButton, Reveal } from "@/components/landing";
 import { LogoMark } from "@/lib/logo";
+import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: { absolute: "Kaban — Every peso on the family card, accounted for" },
-  description:
-    "Kaban is an offline-first tracker for cash, debit and a shared family credit card: billing cycles, instalments, splits and who owes you. Free, private, installs on iPhone.",
+  title: { absolute: `${SITE_NAME}: ${SITE_TAGLINE}` },
+  description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  openGraph: {
+    url: "/",
+    title: `${SITE_NAME}: ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
+    type: "website",
+    locale: "en_PH",
+  },
+  twitter: { card: "summary_large_image", title: `${SITE_NAME}: ${SITE_TAGLINE}`, description: SITE_DESCRIPTION },
+};
+
+/** Structured data so search engines understand Kaban is a free finance web app. */
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "iOS, Android, Web",
+  browserRequirements: "Requires a modern browser. Installable as a Progressive Web App.",
+  inLanguage: "en-PH",
+  isAccessibleForFree: true,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "PHP" },
+  featureList: [
+    "Track cash, debit and credit accounts",
+    "Shared family credit card tracking",
+    "Credit card billing cycles and due dates",
+    "Instalment and deferred purchase schedules",
+    "Split expenses equally or by amount",
+    "Who owes me and repayment tracking",
+    "Works offline",
+  ],
 };
 
 const FEATURES = [
@@ -47,8 +83,8 @@ const FEATURES = [
   },
   {
     icon: Zap,
-    title: "Two-tap quick add",
-    body: "Hook Kaban to an iPhone Shortcut, Back Tap or Home Screen icon and land straight on a pre-filled expense form.",
+    title: "One-tap quick add",
+    body: "Set Kaban to open straight on the Add screen, so tapping its Home Screen icon starts a new expense right away.",
   },
   {
     icon: Scale,
@@ -60,6 +96,11 @@ const FEATURES = [
 export default function Landing() {
   return (
     <div className="overflow-x-clip bg-bg text-ink">
+      <script
+        type="application/ld+json"
+        // JSON-LD must be raw; content is static and escaped against </script> injection.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD).replace(/</g, "\\u003c") }}
+      />
       {/* Nav */}
       <header className="pt-safe sticky top-0 z-40 border-b border-transparent bg-bg/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -71,7 +112,6 @@ export default function Landing() {
             <a href="#features" className="hover:text-ink">Features</a>
             <a href="#how" className="hover:text-ink">How it adds up</a>
             <a href="#install" className="hover:text-ink">Install</a>
-            <a href="#shortcut" className="hover:text-ink">Quick add</a>
             <a href="#privacy" className="hover:text-ink">Privacy</a>
           </nav>
           <OpenAppButton className="min-h-10 px-4 text-sm">Open app</OpenAppButton>
@@ -174,16 +214,13 @@ export default function Landing() {
             <p className="mt-4 text-lg text-white/75">It opens full-screen like a native app and keeps working without internet once it&apos;s installed.</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <InstallButton />
-              <a href="#shortcut" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 font-medium text-white ring-1 ring-white/25 hover:bg-white/10">
-                <Zap className="size-4" /> Set up quick add
-              </a>
             </div>
           </Reveal>
           <ol className="grid gap-3">
             {[
               { icon: Share, t: "Open Kaban in Safari", d: "Tap the Share button in the toolbar." },
               { icon: SquarePlus, t: "Add to Home Screen", d: "Scroll the share sheet and tap Add to Home Screen." },
-              { icon: Zap, t: "Optional: a quick-add Shortcut", d: "Build a one-tap “Add expense” button below." },
+              { icon: Zap, t: "Optional: one-tap quick add", d: "In Settings, turn on “Open on the Add screen” so the icon starts a new expense." },
             ].map(({ icon: Icon, t, d }, i) => (
               <Reveal key={t} delay={i * 0.1}>
                 <li className="flex items-start gap-4 rounded-3xl bg-white/8 p-5 ring-1 ring-white/10">
@@ -198,20 +235,6 @@ export default function Landing() {
               </Reveal>
             ))}
           </ol>
-        </div>
-      </section>
-
-      {/* Quick-add Shortcut */}
-      <section id="shortcut" className="scroll-mt-20 py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <Reveal className="mb-10 max-w-2xl">
-            <p className="text-sm font-semibold text-brand-2">iPhone Shortcut</p>
-            <h2 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">Log a purchase before you leave the counter.</h2>
-            <p className="mt-4 text-lg text-ink-2">
-              Make a Shortcut that asks for the amount and opens Kaban with the form already filled in. You can put it on your Home Screen or trigger it with a double tap on the back of your phone.
-            </p>
-          </Reveal>
-          <ShortcutBuilder />
         </div>
       </section>
 

@@ -1,23 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Copy, Smartphone, Trash2 } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { Trash2, Zap } from "lucide-react";
+import { useSyncExternalStore } from "react";
 import { Button, Card, cx, Field, inputCls, PageHeader, SectionTitle } from "@/components/ui";
-import { useLedger } from "@/lib/hooks";
+import { useLedger, useMeta } from "@/lib/hooks";
 import { LogoMark } from "@/lib/logo";
-import { wipeAll } from "@/lib/repo";
+import { setMeta, wipeAll } from "@/lib/repo";
 
 export default function SettingsPage() {
   const router = useRouter();
   const ledger = useLedger();
-  const origin = useSyncExternalStore(noop, () => window.location.origin, () => "");
   const standalone = useSyncExternalStore(noop, isStandalone, () => false);
-  const [acct, setAcct] = useState("");
-  const [copied, setCopied] = useState(false);
-
-  const account = ledger.accountById.get(acct);
-  const link = `${origin}/add?type=expense${account ? `&account=${encodeURIComponent(account.name)}` : ""}&amount=`;
+  const launchToAdd = useMeta<boolean>("launchToAdd");
+  const launchAccount = useMeta<string>("launchAccount");
 
   return (
     <>
@@ -43,38 +39,33 @@ export default function SettingsPage() {
         )}
 
         <Card className="space-y-3">
-          <SectionTitle><span className="flex items-center gap-1.5"><Smartphone className="size-4 text-brand" /> iPhone quick-add Shortcut</span></SectionTitle>
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-ink-2">
-            <li>In the Shortcuts app, create a shortcut with <b>Ask for Input</b> (Number, “Amount”).</li>
-            <li>Add <b>Open URLs</b> with the link below, inserting the <i>Provided Input</i> at the end.</li>
-            <li>Add it to your Home Screen or Back Tap for one-tap entry.</li>
-          </ol>
-          <Field label="Default account (optional)">
-            {(id) => (
-              <select id={id} className={inputCls} value={acct} onChange={(e) => setAcct(e.target.value)}>
-                <option value="">Ask in the app</option>
-                {ledger.activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            )}
-          </Field>
-          <div className="flex gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-2xl bg-pale px-3 py-3 text-xs">{link}</code>
-            <Button
-              variant="secondary"
-              className="px-3"
-              aria-label="Copy link"
-              onClick={async () => {
-                await navigator.clipboard?.writeText(link);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              <Copy className="size-4" />
-            </Button>
-          </div>
-          <p className={cx("text-xs", copied ? "text-income" : "text-ink-3")}>
-            {copied ? "Copied!" : "Also supports &category=, &description= and &date=YYYY-MM-DD. Shortcuts may open Safari instead of the installed app depending on iOS version — test on your device."}
-          </p>
+          <SectionTitle><span className="flex items-center gap-1.5"><Zap className="size-4 text-brand" /> Quick add</span></SectionTitle>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={!!launchToAdd}
+            onClick={() => setMeta("launchToAdd", !launchToAdd)}
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <span>
+              <span className="block font-medium">Open on the Add screen</span>
+              <span className="block text-sm text-ink-3">Tapping the Kaban icon starts a new transaction right away.</span>
+            </span>
+            <span className={cx("relative h-7 w-12 shrink-0 rounded-full transition-colors", launchToAdd ? "bg-brand" : "bg-line")}>
+              <span className={cx("absolute top-1 size-5 rounded-full bg-white shadow transition-all", launchToAdd ? "left-6" : "left-1")} />
+            </span>
+          </button>
+          {launchToAdd && (
+            <Field label="Start with account">
+              {(id) => (
+                <select id={id} className={inputCls} value={launchAccount ?? ""} onChange={(e) => setMeta("launchAccount", e.target.value || undefined)}>
+                  <option value="">Last-used default</option>
+                  {ledger.activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              )}
+            </Field>
+          )}
+          <p className="text-xs text-ink-3">Applies when Kaban is opened fresh from the Home Screen. If it was already open in the background, it resumes where you left off.</p>
         </Card>
 
         <Card className="space-y-2">

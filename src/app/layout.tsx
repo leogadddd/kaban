@@ -1,17 +1,23 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "Kaban", template: "%s · Kaban" },
-  description: "Offline-first tracker for cash, debit and a shared family credit card.",
-  applicationName: "Kaban",
-  appleWebApp: { capable: true, title: "Kaban", statusBarStyle: "default" },
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
   formatDetection: { telephone: false },
+  // App screens are personal and device-local: keep them out of search. The landing page opts back in.
+  robots: { index: false, follow: false },
+  openGraph: { siteName: SITE_NAME, type: "website", locale: "en_PH" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
@@ -23,7 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en-PH" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <body className="min-h-dvh">
         <AppShell>{children}</AppShell>
       </body>

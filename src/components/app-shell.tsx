@@ -19,6 +19,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { requestPersistence } from "@/lib/db";
+import { getMeta } from "@/lib/repo";
 import { useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
 import { LogoMark } from "@/lib/logo";
@@ -59,6 +60,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [mode, pathname, router]);
 
   useEffect(() => installNavDirection(), []);
+
+  // Quick add: a fresh launch of the installed app lands on /home (start_url); jump to Add when enabled.
+  // sessionStorage marks the launch so this only happens once, not on every visit to Home.
+  useEffect(() => {
+    if (mode === null || mode === undefined) return;
+    let launched = false;
+    try {
+      launched = sessionStorage.getItem("kaban:launched") === "1";
+      sessionStorage.setItem("kaban:launched", "1");
+    } catch {}
+    if (launched || pathname !== "/home") return;
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+    if (!standalone) return;
+    Promise.all([getMeta<boolean>("launchToAdd"), getMeta<string>("launchAccount")]).then(([on, acc]) => {
+      if (on) router.replace(acc ? `/add?account=${encodeURIComponent(acc)}` : "/add");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
   useEffect(() => notePath(pathname), [pathname]);
 
   useEffect(() => {
