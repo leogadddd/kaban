@@ -7,6 +7,7 @@ import { Button, Card, cx, Field, inputCls, PageHeader, SectionTitle } from "@/c
 import { useLedger, useMeta } from "@/lib/hooks";
 import { LogoMark } from "@/lib/logo";
 import { setMeta, wipeAll } from "@/lib/repo";
+import { signOut, unsyncedCount, useSyncState } from "@/lib/sync";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -14,6 +15,8 @@ export default function SettingsPage() {
   const standalone = useSyncExternalStore(noop, isStandalone, () => false);
   const launchToAdd = useMeta<boolean>("launchToAdd");
   const launchAccount = useMeta<string>("launchAccount");
+  const sync = useSyncState();
+  const signedIn = !!sync.userId;
 
   return (
     <>
@@ -70,18 +73,30 @@ export default function SettingsPage() {
 
         <Card className="space-y-2">
           <SectionTitle>Danger zone</SectionTitle>
-          <p className="text-sm text-ink-3">Erase every account, transaction and person on this device. Export a backup first.</p>
+          <p className="text-sm text-ink-3">
+            {signedIn
+              ? "Sign out and erase every record on this device. Your cloud copy stays, and comes back when you sign in again."
+              : "Erase every account, transaction and person on this device. Export a backup first."}
+          </p>
           <Button
             variant="danger"
             className="w-full"
             onClick={async () => {
+              if (signedIn) {
+                const n = await unsyncedCount();
+                const warn = n ? ` ${n} change${n === 1 ? " hasn't" : "s haven't"} reached the cloud yet and will be lost.` : "";
+                if (!confirm(`Sign out and erase Kaban data on this device?${warn}`)) return;
+                await signOut();
+                router.replace("/welcome");
+                return;
+              }
               if (!confirm("Erase all Kaban data on this device? This cannot be undone.")) return;
               if (!confirm("Really erase everything?")) return;
               await wipeAll();
               router.replace("/welcome");
             }}
           >
-            <Trash2 className="size-4" /> Erase all data
+            <Trash2 className="size-4" /> {signedIn ? "Sign out & erase device" : "Erase all data"}
           </Button>
         </Card>
       </div>

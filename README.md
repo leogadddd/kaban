@@ -33,11 +33,37 @@ To try it on an iPhone, serve it over HTTPS, open it in Safari, then **Share →
 | Privacy | Eye toggle (Home, Accounts, desktop sidebar) swaps every amount for a fixed-length `₱••••••` mask, so neither values nor digit counts show. Remembered per device. |
 | Banks | Bank / e-wallet / BNPL picker (BDO, BPI, Metrobank, GCash, Maya, Atome…) with bundled logos and brand colours. |
 | Sync queue | Every write also enqueues an outbox mutation (stable id + version) in the same IndexedDB transaction. |
+| Cloud sync | Optional Supabase account (email + password, optional authenticator-app 2FA). A background worker pushes the outbox and pulls other devices' changes; the UI never waits on the network. Per-user record and size limits are enforced in Postgres. |
 
 ### Not yet built
 
-- **Cloud sign-in & sync server** (P1). The client-side outbox is in place, but there is no server, auth or Postgres yet. The Sync page shows "Local only".
 - Native Shortcuts actions, budgets, multi-currency and receipt scanning are post-MVP per the PRD.
+
+## Cloud sync (Supabase)
+
+Without keys the app is local-only, exactly as before. To turn sync on:
+
+1. Create a Supabase project and run `supabase/migrations/20261119000000_cloud_sync.sql` (SQL editor, or `supabase db push`).
+2. Auth → URL configuration: set the Site URL to your domain and add `https://<your-domain>/sync` (and `http://localhost:3000/sync`) to the redirect URLs, for confirmation and password-reset emails.
+3. Auth → Multi-factor: make sure TOTP is enabled (it is by default).
+4. Add to `.env.local` (and your host's env), then rebuild — `NEXT_PUBLIC_` values are inlined at build time:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon / publishable key>
+```
+
+How it works:
+
+- Screens read and write IndexedDB only. `src/lib/repo.ts` adds each change to the outbox in the same transaction; `src/lib/sync.ts` drains it in batches a moment after writes, on focus, when back online, and every minute, with backoff on errors.
+- Postgres has one `records` table (`user_id, entity, id, version, data jsonb …`). Clients can only `select` their own rows (RLS, plus aal2 when 2FA is on). All writes go through `push_records()`, which keeps the higher `(version, updatedAt)` and enforces the quota.
+- Pulls use a per-user `server_seq` cursor. Instalment schedules are not synced; each device rebuilds them.
+- First sign-in uploads whatever is already on the device. Signing out erases the device (warning first about unsynced changes). Data left by a *different* account is wiped, never merged.
+- **Limits:** each user gets 10,000 records and 10 MB by default (`user_quota`). Past the limit the app keeps working locally and changes wait in the outbox, marked "Cloud full". Raise one user's limit with:
+
+```sql
+update user_quota set max_records = 50000, max_bytes = 52428800 where user_id = '<uuid>';
+```
 
 ## Quick add
 

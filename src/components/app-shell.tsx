@@ -19,6 +19,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { requestPersistence } from "@/lib/db";
+import { startSync } from "@/lib/sync";
 import { getMeta } from "@/lib/repo";
 import { useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
@@ -103,6 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     requestPersistence();
+    startSync();
     if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
     navigator.serviceWorker
       .register("/sw.js", { scope: "/", updateViaCache: "none" })

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui";
 import { loadDemoData } from "@/lib/demo";
 import { LogoMark } from "@/lib/logo";
 import { setMeta } from "@/lib/repo";
+import { cloudConfigured } from "@/lib/supabase";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -71,9 +72,25 @@ export default function WelcomePage() {
         <Button variant="secondary" className="w-full" onClick={() => start(true)} disabled={busy}>
           <Sparkles className="size-4" /> Explore with sample data
         </Button>
-        <p className="flex items-center justify-center gap-1.5 text-[0.7rem] text-ink-3 [@media(max-height:700px)]:hidden">
-          <Cloud className="size-3.5" /> Cloud backup is optional and can be turned on later.
-        </p>
+        {cloudConfigured ? (
+          <Button
+            variant="ghost"
+            className="min-h-10 w-full text-sm"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              await setMeta("mode", "local");
+              await setMeta("startedAt", Date.now());
+              router.replace("/sync");
+            }}
+          >
+            <Cloud className="size-4" /> I have an account — sign in
+          </Button>
+        ) : (
+          <p className="flex items-center justify-center gap-1.5 text-[0.7rem] text-ink-3 [@media(max-height:700px)]:hidden">
+            <Cloud className="size-3.5" /> Cloud backup is optional and can be turned on later.
+          </p>
+        )}
       </div>
     </div>
   );

@@ -182,6 +182,10 @@ async function writeTransaction(input: TxnInput, id?: string): Promise<string> {
 
 async function applySplits(txn: Txn, splits: SplitInput[]) {
   const now = Date.now();
+  // Splits are immutable rows replaced wholesale on edit; tell other devices the old ones are gone.
+  for (const old of await db.splits.where("transactionId").equals(txn.id).toArray()) {
+    await enqueue("split", old.id, 2, null, "delete");
+  }
   await db.splits.where("transactionId").equals(txn.id).delete();
   const existingDebts = await db.debts.where("transactionId").equals(txn.id).toArray();
   const byPerson = new Map(existingDebts.map((d) => [d.personId, d]));
@@ -421,19 +425,59 @@ export async function importBackup(data: Awaited<ReturnType<typeof exportBackup>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const t = table as any;
         const prev = await t.get(row.id);
-        if (!prev) {
+        if (!prev || (row.version ?? 0) > (prev.version ?? 0)) {
           await t.put(row);
-          added++;
-        } else if ((row.version ?? 0) > (prev.version ?? 0)) {
-          await t.put(row);
-          updated++;
+          await enqueue(ENTITY_OF.get(table)!, row.id, row.version ?? 1, row);
+          if (prev) updated++;
+          else added++;
         }
       }
     }
-    for (const s of data.splits ?? []) await db.splits.put(s);
+    for (const s of data.splits ?? []) {
+      if (!(await db.splits.get(s.id))) {
+        await db.splits.put(s);
+        await enqueue("split", s.id, 1, s);
+      }
+    }
     for (const e of data.instalments ?? []) await db.instalments.put(e);
   });
   return { added, updated };
+}
+
+const ENTITY_OF = new Map<unknown, string>([
+  [db.accounts, "account"],
+  [db.transactions, "transaction"],
+  [db.people, "person"],
+  [db.debts, "debt"],
+]);
+
+/** Regenerate instalment schedules (a local projection, never synced) for the given purchases. No outbox writes. */
+export async function rebuildInstalments(txnIds: Iterable<string>) {
+  await db.transaction("rw", [db.accounts, db.transactions, db.instalments], async () => {
+    for (const id of txnIds) {
+      await db.instalments.where("transactionId").equals(id).delete();
+      const t = await db.transactions.get(id);
+      const acc = t && (await db.accounts.get(t.accountId));
+      if (!t || !acc) continue;
+      const s = buildSchedule(acc, t);
+      if (s.length) await db.instalments.bulkAdd(s);
+    }
+  });
+}
+
+/**
+ * Queue every local record for upload, replacing whatever was queued. Used when a device first signs in,
+ * so data created before sign-in (or restored from a backup) reaches the cloud.
+ */
+export async function enqueueEverything() {
+  await db.transaction("rw", ALL_TABLES(), async () => {
+    await db.outbox.clear();
+    for (const [table, entity] of ENTITY_OF) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const row of await (table as any).toArray()) await enqueue(entity, row.id, row.version ?? 1, row);
+    }
+    for (const s of await db.splits.toArray()) await enqueue("split", s.id, 1, s);
+  });
 }
 
 export async function wipeAll() {

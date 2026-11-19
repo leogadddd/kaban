@@ -107,7 +107,8 @@ export interface Debt {
   version: number;
 }
 
-export type OutboxStatus = "pending" | "syncing" | "failed" | "conflict" | "done";
+/** quota: rejected because the user's cloud storage is full; retried later. */
+export type OutboxStatus = "pending" | "syncing" | "failed" | "conflict" | "quota" | "done";
 
 export interface OutboxEntry {
   mutationId: string;
