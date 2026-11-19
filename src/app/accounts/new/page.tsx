@@ -1,5 +1,6 @@
 "use client";
 
+import { DateField } from "@/components/date-field";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreditCard, Landmark, Wallet } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
@@ -141,7 +142,7 @@ function AccountForm() {
           )}
         </Field>
 
-        <Field label="As of">{(id) => <input id={id} type="date" className={inputCls} value={openingDate} onChange={(e) => setOpeningDate(e.target.value)} />}</Field>
+        <Field label="As of">{(id) => <DateField id={id} value={openingDate} onChange={setOpeningDate} title="Balance as of" />}</Field>
 
         {credit && (
           <>
@@ -154,10 +155,10 @@ function AccountForm() {
               )}
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Statement closes on day" hint="1–31; short months use their last day">
+              <Field label="Closing day" hint="Day of month the statement closes (1–31)">
                 {(id) => <input id={id} className={cx(inputCls, "num")} inputMode="numeric" value={closingDay} onChange={(e) => setClosingDay(e.target.value.replace(/\D/g, ""))} />}
               </Field>
-              <Field label="Due days after closing" hint="Most PH banks: 20–25">
+              <Field label="Due after (days)" hint="Days after closing. Most PH banks: 20–25">
                 {(id) => <input id={id} className={cx(inputCls, "num")} inputMode="numeric" value={dueDays} onChange={(e) => setDueDays(e.target.value.replace(/\D/g, ""))} />}
               </Field>
             </div>

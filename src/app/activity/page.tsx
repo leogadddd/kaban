@@ -1,5 +1,6 @@
 "use client";
 
+import { DateField } from "@/components/date-field";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { GroupedTxns } from "@/components/txn-row";
@@ -79,16 +80,16 @@ export default function ActivityPage() {
               value={range}
               onChange={setRange}
               options={[
-                { value: "all", label: "All time" },
-                { value: "month", label: "This month" },
+                { value: "all", label: "All" },
+                { value: "month", label: "Month" },
                 { value: "30", label: "30 days" },
                 { value: "custom", label: "Custom" },
               ]}
             />
             {range === "custom" && (
               <div className="grid grid-cols-2 gap-2">
-                <input type="date" className={inputCls} value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" />
-                <input type="date" className={inputCls} value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" />
+                <DateField compact value={from} onChange={setFrom} placeholder="From" title="From date" max={to || undefined} allowClear />
+                <DateField compact value={to} onChange={setTo} placeholder="To" title="To date" min={from || undefined} allowClear />
               </div>
             )}
             <div className="grid grid-cols-2 gap-2">

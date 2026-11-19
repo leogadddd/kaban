@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect -- form state is initialised from async IndexedDB reads and deep-link params */
 
+import { DateField } from "@/components/date-field";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Ban, Check, ChevronDown, CreditCard, Minus, Plus, RotateCcw, Split, UserPlus, X } from "lucide-react";
@@ -346,7 +347,7 @@ function Editor() {
           </div>
         )}
 
-        <Field label="Date">{(id) => <input id={id} type="date" className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
+        <Field label="Date">{(id) => <DateField id={id} value={date} onChange={setDate} title="Transaction date" />}</Field>
 
         {/* Split */}
         {canSplit && (
@@ -395,13 +396,15 @@ function Editor() {
                             {splitMode === "equal" ? (
                               <span className="num font-semibold">{formatMoney(a.amountMinor)}</span>
                             ) : (
+                              <div className="w-28 shrink-0">
                               <input
                                 inputMode="decimal"
                                 aria-label={`${person?.name} share`}
-                                className={cx(inputCls, "num min-h-10 w-28 px-3 text-right")}
+                                className={cx(inputCls, "num min-h-10 px-3 text-right")}
                                 value={custom[a.personId] ?? ""}
                                 onChange={(e) => setCustom((c) => ({ ...c, [a.personId]: e.target.value }))}
                               />
+                              </div>
                             )}
                           </li>
                         );

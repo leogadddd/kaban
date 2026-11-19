@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, Check, HandCoins, Plus, Trash2 } from "lucide-react";
+import { Archive, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DebtSheet, RepaySheet } from "@/components/debt-sheets";
 import { Avatar, BigMoney, Button, Card, EmptyState, Loading, Money, PageHeader, Progress, Segmented } from "@/components/ui";
@@ -49,9 +49,15 @@ function PersonDebts() {
           </div>
         </Card>
 
-        <div className="flex gap-2">
-          <Button variant="secondary" className="flex-1" onClick={() => setAdding(true)}><Plus className="size-4" /> New debt</Button>
-          <Link href="/add" className="flex-1"><Button variant="secondary" className="w-full">Split a purchase</Button></Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="secondary" className="min-w-0 px-3 text-sm whitespace-nowrap" onClick={() => setAdding(true)}>
+            <Plus className="size-4 shrink-0" /> New debt
+          </Button>
+          <Link href="/add" className="min-w-0">
+            <Button variant="secondary" className="w-full px-3 text-sm whitespace-nowrap">
+              <Split className="size-4 shrink-0" /> Split a bill
+            </Button>
+          </Link>
         </div>
 
         <Segmented value={tab} onChange={setTab} options={[{ value: "open", label: "Unsettled" }, { value: "all", label: "History" }]} />

@@ -17,7 +17,7 @@ export default function PaymentsPage() {
     <>
       <PageHeader title="Payment history" back="/home" />
       <div className="space-y-4 px-4">
-        <Segmented value={kind} onChange={setKind} options={[{ value: "card", label: "Card payments" }, { value: "received", label: "Repayments received" }]} />
+        <Segmented value={kind} onChange={setKind} options={[{ value: "card", label: "Card payments" }, { value: "received", label: "Received" }]} />
         <Card className="flex items-center justify-between">
           <span className="text-sm text-ink-3">{kind === "card" ? "Paid to cards" : "Received from people"}</span>
           <Money minor={total} className="text-lg font-semibold" />

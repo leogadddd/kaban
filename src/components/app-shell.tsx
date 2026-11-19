@@ -33,13 +33,13 @@ const NAV = [
   { href: "/activity", label: "Activity", icon: List },
 ] as const;
 
-const MORE = [
+const MORE: { href: string; label: string; short?: string; icon: typeof Users }[] = [
   { href: "/people", label: "People", icon: Users },
-  { href: "/owed", label: "Who Owes Me", icon: HandCoins },
+  { href: "/owed", label: "Who Owes Me", short: "Owed to me", icon: HandCoins },
   { href: "/instalments", label: "Instalments", icon: CalendarClock },
-  { href: "/payments", label: "Payment History", icon: History },
+  { href: "/payments", label: "Payment History", short: "Payments", icon: History },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/sync", label: "Sync & Backup", icon: RefreshCw },
+  { href: "/sync", label: "Sync & Backup", short: "Backup", icon: RefreshCw },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -124,7 +124,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="More">
         <nav className="grid grid-cols-3 gap-2 pb-2">
-          {MORE.map(({ href, label, icon: Icon }) => (
+          {MORE.map(({ href, label, short, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -137,7 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="grid size-10 place-items-center rounded-2xl bg-pale text-brand">
                 <Icon className="size-5" />
               </span>
-              {label}
+              <span className="whitespace-nowrap">{short ?? label}</span>
             </Link>
           ))}
         </nav>

@@ -4,9 +4,12 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { formatMoney } from "@/lib/money";
 import { animatedBack } from "@/lib/nav-direction";
+
+const noopSubscribe = () => () => {};
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -159,7 +162,7 @@ export function Segmented<T extends string>({
             aria-selected={active}
             onClick={() => onChange(o.value)}
             className={cx(
-              "relative flex-1 rounded-xl font-medium transition-colors",
+              "relative flex-1 rounded-xl font-medium whitespace-nowrap transition-colors",
               size === "sm" ? "min-h-9 px-2 text-sm" : "min-h-11 px-3",
               active ? "text-ink" : "text-ink-2",
             )}
@@ -204,13 +207,21 @@ export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; ti
 }
 
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: string; children: ReactNode }) {
+  // Rendered into <body> so a sheet can open from inside another sheet (e.g. the date picker in "Record a debt")
+  // without being trapped by the parent's transform.
+  const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopImmediatePropagation(); // only the topmost sheet closes
+      onClose();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [open, onClose]);
-  return (
+  if (!mounted) return null;
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={title}>
@@ -239,7 +250,8 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

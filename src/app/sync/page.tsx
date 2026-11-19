@@ -77,7 +77,13 @@ export default function SyncPage() {
             <dt className="text-ink-3">Queued changes</dt>
             <dd className="num text-right">{counts.pending} pending{counts.failed ? ` · ${counts.failed} failed` : ""}{counts.conflict ? ` · ${counts.conflict} conflicts` : ""}</dd>
             <dt className="text-ink-3">Storage</dt>
-            <dd className="text-right">{persisted ? <span className="inline-flex items-center gap-1 text-income"><ShieldCheck className="size-4" /> Protected</span> : "Best-effort"}{usage ? ` · ${usage}` : ""}</dd>
+            <dd className="text-right">{persisted ? <span className="inline-flex items-center gap-1 text-income"><ShieldCheck className="size-4" /> Protected</span> : "Best-effort"}</dd>
+            {usage && (
+              <>
+                <dt className="text-ink-3">Space used</dt>
+                <dd className="num text-right">{usage.replace(" used", "")}</dd>
+              </>
+            )}
             <dt className="text-ink-3">Last backup</dt>
             <dd className="text-right">{lastBackup ? new Date(lastBackup).toLocaleString("en-PH") : "Never"}</dd>
           </dl>

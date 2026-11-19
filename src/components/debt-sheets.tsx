@@ -6,6 +6,7 @@ import type { DebtStatus } from "@/lib/finance";
 import type { Ledger } from "@/lib/hooks";
 import { formatMoney, minorToInput, parseMinor } from "@/lib/money";
 import { recordRepayment, saveDebt, savePerson } from "@/lib/repo";
+import { DateField } from "./date-field";
 import { Button, Chip, cx, Field, inputCls, Sheet } from "./ui";
 
 // The forms mount only while the sheet is open, so each opening starts with fresh state.
@@ -56,7 +57,7 @@ function DebtForm({ onClose, ledger, personId }: { onClose: () => void; ledger: 
       )}
       <Field label="Amount">{(id) => <input id={id} className={cx(inputCls, "num")} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
       <Field label="What for">{(id) => <input id={id} className={inputCls} placeholder="Borrowed for tuition" value={description} onChange={(e) => setDescription(e.target.value)} />}</Field>
-      <Field label="Date">{(id) => <input id={id} type="date" className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
+      <Field label="Date">{(id) => <DateField id={id} value={date} onChange={setDate} title="Date of the debt" />}</Field>
       {error && <p className="text-sm text-expense" role="alert">{error}</p>}
       <Button type="submit" className="w-full">Save debt</Button>
     </form>
@@ -109,7 +110,7 @@ function RepayForm({ status, onClose, ledger }: { status: DebtStatus; onClose: (
         </div>
         {!funds.length && <p className="text-sm text-expense">Add a cash or debit account first.</p>}
       </div>
-      <Field label="Date">{(id) => <input id={id} type="date" className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
+      <Field label="Date">{(id) => <DateField id={id} value={date} onChange={setDate} title="Date received" />}</Field>
       {error && <p className="text-sm text-expense" role="alert">{error}</p>}
       <Button type="submit" className="w-full">Save repayment</Button>
       <p className="text-center text-xs text-ink-3">Increases the receiving account. Not counted as income.</p>
