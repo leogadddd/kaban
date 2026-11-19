@@ -19,6 +19,7 @@ import { useLedger } from "@/lib/hooks";
 import { animatedBack } from "@/lib/nav-direction";
 import { formatMoney, minorToInput, parseMinor, splitEvenly } from "@/lib/money";
 import { savePerson, saveTransaction, setTransactionVoid } from "@/lib/repo";
+import { runSync } from "@/lib/sync";
 import { ME, type Account, type Arrangement, type Txn, type TxnType } from "@/lib/types";
 
 export default function Page() {
@@ -56,11 +57,8 @@ function Editor() {
   const [type, setType] = useState<TxnType>(linkedType ?? "expense");
   // New records walk type → account → details; edits and fully deep-linked records open on the form.
   const [step, setStep] = useState<Step>(() => (editId ? "form" : !linkedType ? "type" : params.get("account") ? "form" : "account"));
-  const [amount, setAmount] = useState(() => {
-    const p = params.get("amount");
-    const m = p ? parseMinor(p) : null;
-    return m && m > 0 ? minorToInput(m) : "";
-  });
+  const linkedAmountMinor = parseMinor(params.get("amount") ?? "") ?? 0;
+  const [amount, setAmount] = useState(() => linkedAmountMinor > 0 ? minorToInput(linkedAmountMinor) : "");
   const [adjSign, setAdjSign] = useState<1 | -1>(1);
   const [accountId, setAccountId] = useState<string>("");
   const [toAccountId, setToAccountId] = useState<string>(params.get("to") ?? "");
@@ -83,8 +81,8 @@ function Editor() {
   const initialised = useRef(false);
 
   useEffect(() => {
-    if (!editId && step === "form") amountRef.current?.focus({ preventScroll: true });
-  }, [editId, ledger.ready, step]);
+    if (!editId && linkedAmountMinor <= 0 && step === "form") amountRef.current?.focus({ preventScroll: true });
+  }, [editId, ledger.ready, linkedAmountMinor, step]);
 
   // Load the record being edited.
   useEffect(() => {
@@ -218,12 +216,27 @@ function Editor() {
         editId,
       );
       setSaved(true);
-      setTimeout(close, 450);
+      void runSync();
     } catch (e) {
       setError((e as Error).message);
       setSaving(false);
     }
   }
+
+  if (saved)
+    return (
+      <div className="grid min-h-dvh place-items-center lg:min-h-80">
+        <p className="sr-only" role="status">Transaction saved</p>
+        <button
+          type="button"
+          aria-label="Go to Home"
+          onClick={() => router.replace("/home")}
+          className="grid size-24 place-items-center rounded-full bg-income/10 text-income active:scale-95"
+        >
+          <Check className="size-12" aria-hidden="true" />
+        </button>
+      </div>
+    );
 
   if (!ledger.ready || existing === undefined) return <Loading />;
   if (editId && existing === null) return <p className="p-6">Transaction not found.</p>;
@@ -405,11 +418,6 @@ function Editor() {
           )}
         </AnimatePresence>
 
-        {/* Description + category */}
-        <Field label="Description">
-          {(id) => <input id={id} className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={type === "expense" ? "What was it for?" : "Optional"} />}
-        </Field>
-
         {showCategories && (
           <div>
             <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">Category</p>
@@ -522,6 +530,10 @@ function Editor() {
           </div>
         )}
 
+        <Field label="Description">
+          {(id) => <input id={id} className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={type === "expense" ? "What was it for?" : "Optional"} />}
+        </Field>
+
         <button type="button" onClick={() => setMoreOpen((v) => !v)} className="flex items-center gap-1 px-1 text-sm font-medium text-brand" aria-expanded={moreOpen}>
           Notes <ChevronDown className={cx("size-4 transition", moreOpen && "rotate-180")} />
         </button>
@@ -556,15 +568,7 @@ function Editor() {
       <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-6 lg:pt-3 lg:pb-6">
         {error && <p className="mb-2 rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         <Button className="w-full text-base" onClick={submit} disabled={saving || voided}>
-          <AnimatePresence mode="wait" initial={false}>
-            {saved ? (
-              <motion.span key="ok" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-2"><Check className="size-5" /> Saved</motion.span>
-            ) : (
-              <motion.span key="save" className="num">
-                {editId ? "Save changes" : `Save${amountMinor > 0 ? ` ${formatMoney(amountMinor)}` : ""}`}
-              </motion.span>
-            )}
-          </AnimatePresence>
+          <span className="num">{editId ? "Save changes" : `Save${amountMinor > 0 ? ` ${formatMoney(amountMinor)}` : ""}`}</span>
         </Button>
       </div>
     </div>
