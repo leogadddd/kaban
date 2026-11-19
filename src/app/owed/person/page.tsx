@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DebtSheet, RepaySheet, type RepayTarget } from "@/components/debt-sheets";
-import { Avatar, BigMoney, Button, Card, EmptyState, Loading, Money, PageHeader, Progress, Segmented } from "@/components/ui";
+import { Avatar, BigMoney, Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, Progress, Segmented } from "@/components/ui";
 import { formatDay } from "@/lib/dates";
 import { useLedger } from "@/lib/hooks";
 import { setPersonArchived, voidDebt } from "@/lib/repo";
@@ -67,21 +67,19 @@ function PersonDebts() {
             </div>
           </dl>
           {outstanding > 0 && (
-            <Button className="w-full" onClick={() => setRepay({ personId: person.id })}>
+            <Button wrapperClassName="w-full" onClick={() => setRepay({ personId: person.id })}>
               <HandCoins className="size-4" /> Record payment from {person.name.split(" ")[0]}
             </Button>
           )}
         </Card>
 
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="secondary" className="min-w-0 px-3 text-sm whitespace-nowrap" onClick={() => setAdding(true)}>
+          <Button variant="secondary" wrapperClassName="min-w-0" className="px-3 text-sm whitespace-nowrap" onClick={() => setAdding(true)}>
             <Plus className="size-4 shrink-0" /> New debt
           </Button>
-          <Link href="/add" className="min-w-0">
-            <Button variant="secondary" className="w-full px-3 text-sm whitespace-nowrap">
-              <Split className="size-4 shrink-0" /> Split a bill
-            </Button>
-          </Link>
+          <ButtonLink href="/add" variant="secondary" wrapperClassName="min-w-0" className="px-3 text-sm whitespace-nowrap">
+            <Split className="size-4 shrink-0" /> Split a bill
+          </ButtonLink>
         </div>
 
         <Segmented value={tab} onChange={setTab} options={[{ value: "open", label: "Unsettled" }, { value: "all", label: "History" }]} />
@@ -121,7 +119,7 @@ function PersonDebts() {
                   <p className="flex items-center gap-1.5 text-sm font-medium text-income"><Check className="size-4" /> Settled</p>
                 ) : (
                   <div className="flex gap-2">
-                    <Button className="flex-1" onClick={() => setRepay({ personId: person.id, debtId: s.debt.id })}><HandCoins className="size-4" /> Record repayment</Button>
+                    <Button wrapperClassName="flex-1" onClick={() => setRepay({ personId: person.id, debtId: s.debt.id })}><HandCoins className="size-4" /> Record repayment</Button>
                     {!txn && s.repaid === 0 && (
                       <Button variant="danger" className="px-4" aria-label="Remove debt" onClick={async () => {
                           if (await confirmDialog({ title: "Remove this debt?", body: s.debt.description || undefined, confirmLabel: "Remove", danger: true })) await voidDebt(s.debt.id);
@@ -141,7 +139,7 @@ function PersonDebts() {
 
         <Button
           variant="ghost"
-          className="w-full"
+          wrapperClassName="w-full"
           onClick={async () => {
             if (
               outstanding > 0 &&

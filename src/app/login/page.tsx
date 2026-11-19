@@ -49,7 +49,7 @@ export default function LoginPage() {
           action={<Link href="/forgot-password" className="font-medium text-brand">Forgot?</Link>}
         />
         <FormError>{error}</FormError>
-        <Button type="submit" className="w-full" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
+        <Button type="submit" wrapperClassName="w-full" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
       </form>
     </AuthScreen>
   );

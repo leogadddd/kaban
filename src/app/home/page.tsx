@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { animate, motion, useMotionValue, type PanInfo } from "motion/react";
 import Link from "next/link";
 import { ArrowRight, CreditCard, HandCoins, Landmark, Plus, Wallet, WalletCards } from "lucide-react";
@@ -10,7 +11,7 @@ import { CreditOverview } from "@/components/credit-overview";
 import { PrivacyToggle } from "@/components/privacy-toggle";
 import { SyncPill } from "@/components/sync-pill";
 import { TxnRow } from "@/components/txn-row";
-import { BigMoney, Button, Card, EmptyState, Loading, Money, SectionTitle, Segmented } from "@/components/ui";
+import { BigMoney, ButtonLink, Card, EmptyState, Loading, Money, SectionTitle, Segmented } from "@/components/ui";
 import { dailySpend } from "@/lib/finance";
 import { useIsDesktop, useLedger } from "@/lib/hooks";
 import { loadDemoData } from "@/lib/demo";
@@ -92,9 +93,9 @@ export default function HomePage() {
         </div>
         {ledger.activeAccounts.length > 0 && (
           <div className="flex items-center gap-2">
-          <Link href="/accounts/new" className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-4 text-sm font-medium hover:bg-pale">
+          <HapticLink href="/accounts/new" className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-4 text-sm font-medium hover:bg-pale">
             <Plus className="size-4" /> Add account
-          </Link>
+          </HapticLink>
           </div>
         )}
       </div>
@@ -174,11 +175,9 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
         title="Add your first account"
         body="Start with your wallet cash, a bank or e-wallet account, or a credit card."
         action={
-          <Link href="/accounts/new">
-            <Button>
-              <Plus className="size-4" /> Add account
-            </Button>
-          </Link>
+          <ButtonLink href="/accounts/new">
+            <Plus className="size-4" /> Add account
+          </ButtonLink>
         }
       />
     );
@@ -193,13 +192,13 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <button onClick={onCredit} className="rounded-3xl bg-night p-4 text-left text-white shadow-float dark:ring-1 dark:ring-white/6 active:scale-[0.98]">
+        <HapticButton onClick={onCredit} className="rounded-3xl bg-night p-4 text-left text-white shadow-float dark:ring-1 dark:ring-white/6 active:scale-[0.98]">
           <p className="text-xs text-white/60">Credit outstanding</p>
           <Money minor={totals.creditOutstanding} className="mt-1 block text-xl font-semibold" />
           <p className="mt-2 flex items-center gap-1 text-xs text-mint">
             Credit view <ArrowRight className="size-3" />
           </p>
-        </button>
+        </HapticButton>
         <Link href="/owed" className="rounded-3xl bg-brand-2 p-4 text-on-brand shadow-float active:scale-[0.98]">
           <p className="flex items-center gap-1 text-xs text-on-brand/75">
             <HandCoins className="size-3.5" /> Owed to me
@@ -270,17 +269,18 @@ function DesktopSetup() {
             </Link>
           ))}
         </div>
-        <button
+        <HapticButton
           type="button"
           disabled={busy}
           onClick={async () => {
             setBusy(true);
             await loadDemoData();
           }}
-          className="mt-6 text-sm font-medium text-ink-3 hover:text-brand disabled:opacity-50"
+          wrapperClassName="mt-6"
+          className="text-sm font-medium text-ink-3 hover:text-brand disabled:opacity-50"
         >
           {busy ? "Loading sample data…" : "Or explore with sample data first"}
-        </button>
+        </HapticButton>
       </div>
     </div>
   );

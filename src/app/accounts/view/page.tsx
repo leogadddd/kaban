@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticLink } from "@/components/haptic-button";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Archive, ArchiveRestore, ArrowLeftRight, Pencil, Plus, SlidersHorizontal } from "lucide-react";
@@ -7,7 +8,7 @@ import { Suspense } from "react";
 import { AccountCard } from "@/components/account-card";
 import { CreditOverview } from "@/components/credit-overview";
 import { GroupedTxns } from "@/components/txn-row";
-import { Button, Card, EmptyState, Loading, Money, PageHeader, SectionTitle } from "@/components/ui";
+import { Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, SectionTitle } from "@/components/ui";
 import { formatDayLong } from "@/lib/dates";
 import { useLedger } from "@/lib/hooks";
 import { setAccountArchived } from "@/lib/repo";
@@ -36,26 +37,20 @@ function AccountView() {
         title={acc.name}
         back="/accounts"
         action={
-          <Link href={`/accounts/new?edit=${acc.id}`} className="grid size-11 place-items-center rounded-full border border-line bg-surface" aria-label="Edit account">
+          <HapticLink href={`/accounts/new?edit=${acc.id}`} className="grid size-11 place-items-center rounded-full border border-line bg-surface" aria-label="Edit account">
             <Pencil className="size-4" />
-          </Link>
+          </HapticLink>
         }
       />
       <div className="space-y-5 px-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6 lg:gap-y-5 lg:space-y-0 lg:[&>*]:col-start-1">
         {credit ? <CreditOverview ledger={ledger} accountId={acc.id} showSelector={false} /> : <AccountCard b={b} />}
 
         <div className="grid grid-cols-3 gap-2">
-          <Link href={`/add?account=${acc.id}`}>
-            <Button variant="secondary" className="w-full px-2 text-sm"><Plus className="size-4" />Add</Button>
-          </Link>
+          <ButtonLink href={`/add?account=${acc.id}`} variant="secondary" className="px-2 text-sm"><Plus className="size-4" />Add</ButtonLink>
           {!credit && (
-            <Link href={`/add?type=transfer&account=${acc.id}`}>
-              <Button variant="secondary" className="w-full px-2 text-sm"><ArrowLeftRight className="size-4" />Transfer</Button>
-            </Link>
+            <ButtonLink href={`/add?type=transfer&account=${acc.id}`} variant="secondary" className="px-2 text-sm"><ArrowLeftRight className="size-4" />Transfer</ButtonLink>
           )}
-          <Link href={`/add?type=adjustment&account=${acc.id}`}>
-            <Button variant="secondary" className="w-full px-2 text-sm"><SlidersHorizontal className="size-4" />Adjust</Button>
-          </Link>
+          <ButtonLink href={`/add?type=adjustment&account=${acc.id}`} variant="secondary" className="px-2 text-sm"><SlidersHorizontal className="size-4" />Adjust</ButtonLink>
         </div>
 
         <Card>
@@ -85,7 +80,7 @@ function AccountView() {
           {txns.length ? <GroupedTxns txns={txns} ledger={ledger} perspective={acc.id} /> : <Card className="text-sm text-ink-3">No transactions yet.</Card>}
         </section>
 
-        <Button variant="ghost" className="w-full" onClick={() => setAccountArchived(acc.id, !acc.archived)}>
+        <Button variant="ghost" wrapperClassName="w-full" onClick={() => setAccountArchived(acc.id, !acc.archived)}>
           {acc.archived ? <><ArchiveRestore className="size-4" /> Restore account</> : <><Archive className="size-4" /> Archive account</>}
         </Button>
         <p className="-mt-3 text-center text-xs text-ink-3">Archiving hides the account but keeps its full history.</p>

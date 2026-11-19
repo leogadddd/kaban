@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { alertDialog, confirmDialog, confirmSignOut } from "@/components/dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,7 +39,7 @@ export default function SettingsPage() {
                   ? "Install Kaban from Chrome. It opens like an app and works offline."
                   : "Install Kaban from Chrome or Edge, or add it to your phone's Home Screen."}
             </p>
-            <Button variant="secondary" className="w-full" onClick={() => void requestInstall()}>
+            <Button variant="secondary" wrapperClassName="w-full" onClick={() => void requestInstall()}>
               {install.platform === "desktop" ? "Install Kaban" : "Add to Home Screen"}
             </Button>
             <InstallSheet />
@@ -62,7 +63,7 @@ function AccountSection({ signedIn, email }: { signedIn: boolean; email?: string
         <SectionTitle><span className="flex items-center gap-1.5"><UserRound className="size-4 text-brand" /> Account</span></SectionTitle>
         <p className="text-sm text-ink-3">Sign in to back up your records and use Kaban on more than one device. Everything still saves here first.</p>
         <div className="grid grid-cols-2 gap-3">
-          <Link href="/signup" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">Create account</Link>
+          <HapticLink href="/signup" wrapperClassName="grid" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">Create account</HapticLink>
           <Link href="/login" className="flex min-h-12 items-center justify-center rounded-2xl bg-pale font-medium text-brand">Sign in</Link>
         </div>
       </Card>
@@ -146,7 +147,7 @@ function EraseDevice() {
       <p className="text-sm text-ink-3">Erase every account, transaction and person on this device. Export a backup first.</p>
       <Button
         variant="danger"
-        className="w-full"
+        wrapperClassName="w-full"
         onClick={async () => {
           const ok = await confirmDialog({
             title: "Erase everything on this device?",
@@ -182,7 +183,7 @@ function Appearance() {
         {THEMES.map(({ value, label, icon: Icon, preview }) => {
           const active = pref === value;
           return (
-            <button
+            <HapticButton
               key={value}
               type="button"
               role="radio"
@@ -199,7 +200,7 @@ function Appearance() {
                 <span className={cx("absolute bottom-2 h-2 rounded [background:var(--pv-accent)]", value === "system" ? "left-[calc(50%-1.1rem)] w-9" : "left-2 w-5")} />
               </span>
               <span className="flex items-center gap-1"><Icon className={cx("size-3.5", active && "text-brand")} /> {label}</span>
-            </button>
+            </HapticButton>
           );
         })}
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
+import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { motion } from "motion/react";
-import Link from "next/link";
 import { ArrowRight, CloudCheck, CreditCard, HandCoins, SquarePlus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMeta } from "@/lib/hooks";
@@ -24,16 +24,16 @@ export function OpenAppButton({ className, children, variant = "primary" }: { cl
   );
   if (installFirst)
     return (
-      <button type="button" onClick={() => requestInstall()} className={cls}>
+      <HapticButton type="button" onClick={() => requestInstall()} className={cls}>
         {children ?? "Get the app"}
         <SquarePlus className="size-4" />
-      </button>
+      </HapticButton>
     );
   return (
-    <Link href={started ? "/home" : "/welcome"} className={cls}>
+    <HapticLink href={started ? "/home" : "/welcome"} className={cls}>
       {children ?? (started ? "Open Kaban" : "Get started — it's free")}
       <ArrowRight className="size-4" />
-    </Link>
+    </HapticLink>
   );
 }
 
@@ -150,9 +150,9 @@ export function HeroSecondary() {
   const install = useInstall();
   if (shouldInstallFirst(install))
     return (
-      <Link href={typeof mode === "string" ? "/home" : "/welcome"} className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-line bg-white px-5 font-medium text-ink hover:bg-pale">
+      <HapticLink href={typeof mode === "string" ? "/home" : "/welcome"} className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-line bg-white px-5 font-medium text-ink hover:bg-pale">
         Use in browser instead
-      </Link>
+      </HapticLink>
     );
   return <InstallButton variant="outline" />;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { motion } from "motion/react";
 import { Check, Download, MoreHorizontal, Share, Smartphone, SquarePlus } from "lucide-react";
 import Link from "next/link";
@@ -133,7 +134,7 @@ export function InstallButton({ className, variant = "light" }: { className?: st
 
   return (
     <>
-      <button
+      <HapticButton
         onClick={onClick}
         disabled={done}
         className={cx(
@@ -146,7 +147,7 @@ export function InstallButton({ className, variant = "light" }: { className?: st
       >
         {done ? <Check className="size-4" /> : s.platform === "desktop" && !s.canPrompt ? <Download className="size-4" /> : <SquarePlus className="size-4" />}
         {done ? "Installed on this device" : s.platform === "desktop" ? "Install Kaban" : "Add to Home Screen"}
-      </button>
+      </HapticButton>
     </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect -- form state is initialised from async IndexedDB reads and deep-link params */
 
+import { HapticButton } from "@/components/haptic-button";
 import { confirmDialog } from "@/components/dialog";
 import { useMoney } from "@/lib/privacy";
 import { DateField } from "@/components/date-field";
@@ -246,7 +247,7 @@ function Editor() {
     return (
       <div className="pt-safe p-6 text-center">
         <p className="font-semibold">Add an account first</p>
-        <Button className="mt-4" onClick={() => router.replace("/accounts/new")}>Add account</Button>
+        <Button wrapperClassName="mt-4" onClick={() => router.replace("/accounts/new")}>Add account</Button>
       </div>
     );
 
@@ -268,15 +269,18 @@ function Editor() {
       <StepScreen title="New transaction" subtitle="What kind of transaction is this?" onClose={close} animateIn={stepMoved}>
         <div className="grid grid-cols-2 gap-3">
           {TYPE_CHOICES.map(({ type: t, icon: Icon, body, tone }, i) => (
-            <motion.button
+            <motion.div
               key={t}
-              type="button"
+              className="grid"
               initial={stepMoved ? { opacity: 0, y: 10 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
-              onClick={() => chooseType(t)}
-              className="flex min-h-36 flex-col items-start gap-3 rounded-3xl border border-line bg-surface p-4 text-left shadow-soft transition active:scale-[0.98] lg:hover:border-brand-2"
             >
+              <HapticButton
+                type="button"
+                onClick={() => chooseType(t)}
+                className="flex min-h-36 flex-col items-start gap-3 rounded-3xl border border-line bg-surface p-4 text-left shadow-soft transition active:scale-[0.98] lg:hover:border-brand-2"
+              >
               <span className={cx("grid size-11 place-items-center rounded-2xl", tone === "expense" ? "bg-expense/10 text-expense" : tone === "income" ? "bg-income/10 text-income" : "bg-pale text-brand")}>
                 <Icon className="size-5" />
               </span>
@@ -284,7 +288,8 @@ function Editor() {
                 <span className="block font-semibold">{TYPE_LABEL[t]}</span>
                 <span className="mt-0.5 block text-xs text-ink-3">{body}</span>
               </span>
-            </motion.button>
+              </HapticButton>
+            </motion.div>
           ))}
         </div>
       </StepScreen>
@@ -314,21 +319,21 @@ function Editor() {
     <div className="flex min-h-dvh flex-col lg:min-h-0">
       <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
         {editId ? (
-          <button onClick={close} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
+          <HapticButton onClick={close} wrapperClassName="-ml-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
             <X className="size-6" />
-          </button>
+          </HapticButton>
         ) : (
-          <button onClick={stepBack} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
+          <HapticButton onClick={stepBack} wrapperClassName="-ml-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
             <ChevronLeft className="size-6" />
-          </button>
+          </HapticButton>
         )}
         <h1 className="font-semibold">{editId ? (voided ? "Voided transaction" : "Edit transaction") : `New ${TYPE_LABEL[type].toLowerCase()}`}</h1>
         {editId ? (
           <span className="size-11" />
         ) : (
-          <button onClick={close} className="-mr-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
+          <HapticButton onClick={close} wrapperClassName="-mr-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
             <X className="size-6" />
-          </button>
+          </HapticButton>
         )}
       </header>
 
@@ -353,9 +358,9 @@ function Editor() {
           </label>
           <div className="mt-1 flex items-center justify-center gap-2">
             {type === "adjustment" && (
-              <button onClick={() => setAdjSign((s) => (s === 1 ? -1 : 1))} className="grid size-11 place-items-center rounded-full bg-pale text-brand" aria-label={adjSign === 1 ? "Increase (tap to decrease)" : "Decrease (tap to increase)"}>
+              <HapticButton onClick={() => setAdjSign((s) => (s === 1 ? -1 : 1))} className="grid size-11 place-items-center rounded-full bg-pale text-brand" aria-label={adjSign === 1 ? "Increase (tap to decrease)" : "Decrease (tap to increase)"}>
                 {adjSign === 1 ? <Plus className="size-5" /> : <Minus className="size-5" />}
-              </button>
+              </HapticButton>
             )}
             <span className="text-4xl font-semibold text-ink-3" aria-hidden="true">₱</span>
             <input
@@ -426,7 +431,7 @@ function Editor() {
             <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">Category</p>
             <div className="grid grid-cols-4 gap-2">
               {categories.map(({ name, icon: Icon }) => (
-                <button
+                <HapticButton
                   key={name}
                   type="button"
                   onClick={() => setCategory(name)}
@@ -438,7 +443,7 @@ function Editor() {
                 >
                   <Icon className="size-5" />
                   <span className="line-clamp-2 text-center">{name}</span>
-                </button>
+                </HapticButton>
               ))}
             </div>
           </div>
@@ -449,12 +454,12 @@ function Editor() {
         {/* Split */}
         {canSplit && (
           <div className="rounded-3xl border border-line bg-surface p-4">
-            <button type="button" onClick={() => setSplitOn((v) => !v)} className="flex w-full items-center justify-between" aria-expanded={splitOn}>
+            <HapticButton type="button" onClick={() => setSplitOn((v) => !v)} wrapperClassName="w-full" className="flex items-center justify-between" aria-expanded={splitOn}>
               <span className="flex items-center gap-2 font-medium"><Split className="size-4 text-brand" /> Split with others</span>
               <span className={cx("relative h-7 w-12 rounded-full transition-colors", splitOn ? "bg-brand" : "bg-line")}>
                 <motion.span layout className={cx("absolute top-1 size-5 rounded-full bg-white shadow", splitOn ? "right-1" : "left-1")} />
               </span>
-            </button>
+            </HapticButton>
             <AnimatePresence initial={false}>
               {splitOn && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
@@ -537,9 +542,9 @@ function Editor() {
           {(id) => <input id={id} className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={type === "expense" ? "What was it for?" : "Optional"} />}
         </Field>
 
-        <button type="button" onClick={() => setMoreOpen((v) => !v)} className="flex items-center gap-1 px-1 text-sm font-medium text-brand" aria-expanded={moreOpen}>
+        <HapticButton type="button" onClick={() => setMoreOpen((v) => !v)} className="flex items-center gap-1 px-1 text-sm font-medium text-brand" aria-expanded={moreOpen}>
           Notes <ChevronDown className={cx("size-4 transition", moreOpen && "rotate-180")} />
-        </button>
+        </HapticButton>
         {(moreOpen || notes) && (
           <textarea className={cx(inputCls, "min-h-24 py-3")} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything to remember" aria-label="Notes" />
         )}
@@ -547,7 +552,7 @@ function Editor() {
         {editId && existing && (
           <Button
             variant={voided ? "secondary" : "danger"}
-            className="w-full"
+            wrapperClassName="w-full"
             onClick={async () => {
               if (
                 !voided &&
@@ -570,7 +575,7 @@ function Editor() {
 
       <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-6 pb-[max(var(--safe-bottom),1rem)] lg:static lg:max-w-none lg:bg-none lg:px-6 lg:pt-3 lg:pb-6">
         {error && <p className="mb-2 rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
-        <Button className="w-full text-base" onClick={submit} disabled={saving || voided}>
+        <Button wrapperClassName="w-full" className="text-base" onClick={submit} disabled={saving || voided}>
           <span className="num">{editId ? "Save changes" : `Save${amountMinor > 0 ? ` ${formatMoney(amountMinor)}` : ""}`}</span>
         </Button>
       </div>
@@ -595,13 +600,14 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
           const b = ledger.balances.get(a.id);
           const active = a.id === value;
           return (
-            <button
+            <HapticButton
               key={a.id}
               type="button"
               role="radio"
               aria-checked={active}
               onClick={() => onChange(a.id)}
-              className={cx("min-w-36 shrink-0 rounded-2xl border p-3 text-left transition", active ? "border-transparent text-white shadow-float" : "border-line bg-surface")}
+              wrapperClassName="min-w-36 shrink-0"
+              className={cx("rounded-2xl border p-3 text-left transition", active ? "border-transparent text-white shadow-float" : "border-line bg-surface")}
               style={active ? { background: a.color } : undefined}
             >
               <span className="flex items-center gap-1.5 text-sm font-medium">
@@ -615,7 +621,7 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
               <span className={cx("num amount block text-xs", active ? "text-white/75" : "text-ink-3")}>
                 {a.type === "credit" ? `${fmt(b?.available ?? 0, { compact: true })} available` : fmt(b?.balance ?? 0)}
               </span>
-            </button>
+            </HapticButton>
           );
         })}
       </div>
@@ -629,16 +635,16 @@ function StepScreen({ title, subtitle, onBack, onClose, animateIn = true, childr
     <div className="flex min-h-dvh flex-col lg:min-h-0">
       <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
         {onBack ? (
-          <button onClick={onBack} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
+          <HapticButton onClick={onBack} wrapperClassName="-ml-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
             <ChevronLeft className="size-6" />
-          </button>
+          </HapticButton>
         ) : (
           <span className="size-11" />
         )}
         <h1 className="font-semibold">{title}</h1>
-        <button onClick={onClose} className="-mr-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
+        <HapticButton onClick={onClose} wrapperClassName="-mr-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
           <X className="size-6" />
-        </button>
+        </HapticButton>
       </header>
       <motion.div key={title} initial={animateIn ? { opacity: 0, x: 24 } : false} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 380, damping: 34 }} className="flex-1 px-4 pt-2 pb-10 lg:px-6 lg:pt-5">
         <p className="mb-4 px-1 text-[1.35rem] leading-tight font-semibold tracking-tight">{subtitle}</p>
@@ -656,11 +662,12 @@ function AccountList({ accounts, ledger, onPick }: { accounts: Account[]; ledger
         const b = ledger.balances.get(a.id);
         const bank = a.type === "cash" ? undefined : bankFor(a);
         return (
-          <button
+          <HapticButton
             key={a.id}
             type="button"
             onClick={() => onPick(a.id)}
-            className="flex min-h-18 w-full items-center gap-3 rounded-3xl border border-line bg-surface p-3 text-left shadow-soft transition active:scale-[0.99] lg:hover:border-brand-2"
+            wrapperClassName="w-full"
+            className="flex min-h-18 items-center gap-3 rounded-3xl border border-line bg-surface p-3 text-left shadow-soft transition active:scale-[0.99] lg:hover:border-brand-2"
           >
             {bank ? (
               <BankLogo bank={bank} size={44} />
@@ -676,7 +683,7 @@ function AccountList({ accounts, ledger, onPick }: { accounts: Account[]; ledger
               {a.type === "credit" && <span className="block text-[0.68rem] font-normal text-ink-3">available</span>}
             </span>
             <ChevronRight className="size-4 shrink-0 text-ink-3" />
-          </button>
+          </HapticButton>
         );
       })}
     </div>

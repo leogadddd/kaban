@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { DateField } from "@/components/date-field";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreditCard, Landmark, Wallet } from "lucide-react";
@@ -182,7 +183,7 @@ function AccountForm() {
                   {section.items.map((b) => {
                     const active = bankId === b.id;
                     return (
-                      <button
+                      <HapticButton
                         key={b.id}
                         type="button"
                         role="radio"
@@ -199,11 +200,11 @@ function AccountForm() {
                       >
                         <BankLogo bank={b} size={32} />
                         <span className="line-clamp-1 text-center">{b.short}</span>
-                      </button>
+                      </HapticButton>
                     );
                   })}
                   {si === all.length - 1 && (
-                    <button
+                    <HapticButton
                       type="button"
                       role="radio"
                       aria-checked={otherBank}
@@ -218,7 +219,7 @@ function AccountForm() {
                     >
                       <span className="grid size-8 place-items-center rounded-[9px] bg-pale text-base text-brand">+</span>
                       Other
-                    </button>
+                    </HapticButton>
                   )}
                 </div>
               </div>
@@ -238,15 +239,15 @@ function AccountForm() {
           <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">Card colour</p>
           <div className="flex flex-wrap gap-2.5">
             {[...new Set([bankById(bankId)?.color, ...ACCOUNT_COLORS].filter((c): c is string => !!c))].map((c) => (
-              <button type="button" key={c} onClick={() => setColor(c)} className={cx("size-10 rounded-full ring-offset-2 ring-offset-bg", color === c && "ring-2 ring-brand")} style={{ background: c }} aria-label={`Colour ${c}`} aria-pressed={color === c} />
+              <HapticButton type="button" key={c} onClick={() => setColor(c)} className={cx("size-10 rounded-full ring-offset-2 ring-offset-bg", color === c && "ring-2 ring-brand")} style={{ background: c }} aria-label={`Colour ${c}`} aria-pressed={color === c} />
             ))}
           </div>
         </div>
 
         {error && <p className="rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
-        <Button type="submit" className="w-full">{editId ? "Save changes" : "Create account"}</Button>
+        <Button type="submit" wrapperClassName="w-full">{editId ? "Save changes" : "Create account"}</Button>
         {first && (
-          <Button type="button" variant="ghost" className="w-full" onClick={() => router.replace("/home")}>
+          <Button type="button" variant="ghost" wrapperClassName="w-full" onClick={() => router.replace("/home")}>
             Skip for now
           </Button>
         )}

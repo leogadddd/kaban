@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { DateField } from "@/components/date-field";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -62,15 +63,16 @@ export default function ActivityPage() {
             <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-3" />
             <input className={cx(inputCls, "pl-10")} placeholder="Search description, category, notes" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search transactions" type="search" />
           </div>
-          <button
+          <HapticButton
+            wrapperClassName="shrink-0 lg:hidden"
             onClick={() => setFiltersOpen((v) => !v)}
-            className={cx("relative grid size-12 shrink-0 place-items-center rounded-2xl border lg:hidden", filtersOpen || activeFilters ? "border-brand bg-brand text-on-brand" : "border-line bg-surface")}
+            className={cx("relative grid size-12 place-items-center rounded-2xl border", filtersOpen || activeFilters ? "border-brand bg-brand text-on-brand" : "border-line bg-surface")}
             aria-label="Filters"
             aria-expanded={filtersOpen}
           >
             <SlidersHorizontal className="size-5" />
             {activeFilters > 0 && <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-gold text-[0.65rem] text-white">{activeFilters}</span>}
-          </button>
+          </HapticButton>
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
@@ -109,7 +111,7 @@ export default function ActivityPage() {
             </select>
             <div className="flex items-center justify-between">
               <Chip active={showVoid} onClick={() => setShowVoid((v) => !v)}>Show voided</Chip>
-              {activeFilters > 0 && <button onClick={clear} className="flex items-center gap-1 text-sm text-brand"><X className="size-4" /> Clear</button>}
+              {activeFilters > 0 && <HapticButton onClick={clear} className="flex items-center gap-1 text-sm text-brand"><X className="size-4" /> Clear</HapticButton>}
             </div>
           </Card>
 

@@ -29,6 +29,7 @@
 }
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant active (&:is(:active, :where(:has(+ [data-haptic-tap]:active))));
 
 :root {
   color-scheme: light;
@@ -167,12 +168,36 @@ select:focus-visible {
 /* ---------- Native-app feel ---------- */
 a,
 button,
+[data-haptic-tap],
 [role="tab"],
 [role="radio"] {
   -webkit-touch-callout: none; /* no iOS long-press link preview */
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation; /* no double-tap zoom delay */
+}
+
+@layer components {
+  .haptic-target {
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+[data-haptic-tap] {
+  display: none;
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (pointer: coarse) {
+    .haptic-target > :is(a[href], button:enabled):not([aria-disabled="true"], [hidden]) + [data-haptic-tap] {
+      display: block;
+      position: absolute;
+      inset: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
 }
 
 /* ---------- Page transitions (React <ViewTransition>, direction from <html data-nav>) ---------- */

@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, CreditCard, Landmark, Wallet } from "lucide-react";
@@ -144,17 +145,17 @@ export function CardStack({ items, linkTo = true }: { items: AccountBalance[]; l
       </div>
       {n > 1 && (
         <div className="mt-3 flex items-center justify-between px-1">
-          <button onClick={() => go(-1)} className="grid size-11 place-items-center rounded-full border border-line bg-surface active:scale-95" aria-label="Previous account">
+          <HapticButton onClick={() => go(-1)} className="grid size-11 place-items-center rounded-full border border-line bg-surface active:scale-95" aria-label="Previous account">
             <ChevronLeft className="size-5" />
-          </button>
+          </HapticButton>
           <div className="flex gap-1.5" aria-label={`Account ${i + 1} of ${n}`}>
             {items.map((it, k) => (
               <span key={it.account.id} className={cx("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-brand" : "w-1.5 bg-line")} />
             ))}
           </div>
-          <button onClick={() => go(1)} className="grid size-11 place-items-center rounded-full border border-line bg-surface active:scale-95" aria-label="Next account">
+          <HapticButton onClick={() => go(1)} className="grid size-11 place-items-center rounded-full border border-line bg-surface active:scale-95" aria-label="Next account">
             <ChevronRight className="size-5" />
-          </button>
+          </HapticButton>
         </div>
       )}
     </div>

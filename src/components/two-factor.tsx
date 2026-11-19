@@ -63,7 +63,7 @@ export function TwoFactorCard() {
       ) : on ? (
         <Button
           variant="secondary"
-          className="w-full"
+          wrapperClassName="w-full"
           disabled={busy}
           onClick={async () => {
             if (
@@ -91,7 +91,7 @@ export function TwoFactorCard() {
       ) : (
         <Button
           variant="secondary"
-          className="w-full"
+          wrapperClassName="w-full"
           disabled={busy || !factors}
           onClick={async () => {
             setBusy(true);

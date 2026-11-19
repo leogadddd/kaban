@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import Link from "next/link";
 import { ChevronRight, HandCoins, Plus } from "lucide-react";
 import { useState } from "react";
@@ -29,7 +30,7 @@ export default function OwedPage() {
       <PageHeader
         title="Who Owes Me"
         back="/home"
-        action={<button onClick={() => setAdding(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand" aria-label="Add debt"><Plus className="size-5" /></button>}
+        action={<HapticButton onClick={() => setAdding(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand" aria-label="Add debt"><Plus className="size-5" /></HapticButton>}
       />
       <div className="space-y-4 px-4">
         <Card className="bg-brand-2 text-on-brand">

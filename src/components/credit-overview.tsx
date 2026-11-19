@@ -9,7 +9,7 @@ import { billedOnStatement } from "@/lib/finance";
 import type { Ledger } from "@/lib/hooks";
 import { BankLogo } from "./bank-logo";
 import { bankFor } from "@/lib/banks";
-import { BigMoney, Button, Card, Chip, EmptyState, Money, SectionTitle } from "./ui";
+import { BigMoney, ButtonLink, Card, Chip, EmptyState, Money, SectionTitle } from "./ui";
 import { UtilisationRing } from "./charts";
 import { TxnRow } from "./txn-row";
 
@@ -40,11 +40,9 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
         title="No credit cards yet"
         body="Add a credit card to track what you owe the bank, billing cycles and instalments."
         action={
-          <Link href="/accounts/new?type=credit">
-            <Button>
-              <Plus className="size-4" /> Add credit card
-            </Button>
-          </Link>
+          <ButtonLink href="/accounts/new?type=credit">
+            <Plus className="size-4" /> Add credit card
+          </ButtonLink>
         }
       />
     );
@@ -113,9 +111,7 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
         </Card>
       </div>
 
-      <Link href={`/add?type=card_payment&to=${acc.id}`} className="block">
-        <Button className="w-full">Record card payment</Button>
-      </Link>
+      <ButtonLink href={`/add?type=card_payment&to=${acc.id}`} wrapperClassName="grid">Record card payment</ButtonLink>
 
       {upcomingInst.length > 0 && (
         <section>

@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { History } from "lucide-react";
 import { useState } from "react";
 import { GroupedTxns } from "@/components/txn-row";
-import { Button, Card, EmptyState, Loading, Money, PageHeader, Segmented } from "@/components/ui";
+import { ButtonLink, Card, EmptyState, Loading, Money, PageHeader, Segmented } from "@/components/ui";
 import { useLedger } from "@/lib/hooks";
 
 export default function PaymentsPage() {
@@ -30,7 +29,7 @@ export default function PaymentsPage() {
           <EmptyState
             icon={<History className="size-6" />}
             title="No payments yet"
-            action={kind === "card" && <Link href="/add?type=card_payment"><Button>Record card payment</Button></Link>}
+            action={kind === "card" && <ButtonLink href="/add?type=card_payment">Record card payment</ButtonLink>}
           />
         )}
       </div>

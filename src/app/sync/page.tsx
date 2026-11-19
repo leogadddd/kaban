@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticLink } from "@/components/haptic-button";
 import { confirmDialog } from "@/components/dialog";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AlertTriangle, Cloud, CloudOff, Download, HardDrive, RefreshCw, ShieldCheck, Upload } from "lucide-react";
@@ -147,7 +148,7 @@ export default function SyncPage() {
           {recoveryAvailable && (
             <div className="mt-3 rounded-2xl bg-gold/10 p-3 text-sm text-ink-2">
               <p>Cloud data was reset. A recovery copy of this browser’s previous records is available to export.</p>
-              <Button variant="ghost" className="mt-1 min-h-10 px-2" onClick={() => doExport(true)}><Download className="size-4" /> Export recovery copy</Button>
+              <Button variant="ghost" wrapperClassName="mt-1" className="min-h-10 px-2" onClick={() => doExport(true)}><Download className="size-4" /> Export recovery copy</Button>
             </div>
           )}
           {msg && <p className="mt-3 rounded-2xl bg-pale p-3 text-sm text-brand" role="status">{msg}</p>}
@@ -183,7 +184,7 @@ function SignedOutCard() {
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/signup" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">Create account</Link>
+        <HapticLink href="/signup" wrapperClassName="grid" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">Create account</HapticLink>
         <Link href="/login" className="flex min-h-12 items-center justify-center rounded-2xl bg-pale font-medium text-brand">Sign in</Link>
       </div>
     </Card>

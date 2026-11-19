@@ -121,7 +121,7 @@ function DialogBody({ d }: { d: Pending }) {
         </label>
       )}
       {d.kind === "alert" ? (
-        <Button type="submit" className="w-full" autoFocus>{d.confirmLabel ?? "OK"}</Button>
+        <Button type="submit" wrapperClassName="w-full" autoFocus>{d.confirmLabel ?? "OK"}</Button>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <Button type="button" variant="secondary" onClick={() => settle(false)}>{d.cancelLabel ?? "Cancel"}</Button>

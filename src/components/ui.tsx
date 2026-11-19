@@ -1,10 +1,10 @@
 "use client";
 
+import { HapticButton, HapticLink, type HapticButtonProps } from "@/components/haptic-button";
 import { AnimatePresence, motion } from "motion/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
-import { useEffect, useId, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { formatMoney } from "@/lib/money";
 import { useMoney } from "@/lib/privacy";
@@ -93,48 +93,46 @@ export function PageHeader({
       <div className="flex min-h-12 items-center gap-2">
         {back &&
           (back === true ? (
-            <button onClick={() => animatedBack(() => router.back())} className="-ml-2 grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
+            <HapticButton wrapperClassName="-ml-2" onClick={() => animatedBack(() => router.back())} className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
               <ChevronLeft className="size-6" />
-            </button>
+            </HapticButton>
           ) : (
-            <Link href={back} className={cx("-ml-2 grid size-11 place-items-center rounded-full active:bg-pale lg:hover:bg-pale", back === "/home" && "lg:hidden")} aria-label="Back">
+            <HapticLink href={back} wrapperClassName={cx("-ml-2", back === "/home" && "lg:hidden")} className="grid size-11 place-items-center rounded-full active:bg-pale lg:hover:bg-pale" aria-label="Back">
               <ChevronLeft className="size-6" />
-            </Link>
+            </HapticLink>
           ))}
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-[1.6rem] leading-tight font-semibold tracking-tight lg:text-[2rem]">{title}</h1>
           {subtitle && <div className="text-sm text-ink-3">{subtitle}</div>}
         </div>
         {/* Desktop has one toggle in the sidebar; phones get it on screens that show amounts. */}
-        {privacy && <PrivacyToggle className="size-11 lg:hidden" />}
+        {privacy && <PrivacyToggle className="size-11" wrapperClassName="lg:hidden" />}
         {action}
       </div>
     </header>
   );
 }
 
-export function Button({
-  children,
-  variant = "primary",
-  className,
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger" | "destructive" }) {
-  return (
-    <button
-      {...props}
-      className={cx(
-        "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 font-medium transition active:scale-[0.98] disabled:opacity-40",
-        variant === "primary" && "bg-brand text-on-brand shadow-soft",
-        variant === "secondary" && "bg-pale text-brand",
-        variant === "ghost" && "text-brand active:bg-pale",
-        variant === "danger" && "bg-expense/10 text-expense",
-        variant === "destructive" && "bg-expense text-white shadow-soft",
-        className,
-      )}
-    >
-      {children}
-    </button>
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "destructive";
+
+function buttonClass(variant: ButtonVariant, className?: string) {
+  return cx(
+    "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 font-medium transition active:scale-[0.98] disabled:opacity-40",
+    variant === "primary" && "bg-brand text-on-brand shadow-soft",
+    variant === "secondary" && "bg-pale text-brand",
+    variant === "ghost" && "text-brand active:bg-pale",
+    variant === "danger" && "bg-expense/10 text-expense",
+    variant === "destructive" && "bg-expense text-white shadow-soft",
+    className,
   );
+}
+
+export function Button({ variant = "primary", className, ...props }: HapticButtonProps & { variant?: ButtonVariant }) {
+  return <HapticButton {...props} className={buttonClass(variant, className)} />;
+}
+
+export function ButtonLink({ variant = "primary", className, ...props }: ComponentProps<typeof HapticLink> & { variant?: ButtonVariant }) {
+  return <HapticLink {...props} className={buttonClass(variant, className)} />;
 }
 
 export function Card({ children, className, ...p }: React.HTMLAttributes<HTMLDivElement>) {
@@ -190,13 +188,14 @@ export function Segmented<T extends string>({
       {options.map((o) => {
         const active = o.value === value;
         return (
-          <button
+          <HapticButton
             key={o.value}
+            wrapperClassName="flex-1"
             role="tab"
             aria-selected={active}
             onClick={() => onChange(o.value)}
             className={cx(
-              "relative flex-1 rounded-xl font-medium whitespace-nowrap transition-colors",
+              "relative rounded-xl font-medium whitespace-nowrap transition-colors",
               size === "sm" ? "min-h-9 px-2 text-sm" : "min-h-11 px-3",
               active ? "text-ink" : "text-ink-2",
             )}
@@ -205,7 +204,7 @@ export function Segmented<T extends string>({
               <motion.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-xl bg-surface shadow-soft" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />
             )}
             <span className="relative">{o.label}</span>
-          </button>
+          </HapticButton>
         );
       })}
     </div>
@@ -214,18 +213,19 @@ export function Segmented<T extends string>({
 
 export function Chip({ active, children, onClick, className }: { active?: boolean; children: ReactNode; onClick?: () => void; className?: string }) {
   return (
-    <button
+    <HapticButton
       type="button"
+      wrapperClassName="shrink-0"
       onClick={onClick}
       aria-pressed={active}
       className={cx(
-        "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition",
+        "inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition",
         active ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2",
         className,
       )}
     >
       {children}
-    </button>
+    </HapticButton>
   );
 }
 
@@ -284,9 +284,9 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
               {title && (
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold">{title}</h2>
-                  <button onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale hover:bg-mint" aria-label="Close">
+                  <HapticButton onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale hover:bg-mint" aria-label="Close">
                     <X className="size-5" />
-                  </button>
+                  </HapticButton>
                 </div>
               )}
               {children}
@@ -308,9 +308,9 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
               {title && (
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-lg font-semibold">{title}</h2>
-                  <button onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale" aria-label="Close">
+                  <HapticButton onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale" aria-label="Close">
                     <X className="size-5" />
-                  </button>
+                  </HapticButton>
                 </div>
               )}
               {children}

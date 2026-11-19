@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import Link from "next/link";
 import { ChevronRight, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
@@ -33,7 +34,7 @@ export default function PeoplePage() {
         title="People"
         back="/home"
         subtitle="People you split bills with or lend to. They don't need an account."
-        action={<button onClick={() => setOpen(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand" aria-label="Add person"><UserPlus className="size-5" /></button>}
+        action={<HapticButton onClick={() => setOpen(true)} className="grid size-11 place-items-center rounded-full bg-brand text-on-brand" aria-label="Add person"><UserPlus className="size-5" /></HapticButton>}
       />
       <div className="space-y-4 px-4">
         {ledger.ready && people.length > 0 && (
@@ -99,7 +100,7 @@ export default function PeoplePage() {
         <form onSubmit={add} className="space-y-3">
           <Field label="Name" error={error}>{(id) => <input id={id} className={inputCls} value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="e.g. Mama" />}</Field>
           <Field label="Nickname (optional)">{(id) => <input id={id} className={inputCls} value={nickname} onChange={(e) => setNickname(e.target.value)} />}</Field>
-          <Button type="submit" className="w-full">Add</Button>
+          <Button type="submit" wrapperClassName="w-full">Add</Button>
         </form>
       </Sheet>
     </>

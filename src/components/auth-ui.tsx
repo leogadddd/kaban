@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
@@ -29,14 +30,15 @@ export function AuthScreen({
   return (
     <div className="pt-safe flex min-h-dvh flex-col px-5 pb-[max(var(--safe-bottom),1.25rem)] lg:justify-center lg:py-12">
       <div className="lg:rounded-[2rem] lg:border lg:border-line lg:bg-surface lg:p-8 lg:shadow-soft">
-        <button
+        <HapticButton
           type="button"
           onClick={() => (onBack ? onBack() : window.history.length > 1 ? router.back() : router.replace(back))}
-          className="-ml-2 mt-2 grid size-11 place-items-center rounded-full active:bg-pale lg:mt-0 lg:hover:bg-pale"
+          wrapperClassName="-ml-2 mt-2 lg:mt-0"
+          className="grid size-11 place-items-center rounded-full active:bg-pale lg:hover:bg-pale"
           aria-label="Back"
         >
           <ChevronLeft className="size-6" />
-        </button>
+        </HapticButton>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="mt-4">
           <div className="flex items-center gap-2">
             <LogoMark size={28} />
@@ -108,14 +110,15 @@ export function PasswordField({
               value={value}
               onChange={(e) => onChange(e.target.value)}
             />
-            <button
+            <HapticButton
               type="button"
               onClick={() => setShow(!show)}
-              className="absolute inset-y-0 right-1 grid w-11 place-items-center text-ink-3"
+              wrapperClassName="absolute inset-y-0 right-1 w-11"
+              className="grid place-items-center text-ink-3"
               aria-label={show ? "Hide password" : "Show password"}
             >
               {show ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-            </button>
+            </HapticButton>
           </div>
         )}
       </Field>

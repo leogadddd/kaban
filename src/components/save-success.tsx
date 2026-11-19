@@ -1,7 +1,8 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 const COLORS = ["var(--color-brand)", "var(--color-brand-2)", "var(--color-income)", "var(--color-gold)", "var(--color-mint)", "var(--color-expense)"];
 
@@ -30,19 +31,23 @@ function makePieces(n: number): Piece[] {
 export function SaveSuccess({ title, amount, subtitle, onDone }: { title: string; amount?: string; subtitle?: string; onDone: () => void }) {
   const reduce = useReducedMotion();
   const pieces = useMemo(() => makePieces(36), []);
+  const playedHaptic = useRef(false);
 
   useEffect(() => {
-    if (!reduce) navigator.vibrate?.([12, 40, 18]);
+    if (playedHaptic.current) return;
+    playedHaptic.current = true;
+    if (!reduce) navigator.vibrate?.([10, 45, 24]);
   }, [reduce]);
 
   const ease = [0.22, 1, 0.36, 1] as const;
 
   return (
-    <button
+    <HapticButton
       type="button"
+      wrapperClassName="grid"
       aria-label="Go to Home"
       onClick={onDone}
-      className="relative grid min-h-dvh w-full place-items-center overflow-hidden lg:min-h-96"
+      className="relative grid min-h-dvh place-items-center overflow-hidden lg:min-h-96"
     >
       <p className="sr-only" role="status">Transaction saved</p>
       <div className="flex flex-col items-center">
@@ -125,6 +130,6 @@ export function SaveSuccess({ title, amount, subtitle, onDone }: { title: string
           Tap anywhere to continue
         </motion.p>
       </div>
-    </button>
+    </HapticButton>
   );
 }

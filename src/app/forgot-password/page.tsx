@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
         <form onSubmit={submit} className="space-y-4">
           <EmailField value={email} onChange={setEmail} autoFocus />
           <FormError>{error}</FormError>
-          <Button type="submit" className="w-full" disabled={busy}>{busy ? "Sending…" : "Send reset link"}</Button>
+          <Button type="submit" wrapperClassName="w-full" disabled={busy}>{busy ? "Sending…" : "Send reset link"}</Button>
         </form>
       )}
     </AuthScreen>

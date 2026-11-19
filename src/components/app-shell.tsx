@@ -28,6 +28,7 @@ import { PrivacySync, PrivacyToggle } from "./privacy-toggle";
 import { PullToRefresh } from "./pull-to-refresh";
 import { SyncPill } from "./sync-pill";
 import { cx, Sheet } from "./ui";
+import { HapticButton, HapticLink } from "./haptic-button";
 
 const NAV = [
   { href: "/home", label: "Home", icon: Home },
@@ -174,28 +175,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-function BottomNavItem({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={cx("group relative", className)}>
-      {children}
-      {/* A real tap on the label gives WebKit a trusted switch activation and lets swipes scroll. */}
-      <label aria-hidden="true" className="absolute inset-0 hidden touch-manipulation supports-[-webkit-touch-callout:none]:pointer-coarse:block">
-        <input
-          type="checkbox"
-          {...{ switch: "" }}
-          tabIndex={-1}
-          className="pointer-events-none invisible absolute size-px"
-          onChange={(event) => {
-            // Activate the sibling link or button through its existing click path.
-            const control = event.currentTarget.parentElement?.previousElementSibling;
-            if (control instanceof HTMLElement) control.click();
-          }}
-        />
-      </label>
-    </div>
-  );
-}
-
 function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void }) {
   const isActive = (href: string) => pathname.startsWith(href);
   const moreActive = MORE.some((m) => pathname.startsWith(m.href));
@@ -207,30 +186,24 @@ function BottomNav({ pathname, onMore }: { pathname: string; onMore: () => void 
         {NAV.map(({ href, label, icon: Icon }) => {
           if (href === "/add")
             return (
-              <BottomNavItem key={href} className="-my-1">
-                <Link href={href} aria-label="Add transaction" className="grid size-14 place-items-center rounded-[1.35rem] bg-brand-2 text-on-brand shadow-float active:scale-95 group-active:scale-95">
-                  <Icon className="size-7" strokeWidth={2.4} />
-                </Link>
-              </BottomNavItem>
+              <HapticLink key={href} href={href} wrapperClassName="-my-1" aria-label="Add transaction" className="grid size-14 place-items-center rounded-[1.35rem] bg-brand-2 text-on-brand shadow-float active:scale-95">
+                <Icon className="size-7" strokeWidth={2.4} />
+              </HapticLink>
             );
           const active = isActive(href);
           return (
-            <BottomNavItem key={href}>
-              <Link href={href} aria-current={active ? "page" : undefined} className="relative flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.68rem] font-medium">
-                {active && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-2xl bg-white/10" transition={{ type: "spring", bounce: 0.25, duration: 0.45 }} />}
-                <Icon className={cx("relative size-5", active ? "text-mint" : "text-white/60")} />
-                <span className={cx("relative", active ? "text-white" : "text-white/60")}>{label}</span>
-              </Link>
-            </BottomNavItem>
+            <HapticLink key={href} href={href} aria-current={active ? "page" : undefined} className="relative flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.68rem] font-medium">
+              {active && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-2xl bg-white/10" transition={{ type: "spring", bounce: 0.25, duration: 0.45 }} />}
+              <Icon className={cx("relative size-5", active ? "text-mint" : "text-white/60")} />
+              <span className={cx("relative", active ? "text-white" : "text-white/60")}>{label}</span>
+            </HapticLink>
           );
         })}
-        <BottomNavItem>
-          <button type="button" onClick={onMore} aria-label="More" className="relative flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.68rem] font-medium">
-            {moreActive && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-2xl bg-white/10" />}
-            <LayoutGrid className={cx("relative size-5", moreActive ? "text-mint" : "text-white/60")} />
-            <span className={cx("relative", moreActive ? "text-white" : "text-white/60")}>More</span>
-          </button>
-        </BottomNavItem>
+        <HapticButton type="button" onClick={onMore} aria-label="More" className="relative flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.68rem] font-medium">
+          {moreActive && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-2xl bg-white/10" />}
+          <LayoutGrid className={cx("relative size-5", moreActive ? "text-mint" : "text-white/60")} />
+          <span className={cx("relative", moreActive ? "text-white" : "text-white/60")}>More</span>
+        </HapticButton>
       </div>
     </nav>
   );

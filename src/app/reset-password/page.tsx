@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { HapticLink } from "@/components/haptic-button";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthScreen, FormError, PasswordField } from "@/components/auth-ui";
@@ -47,9 +47,9 @@ export default function ResetPasswordPage() {
         back="/login"
       >
         {expired && (
-          <Link href="/forgot-password" replace className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">
+          <HapticLink href="/forgot-password" replace wrapperClassName="w-full" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">
             Send a new link
-          </Link>
+          </HapticLink>
         )}
       </AuthScreen>
     );
@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
         <PasswordField label="New password" value={password} onChange={setPassword} autoComplete="new-password" hint="At least 8 characters." />
         <PasswordField label="Confirm new password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
         <FormError>{error}</FormError>
-        <Button type="submit" className="w-full" disabled={busy}>{busy ? "Saving…" : "Save password"}</Button>
+        <Button type="submit" wrapperClassName="w-full" disabled={busy}>{busy ? "Saving…" : "Save password"}</Button>
       </form>
     </AuthScreen>
   );

@@ -70,16 +70,16 @@ export default function WelcomePage() {
             <b className="text-ink">Data stays on this device.</b> Clearing Safari data or losing the phone erases it, so export backups from Sync & Backup.
           </p>
         </div>
-        <Button className="w-full" onClick={() => start(false)} disabled={busy}>
+        <Button wrapperClassName="w-full" onClick={() => start(false)} disabled={busy}>
           <HardDrive className="size-4" /> Start on this device
         </Button>
-        <Button variant="secondary" className="w-full" onClick={() => start(true)} disabled={busy}>
+        <Button variant="secondary" wrapperClassName="w-full" onClick={() => start(true)} disabled={busy}>
           <Sparkles className="size-4" /> Explore with sample data
         </Button>
         {cloudConfigured ? (
           <Button
             variant="ghost"
-            className="min-h-10 w-full text-sm"
+            wrapperClassName="w-full" className="min-h-10 text-sm"
             disabled={busy}
             onClick={() => router.push("/login")}
           >

@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticLink } from "@/components/haptic-button";
 import Link from "next/link";
 import { Archive, ChevronRight, CreditCard, Landmark, Plus, Wallet } from "lucide-react";
 import { useState } from "react";
@@ -28,9 +29,9 @@ export default function AccountsPage() {
         title="Accounts"
         action={
           <div className="flex items-center gap-2">
-            <Link href="/accounts/new" className="grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-soft" aria-label="Add account">
+            <HapticLink href="/accounts/new" className="grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-soft" aria-label="Add account">
               <Plus className="size-5" />
-            </Link>
+            </HapticLink>
           </div>
         }
       />

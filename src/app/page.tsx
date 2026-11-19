@@ -1,3 +1,4 @@
+import { HapticLink } from "@/components/haptic-button";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -432,9 +433,9 @@ export default function Landing() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <OpenAppButton variant="light" />
             {cloudConfigured && (
-              <Link href="/signup" className="inline-flex min-h-12 items-center justify-center rounded-2xl px-5 font-medium text-white/80 ring-1 ring-white/20 hover:bg-white/10 hover:text-white">
+              <HapticLink href="/signup" className="inline-flex min-h-12 items-center justify-center rounded-2xl px-5 font-medium text-white/80 ring-1 ring-white/20 hover:bg-white/10 hover:text-white">
                 Create an account
-              </Link>
+              </HapticLink>
             )}
           </div>
         </Reveal>

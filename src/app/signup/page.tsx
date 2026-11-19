@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
@@ -46,7 +47,7 @@ export default function SignupPage() {
         footer={
           <>
             Wrong email?{" "}
-            <button type="button" className="font-medium text-brand" onClick={() => setSentTo(undefined)}>Start over</button>
+            <HapticButton type="button" className="font-medium text-brand" onClick={() => setSentTo(undefined)}>Start over</HapticButton>
           </>
         }
       >
@@ -54,12 +55,12 @@ export default function SignupPage() {
           <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-pale text-brand">
             <MailCheck className="size-6" />
           </div>
-          <Link href="/login" replace className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">
+          <HapticLink href="/login" replace wrapperClassName="w-full" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">
             I&apos;ve confirmed — sign in
-          </Link>
+          </HapticLink>
           <Button
             variant="ghost"
-            className="w-full"
+            wrapperClassName="w-full"
             disabled={resent}
             onClick={async () => {
               try {
@@ -94,7 +95,7 @@ export default function SignupPage() {
         <PasswordField value={password} onChange={setPassword} autoComplete="new-password" hint="At least 8 characters." />
         <PasswordField label="Confirm password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
         <FormError>{error}</FormError>
-        <Button type="submit" className="w-full" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
+        <Button type="submit" wrapperClassName="w-full" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
         <p className="text-center text-xs text-ink-3">Records already on this device are added to your account.</p>
       </form>
     </AuthScreen>

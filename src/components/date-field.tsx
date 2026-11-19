@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useState } from "react";
@@ -53,13 +54,14 @@ export function DateField({
 
   return (
     <>
-      <button
+      <HapticButton
+        wrapperClassName="w-full min-w-0"
         id={id}
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         className={cx(
-          cx("flex min-h-12 w-full min-w-0 items-center gap-2.5 rounded-2xl border border-line bg-field text-left text-[16px]", compact ? "px-3" : "px-4"),
+          cx("flex min-h-12 items-center gap-2.5 rounded-2xl border border-line bg-field text-left text-[16px]", compact ? "px-3" : "px-4"),
           className,
         )}
       >
@@ -68,7 +70,7 @@ export function DateField({
           {rel && <span className="font-medium text-ink">{rel} · </span>}
           <span className={rel ? "text-ink-2" : ""}>{label}</span>
         </span>
-      </button>
+      </HapticButton>
       <Sheet open={open} onClose={() => setOpen(false)} title={title}>
         <Calendar
           value={value}
@@ -142,15 +144,15 @@ function Calendar({
       </div>
 
       <div className="mb-2 flex items-center justify-between">
-        <button type="button" onClick={() => shift(-1)} className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Previous month">
+        <HapticButton type="button" onClick={() => shift(-1)} className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Previous month">
           <ChevronLeft className="size-5" />
-        </button>
+        </HapticButton>
         <p className="font-semibold" aria-live="polite">
           {monthTitle.format(new Date(view.y, view.m, 1))}
         </p>
-        <button type="button" onClick={() => shift(1)} className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Next month">
+        <HapticButton type="button" onClick={() => shift(1)} className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Next month">
           <ChevronRight className="size-5" />
-        </button>
+        </HapticButton>
       </div>
 
       <div className="grid grid-cols-7 text-center text-xs font-medium text-ink-3" aria-hidden="true">
@@ -180,20 +182,21 @@ function Calendar({
           >
             {cells.map((iso, i) =>
               iso ? (
-                <button
+                <HapticButton
                   key={iso}
+                  wrapperClassName="mx-auto aspect-square w-full max-w-11"
                   type="button"
                   disabled={!!disabled(iso)}
                   onClick={() => onPick(iso)}
                   aria-pressed={iso === value}
                   aria-label={longDay.format(fromISO(iso))}
                   className={cx(
-                    "num mx-auto grid aspect-square w-full max-w-11 place-items-center rounded-full text-[0.95rem] transition disabled:opacity-25",
+                    "num grid place-items-center rounded-full text-[0.95rem] transition disabled:opacity-25",
                     iso === value ? "bg-brand font-semibold text-on-brand" : iso === today ? "font-semibold text-brand ring-1 ring-brand/40" : "text-ink active:bg-pale",
                   )}
                 >
                   {Number(iso.slice(8))}
-                </button>
+                </HapticButton>
               ) : (
                 <span key={`e${i}`} />
               ),

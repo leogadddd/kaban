@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { useMoney } from "@/lib/privacy";
 import { useState } from "react";
 import { todayISO } from "@/lib/dates";
@@ -61,7 +62,7 @@ function DebtForm({ onClose, ledger, personId }: { onClose: () => void; ledger: 
       <Field label="What for">{(id) => <input id={id} className={inputCls} placeholder="Borrowed for tuition" value={description} onChange={(e) => setDescription(e.target.value)} />}</Field>
       <Field label="Date">{(id) => <DateField id={id} value={date} onChange={setDate} title="Date of the debt" />}</Field>
       {error && <p className="text-sm text-expense" role="alert">{error}</p>}
-      <Button type="submit" className="w-full">Save debt</Button>
+      <Button type="submit" wrapperClassName="w-full">Save debt</Button>
     </form>
   );
 }
@@ -153,20 +154,21 @@ function RepayForm({ target, onClose, ledger }: { target: NonNullable<RepayTarge
             const active = a.id === accountId;
             const bank = a.type === "cash" ? undefined : bankFor(a);
             return (
-              <button
+              <HapticButton
                 key={a.id}
                 type="button"
                 role="radio"
                 aria-checked={active}
                 onClick={() => setAccountId(a.id)}
-                className={cx("min-w-36 shrink-0 rounded-2xl border p-3 text-left transition", active ? "border-brand bg-pale ring-2 ring-brand/25" : "border-line bg-surface")}
+                wrapperClassName="min-w-36 shrink-0"
+                className={cx("rounded-2xl border p-3 text-left transition", active ? "border-brand bg-pale ring-2 ring-brand/25" : "border-line bg-surface")}
               >
                 <span className="flex items-center gap-2 text-sm font-medium">
                   {bank ? <BankLogo bank={bank} size={20} /> : <span className="size-2.5 rounded-full" style={{ background: a.color }} />}
                   <span className="truncate">{a.name}</span>
                 </span>
                 <span className="num amount mt-0.5 block text-xs text-ink-3">{fmt(ledger.balances.get(a.id)?.balance ?? 0)}</span>
-              </button>
+              </HapticButton>
             );
           })}
         </div>
@@ -214,7 +216,7 @@ function RepayForm({ target, onClose, ledger }: { target: NonNullable<RepayTarge
 
       <Field label="Date received">{(id) => <DateField id={id} value={date} onChange={setDate} title="Date received" />}</Field>
       {error && <p className="text-sm text-expense" role="alert">{error}</p>}
-      <Button type="submit" className="w-full" disabled={saving || over || !(m > 0)}>
+      <Button type="submit" wrapperClassName="w-full" disabled={saving || over || !(m > 0)}>
         {over ? "More than they owe" : "Save payment"}
       </Button>
       <p className="text-center text-xs text-ink-3">Adds to the account above. Not counted as income.</p>

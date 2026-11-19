@@ -1,5 +1,6 @@
 "use client";
 
+import { HapticButton } from "@/components/haptic-button";
 import { Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
@@ -44,7 +45,7 @@ export default function VerifyPage() {
         router.replace("/login");
       }}
       footer={
-        <button
+        <HapticButton
           type="button"
           className="min-h-10 font-medium text-brand"
           onClick={async () => {
@@ -53,7 +54,7 @@ export default function VerifyPage() {
           }}
         >
           Use a different account
-        </button>
+        </HapticButton>
       }
     >
       <form onSubmit={submit} className="space-y-4">
@@ -61,7 +62,7 @@ export default function VerifyPage() {
           <Smartphone className="size-6" />
         </div>
         <CodeField value={code} onChange={setCode} error={error} />
-        <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>{busy ? "Checking…" : "Verify"}</Button>
+        <Button type="submit" wrapperClassName="w-full" disabled={busy || code.length !== 6}>{busy ? "Checking…" : "Verify"}</Button>
       </form>
     </AuthScreen>
   );
