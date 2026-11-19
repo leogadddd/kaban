@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation";
 import { Trash2, Zap } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { Button, Card, cx, Field, inputCls, PageHeader, SectionTitle } from "@/components/ui";
+import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
 import { useLedger, useMeta } from "@/lib/hooks";
 import { LogoMark } from "@/lib/logo";
 import { setMeta, wipeAll } from "@/lib/repo";
-import { signOut, unsyncedCount, useSyncState } from "@/lib/sync";
+import { signOut, useSyncState } from "@/lib/sync";
 
 export default function SettingsPage() {
   const router = useRouter();
   const ledger = useLedger();
+  const db = useLedgerDatabase();
   const standalone = useSyncExternalStore(noop, isStandalone, () => false);
   const launchToAdd = useMeta<boolean>("launchToAdd");
   const launchAccount = useMeta<string>("launchAccount");
@@ -76,7 +78,7 @@ export default function SettingsPage() {
           <SectionTitle>Danger zone</SectionTitle>
           <p className="text-sm text-ink-3">
             {signedIn
-              ? "Sign out and erase every record on this device. Your cloud copy stays, and comes back when you sign in again."
+              ? "Sign out and close your account ledger on this device."
               : "Erase every account, transaction and person on this device. Export a backup first."}
           </p>
           <Button
@@ -84,7 +86,7 @@ export default function SettingsPage() {
             className="w-full"
             onClick={async () => {
               if (signedIn) {
-                if (!(await confirmSignOut(await unsyncedCount()))) return;
+                if (!(await confirmSignOut()) || !isActiveDatabase(db)) return;
                 await signOut();
                 router.replace("/welcome");
                 return;
@@ -96,12 +98,12 @@ export default function SettingsPage() {
                 danger: true,
                 typeToConfirm: "ERASE",
               });
-              if (!ok) return;
-              await wipeAll();
+              if (!ok || !db || !isActiveDatabase(db)) return;
+              await wipeAll(db);
               router.replace("/welcome");
             }}
           >
-            <Trash2 className="size-4" /> {signedIn ? "Sign out & erase device" : "Erase all data"}
+            <Trash2 className="size-4" /> {signedIn ? "Sign out" : "Erase all data"}
           </Button>
         </Card>
       </div>

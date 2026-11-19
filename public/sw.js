@@ -1,5 +1,5 @@
 /* Kaban service worker: offline app shell. Data lives in IndexedDB, so the shell is all we cache. */
-const VERSION = "kaban-v5";
+const VERSION = "kaban-v6";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 

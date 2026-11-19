@@ -5,17 +5,17 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthScreen, FormError, PasswordField } from "@/components/auth-ui";
 import { Button } from "@/components/ui";
-import { finishSignIn, friendlyAuthError, setNewPassword, useSyncState } from "@/lib/sync";
+import { friendlyAuthError, setNewPassword, useSyncState } from "@/lib/sync";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const { userId, recovering } = useSyncState();
+  const { userId, recovering, phase } = useSyncState();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [expired, setExpired] = useState(false);
-  const ready = !!userId || recovering;
+  const ready = recovering && !!userId;
 
   // The reset link signs the user in via the URL; if no session shows up, the link was used or expired.
   useEffect(() => {
@@ -32,8 +32,7 @@ export default function ResetPasswordPage() {
     setBusy(true);
     try {
       await setNewPassword(password);
-      await finishSignIn();
-      router.replace("/home");
+      router.replace(phase === "mfa" ? "/login/verify" : "/home");
     } catch (err) {
       setError(friendlyAuthError(err));
       setBusy(false);

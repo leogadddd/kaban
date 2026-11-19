@@ -4,7 +4,8 @@
 // event handler and await the answer; <DialogHost /> (mounted once in the app shell) renders it as a
 // Sheet, so it looks like the rest of Kaban: bottom sheet on phones, centered card on desktop.
 import { AlertTriangle, Info } from "lucide-react";
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useLedgerDatabase, visibleDatabase, type KabanDB } from "@/lib/db";
 import { Button, cx, inputCls, Sheet } from "@/components/ui";
 
 interface DialogOptions {
@@ -21,6 +22,7 @@ interface DialogOptions {
 
 interface Pending extends DialogOptions {
   id: number;
+  db: KabanDB | null;
   kind: "confirm" | "alert";
   resolve: (ok: boolean) => void;
 }
@@ -31,16 +33,16 @@ let open = false;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
-function show(p: Omit<Pending, "id">) {
+function show(p: Omit<Pending, "id" | "db">) {
   current?.resolve(false); // a new dialog replaces (and cancels) one still open
-  current = { ...p, id: ++seq };
+  current = { ...p, id: ++seq, db: visibleDatabase() };
   open = true;
   emit();
 }
 
 function settle(ok: boolean) {
   if (!current || !open) return;
-  current.resolve(ok);
+  current.resolve(ok && current.db === visibleDatabase());
   open = false; // keep `current` so the content stays put during the exit animation
   emit();
 }
@@ -50,22 +52,11 @@ export function confirmDialog(opts: DialogOptions): Promise<boolean> {
   return new Promise((resolve) => show({ ...opts, kind: "confirm", resolve }));
 }
 
-/** "Sign out?" with a count of changes that would be lost. Resolves true when the user confirms. */
-export async function confirmSignOut(unsynced: number): Promise<boolean> {
+export function confirmSignOut(): Promise<boolean> {
   return confirmDialog({
     title: "Sign out of Kaban?",
-    body: (
-      <>
-        <p>Kaban data will be erased from this device. Your cloud copy stays, and comes back when you sign in again.</p>
-        {unsynced > 0 && (
-          <p className="mt-2 font-medium text-expense">
-            {unsynced} change{unsynced === 1 ? " hasn't" : "s haven't"} reached the cloud yet and will be lost.
-          </p>
-        )}
-      </>
-    ),
+    body: "Your account's records and pending changes stay in this browser and are available in Kaban when you sign in again.",
     confirmLabel: "Sign out",
-    danger: unsynced > 0,
   });
 }
 
@@ -80,12 +71,14 @@ const subscribe = (cb: () => void) => {
 };
 
 export function DialogHost() {
+  const db = useLedgerDatabase();
+  useEffect(() => () => settle(false), [db]);
   const isOpen = useSyncExternalStore(subscribe, () => open, () => false);
   const d = useSyncExternalStore(subscribe, () => current, () => null);
   return (
-    <Sheet open={isOpen} onClose={() => settle(false)}>
+    <Sheet open={isOpen && d?.db === db} onClose={() => settle(false)}>
       {/* Keyed so the typed confirmation word resets for every new dialog. */}
-      {d && <DialogBody key={d.id} d={d} />}
+      {d?.db === db && <DialogBody key={d.id} d={d} />}
     </Sheet>
   );
 }

@@ -18,8 +18,8 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import { requestPersistence } from "@/lib/db";
-import { startSync } from "@/lib/sync";
+import { isActiveDatabase, requestPersistence, useLedgerDatabase } from "@/lib/db";
+import { startSync, useSyncState } from "@/lib/sync";
 import { DialogHost } from "./dialog";
 import { getMeta } from "@/lib/repo";
 import { useMeta } from "@/lib/hooks";
@@ -62,11 +62,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const mode = useMeta<string>("mode");
+  const database = useLedgerDatabase();
+  const { phase, userId } = useSyncState();
   const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
-    if (mode === undefined && !UNGATED.includes(pathname) && !BARE.includes(pathname)) router.replace("/welcome");
-  }, [mode, pathname, router]);
+    if (pathname === "/welcome" && database && userId) router.replace("/home");
+    if (UNGATED.includes(pathname) || BARE.includes(pathname)) return;
+    if (phase === "mfa") router.replace("/login/verify");
+    else if (mode === undefined) router.replace("/welcome");
+  }, [database, mode, pathname, phase, router, userId]);
 
   useEffect(() => installNavDirection(), []);
 
@@ -91,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Quick add: a fresh launch of the installed app lands on /home (start_url); jump to Add when enabled.
   // sessionStorage marks the launch so this only happens once, not on every visit to Home.
   useEffect(() => {
-    if (mode === null || mode === undefined) return;
+    if (!database || mode === null || mode === undefined) return;
     let launched = false;
     try {
       launched = sessionStorage.getItem("kaban:launched") === "1";
@@ -100,11 +105,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (launched || pathname !== "/home") return;
     const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
     if (!standalone) return;
-    Promise.all([getMeta<boolean>("launchToAdd"), getMeta<string>("launchAccount")]).then(([on, acc]) => {
-      if (on) router.replace(acc ? `/add?account=${encodeURIComponent(acc)}` : "/add");
+    Promise.all([getMeta<boolean>("launchToAdd", database), getMeta<string>("launchAccount", database)]).then(([on, acc]) => {
+      if (on && isActiveDatabase(database)) router.replace(acc ? `/add?account=${encodeURIComponent(acc)}` : "/add");
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [database, mode]);
   useEffect(() => notePath(pathname), [pathname]);
 
   useEffect(() => {
@@ -131,7 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   const hideNav = HIDE_NAV.includes(pathname);
-  const gated = mode === null || (mode === undefined && !UNGATED.includes(pathname));
+  const gated = !AUTH_ROUTES.includes(pathname) && (!database || mode === null || (pathname === "/welcome" && !!userId) || (mode === undefined && !UNGATED.includes(pathname)));
   const showSidebar = !UNGATED.includes(pathname) && !gated;
 
   if (BARE.includes(pathname)) return <>{children}</>;
@@ -142,9 +147,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <DialogHost />
       {showSidebar && <Sidebar pathname={pathname} />}
 
-      <main className={cx("mx-auto max-w-md lg:px-6", NARROW.includes(pathname) ? "lg:max-w-2xl" : "lg:max-w-6xl", !hideNav ? "pb-nav lg:pb-16" : "lg:pb-16")}>{gated ? null : (
+      <main className={cx("mx-auto max-w-md lg:px-6", NARROW.includes(pathname) ? "lg:max-w-2xl" : "lg:max-w-6xl", !hideNav ? "pb-nav lg:pb-16" : "lg:pb-16")}>{gated ? (phase === "error" && !database ? <p role="alert" className="p-4">The ledger could not be opened. Reload Kaban to try again.</p> : null) : (
           // Keyed by path: each navigation exits the old page and enters the new one as a view transition.
-          <ViewTransition key={pathname} enter="page-in" exit="page-out" default="none">
+          <ViewTransition key={`${database?.name ?? "auth"}:${pathname}`} enter="page-in" exit="page-out" default="none">
             {/* Opaque, full-height surface so a page never shows the previous one through it mid-transition. */}
             <div
               className={cx(

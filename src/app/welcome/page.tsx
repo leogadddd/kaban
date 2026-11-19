@@ -7,18 +7,22 @@ import { useState } from "react";
 import { Button } from "@/components/ui";
 import { loadDemoData } from "@/lib/demo";
 import { LogoMark } from "@/lib/logo";
+import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
 import { setMeta } from "@/lib/repo";
 import { cloudConfigured } from "@/lib/supabase";
 
 export default function WelcomePage() {
   const router = useRouter();
+  const db = useLedgerDatabase();
   const [busy, setBusy] = useState(false);
 
   async function start(demo: boolean) {
+    if (!db) return;
     setBusy(true);
-    await setMeta("mode", "local");
-    await setMeta("startedAt", Date.now());
-    if (demo) await loadDemoData();
+    await setMeta("mode", "local", db);
+    await setMeta("startedAt", Date.now(), db);
+    if (demo) await loadDemoData(db);
+    if (!isActiveDatabase(db)) return;
     router.replace(demo ? "/home" : "/accounts/new?first=1");
   }
 

@@ -8,9 +8,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CodeField } from "@/components/auth-ui";
 import { Button, Card, cx, PageHeader, Progress, SectionTitle } from "@/components/ui";
-import { db } from "@/lib/db";
+import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
 import { useMeta, useOnline } from "@/lib/hooks";
-import { exportBackup, importBackup, setMeta } from "@/lib/repo";
+import { exportBackup, importBackup, MAX_BACKUP_BYTES, prepareBackupImport, setMeta } from "@/lib/repo";
 import {
   confirmAuthenticator,
   deleteCloudData,
@@ -20,7 +20,7 @@ import {
   runSync,
   signOut,
   startAuthenticatorEnrollment,
-  unsyncedCount,
+  recoveryBackup,
   useSyncState,
   type SyncState,
 } from "@/lib/sync";
@@ -29,7 +29,9 @@ export default function SyncPage() {
   const online = useOnline();
   const sync = useSyncState();
   const lastBackup = useMeta<number>("lastBackup");
-  const queue = useLiveQuery(() => db.outbox.toArray()) ?? [];
+  const db = useLedgerDatabase();
+  const queue = useLiveQuery(() => db ? db.outbox.toArray() : [], [db]) ?? [];
+  const recoveryAvailable = useMeta<boolean>("recoveryAvailable");
   const [persisted, setPersisted] = useState<boolean | null>(null);
   const [usage, setUsage] = useState<string>();
   const [msg, setMsg] = useState<string>();
@@ -44,34 +46,46 @@ export default function SyncPage() {
   const counts = { pending: 0, failed: 0, conflict: 0, quota: 0 } as Record<string, number>;
   for (const q of queue) counts[q.status] = (counts[q.status] ?? 0) + 1;
 
-  async function doExport() {
-    const data = await exportBackup();
+  async function doExport(recovery = false) {
+    if (!db) return;
+    const data = recovery ? await recoveryBackup(db) : await exportBackup(db);
+    if (!data || !isActiveDatabase(db)) return;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const name = `kaban-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const name = `kaban-${recovery ? "recovery" : "backup"}-${new Date().toISOString().slice(0, 10)}.json`;
     const file = new File([blob], name, { type: "application/json" });
     // iOS: share sheet lets the user save to Files / iCloud Drive.
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: "Kaban backup" });
-        await setMeta("lastBackup", Date.now());
+        if (!recovery) await setMeta("lastBackup", Date.now(), db);
         return;
       } catch {
         /* cancelled → fall through to download */
       }
     }
+    if (!isActiveDatabase(db)) return;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = name;
     a.click();
     URL.revokeObjectURL(url);
-    await setMeta("lastBackup", Date.now());
+    if (!recovery) await setMeta("lastBackup", Date.now(), db);
   }
 
   async function doImport(f: File) {
+    if (!db) return;
     try {
-      const res = await importBackup(JSON.parse(await f.text()));
-      setMsg(`Merged backup: ${res.added} new, ${res.updated} updated records. Nothing was overwritten with older data.`);
+      if (f.size > MAX_BACKUP_BYTES) throw new Error("Choose a backup of 32 MiB or less.");
+      const preview = await prepareBackupImport(JSON.parse(await f.text()), db);
+      if (!isActiveDatabase(db)) return;
+      if (!(await confirmDialog({
+        title: "Import backup?",
+        body: `Add ${preview.added} and replace ${preview.updated} records in this ledger.${signedIn ? " Imported changes will sync to this account." : ""}`,
+        confirmLabel: "Import backup",
+      }))) return;
+      const res = await importBackup(preview);
+      setMsg(`Merged backup: ${res.added} new and ${res.updated} updated records.`);
     } catch (e) {
       setMsg((e as Error).message);
     }
@@ -121,7 +135,7 @@ export default function SyncPage() {
           </dl>
           {!signedIn && (
             <p className="rounded-2xl bg-gold/10 p-3 text-xs text-ink-2">
-              Every change is also written to a durable sync queue, so when you sign in it all uploads without duplicates. Until then, export a backup regularly — clearing Safari website data deletes local records.
+              This ledger stays on this device. To move it into your cloud account, export a backup, then sign in and import the file. Clearing Safari website data deletes the local copy.
             </p>
           )}
         </Card>
@@ -131,10 +145,20 @@ export default function SyncPage() {
         <section>
           <SectionTitle>Backup</SectionTitle>
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="secondary" onClick={doExport}><Download className="size-4" /> Export</Button>
+            <Button variant="secondary" onClick={() => doExport()}><Download className="size-4" /> Export</Button>
             <Button variant="secondary" onClick={() => fileRef.current?.click()}><Upload className="size-4" /> Import</Button>
           </div>
-          <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => e.target.files?.[0] && doImport(e.target.files[0])} />
+          <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => {
+            const file = e.currentTarget.files?.[0];
+            e.currentTarget.value = "";
+            if (file) void doImport(file);
+          }} />
+          {recoveryAvailable && (
+            <div className="mt-3 rounded-2xl bg-gold/10 p-3 text-sm text-ink-2">
+              <p>Cloud data was reset. A recovery copy of this browser’s previous records is available to export.</p>
+              <Button variant="ghost" className="mt-1 min-h-10 px-2" onClick={() => doExport(true)}><Download className="size-4" /> Export recovery copy</Button>
+            </div>
+          )}
           {msg && <p className="mt-3 rounded-2xl bg-pale p-3 text-sm text-brand" role="status">{msg}</p>}
           <p className="mt-2 px-1 text-xs text-ink-3">Import merges by record ID and keeps the newest version of each record, so restoring onto a device that already has data won&apos;t silently overwrite it.</p>
         </section>
@@ -190,12 +214,13 @@ function FinishSignInCard() {
 
 function AccountCard({ sync }: { sync: SyncState }) {
   const router = useRouter();
+  const db = useLedgerDatabase();
   const q = sync.quota;
   const recPct = q ? (q.records / q.maxRecords) * 100 : 0;
   const bytePct = q ? (q.bytes / q.maxBytes) * 100 : 0;
 
   async function doSignOut() {
-    if (!(await confirmSignOut(await unsyncedCount()))) return;
+    if (!(await confirmSignOut()) || !isActiveDatabase(db)) return;
     await signOut();
     router.replace("/welcome");
   }
@@ -203,12 +228,12 @@ function AccountCard({ sync }: { sync: SyncState }) {
   async function doDeleteCloud() {
     const ok = await confirmDialog({
       title: "Delete your cloud data?",
-      body: "Everything stored in the cloud for this account is deleted, and this device signs out. Your records stay here as a local-only copy. This can't be undone.",
+      body: "Delete your account’s cloud records and reset sync on all your devices. This browser keeps a recovery copy you can export from this screen.",
       confirmLabel: "Delete cloud data",
       danger: true,
       typeToConfirm: "DELETE",
     });
-    if (!ok) return;
+    if (!ok || !isActiveDatabase(db)) return;
     try {
       await deleteCloudData();
     } catch (e) {
@@ -237,6 +262,7 @@ function AccountCard({ sync }: { sync: SyncState }) {
             Sync paused: {sync.error}. Retrying automatically.
           </p>
         )}
+        {sync.dataNotice && <p role="status" className="text-sm text-expense">{sync.dataNotice}</p>}
         {q ? (
           <div className="space-y-3 text-sm">
             <div className="space-y-1.5">

@@ -18,3 +18,8 @@ export function supabase(): SupabaseClient | null {
   });
   return client;
 }
+
+/** Pin a sync run's requests to its authenticated account, including across auth events. */
+export function syncClient(accessToken: string) {
+  return createClient(url!, key!, { accessToken: async () => accessToken });
+}

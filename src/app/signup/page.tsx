@@ -2,15 +2,13 @@
 
 import { MailCheck } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useLeaveWhenSignedIn } from "@/components/auth-redirect";
 import { AuthScreen, EmailField, FormError, PasswordField } from "@/components/auth-ui";
 import { Button } from "@/components/ui";
-import { finishSignIn, friendlyAuthError, resendConfirmation, signUp } from "@/lib/sync";
+import { friendlyAuthError, resendConfirmation, signUp } from "@/lib/sync";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -33,8 +31,6 @@ export default function SignupPage() {
         setBusy(false);
         return;
       }
-      await finishSignIn();
-      router.replace("/home");
     } catch (err) {
       setError(friendlyAuthError(err));
       setBusy(false);

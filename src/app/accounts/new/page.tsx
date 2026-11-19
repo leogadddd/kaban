@@ -6,7 +6,7 @@ import { CreditCard, Landmark, Wallet } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { AccountCard } from "@/components/account-card";
 import { Button, cx, Field, inputCls, Loading, PageHeader, Segmented } from "@/components/ui";
-import { db } from "@/lib/db";
+import { useLedgerDatabase } from "@/lib/db";
 import { todayISO } from "@/lib/dates";
 import { minorToInput, parseMinor } from "@/lib/money";
 import { BankLogo } from "@/components/bank-logo";
@@ -24,6 +24,7 @@ export default function Page() {
 
 function AccountForm() {
   const router = useRouter();
+  const db = useLedgerDatabase();
   const params = useSearchParams();
   const editId = params.get("edit") ?? undefined;
   const first = params.get("first") === "1";
@@ -44,7 +45,7 @@ function AccountForm() {
   const [loaded, setLoaded] = useState(!editId);
 
   useEffect(() => {
-    if (!editId) return;
+    if (!editId || !db) return;
     db.accounts.get(editId).then((a) => {
       if (!a) return;
       setType(a.type);
@@ -62,7 +63,7 @@ function AccountForm() {
       setColor(a.color);
       setLoaded(true);
     });
-  }, [editId]);
+  }, [db, editId]);
 
   const credit = type === "credit";
   const openingMinor = parseMinor(opening || "0") ?? 0;

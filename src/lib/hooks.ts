@@ -3,7 +3,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { liveQuery } from "dexie";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { db } from "./db";
+import { useLedgerDatabase, type KabanDB } from "./db";
 import { accountBalances, debtStatuses, totals } from "./finance";
 import type { Account, Debt, InstalmentEntry, Person, SplitAllocation, Txn } from "./types";
 
@@ -23,7 +23,7 @@ export interface Ledger {
   personById: Map<string, Person>;
 }
 
-async function loadLedger() {
+async function loadLedger(db: KabanDB) {
   const [accounts, txns, instalments, people, splits, debts] = await Promise.all([
     db.accounts.orderBy("sortOrder").toArray(),
     db.transactions.toArray(),
@@ -60,34 +60,52 @@ function buildLedger(data?: { accounts: Account[]; txns: Txn[]; instalments: Ins
 // One app-wide live subscription. Pages read the latest projection synchronously, so a navigation
 // renders real numbers on its first frame (no skeleton flash, and view transitions snapshot real content).
 const EMPTY = buildLedger();
-let current: Ledger = EMPTY;
-const listeners = new Set<() => void>();
-let started = false;
+const ledgerStores = new WeakMap<KabanDB, ReturnType<typeof createLedgerStore>>();
 
-function subscribeLedger(cb: () => void) {
-  listeners.add(cb);
-  if (!started) {
-    started = true;
-    liveQuery(loadLedger).subscribe({
-      next: (v) => {
-        current = v;
-        listeners.forEach((l) => l());
-      },
-      error: (e) => console.error("ledger query failed", e),
-    });
-  }
-  return () => listeners.delete(cb);
+function createLedgerStore(db: KabanDB) {
+  let current = EMPTY;
+  const listeners = new Set<() => void>();
+  let subscription: ReturnType<ReturnType<typeof liveQuery>["subscribe"]> | undefined;
+  return {
+    read: () => current,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      subscription ??= liveQuery(() => loadLedger(db)).subscribe({
+        next(value) {
+          current = value;
+          listeners.forEach((notify) => notify());
+        },
+        error: (error) => console.error("ledger query failed", error),
+      });
+      return () => {
+        listeners.delete(listener);
+        if (!listeners.size) {
+          subscription?.unsubscribe();
+          subscription = undefined;
+          current = EMPTY;
+        }
+      };
+    },
+  };
 }
+const unavailable = { read: () => EMPTY, subscribe: () => () => {} };
 
-/** Live projection of the whole local ledger; re-renders on every IndexedDB change. */
+/** Live projection of the active ledger. */
 export function useLedger(): Ledger {
-  return useSyncExternalStore(subscribeLedger, () => current, () => EMPTY);
+  const db = useLedgerDatabase();
+  let store = db ? ledgerStores.get(db) : undefined;
+  if (db && !store) {
+    store = createLedgerStore(db);
+    ledgerStores.set(db, store);
+  }
+  const active = store ?? unavailable;
+  return useSyncExternalStore(active.subscribe, active.read, unavailable.read);
 }
 
 export function useMeta<T>(key: string): T | undefined | null {
-  // null = loading, undefined = not set
-  const v = useLiveQuery(async () => ({ v: (await db.meta.get(key))?.value as T | undefined }), [key]);
-  return v ? v.v : null;
+  const db = useLedgerDatabase();
+  const value = useLiveQuery(async () => db && ({ db, key, value: (await db.meta.get(key))?.value as T | undefined }), [db, key]);
+  return value && value.db === db && value.key === key ? value.value : null;
 }
 
 export function useOnline(): boolean {
@@ -106,7 +124,9 @@ export function useOnline(): boolean {
 }
 
 export function usePendingCount(): number {
-  return useLiveQuery(() => db.outbox.where("status").anyOf("pending", "failed", "conflict").count()) ?? 0;
+  const db = useLedgerDatabase();
+  const result = useLiveQuery(async () => db && ({ db, count: await db.outbox.where("status").anyOf("pending", "failed", "conflict").count() }), [db]);
+  return result && result.db === db ? result.count : 0;
 }
 
 /** True when the viewport matches `query` (false during prerender). */

@@ -11,7 +11,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Button, Chip, cx, Field, inputCls, Loading, Segmented } from "@/components/ui";
 import { shiftStatement, statementFor } from "@/lib/billing";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, TYPE_LABEL } from "@/lib/categories";
-import { db } from "@/lib/db";
+import { useLedgerDatabase } from "@/lib/db";
 import { formatDayLong, todayISO } from "@/lib/dates";
 import { BankLogo } from "@/components/bank-logo";
 import { bankFor } from "@/lib/banks";
@@ -34,6 +34,7 @@ const INSTALMENT_PRESETS = [3, 6, 9, 12, 18, 24, 36];
 
 function Editor() {
   const router = useRouter();
+  const db = useLedgerDatabase();
   const params = useSearchParams();
   const ledger = useLedger();
   const editId = params.get("edit") ?? undefined;
@@ -73,7 +74,7 @@ function Editor() {
 
   // Load the record being edited.
   useEffect(() => {
-    if (!editId) return;
+    if (!editId || !db) return;
     (async () => {
       const t = await db.transactions.get(editId);
       setExisting(t ?? null);
@@ -100,7 +101,7 @@ function Editor() {
         setCustom(Object.fromEntries(splits.map((s) => [s.personId, minorToInput(s.amountMinor)])));
       }
     })();
-  }, [editId]);
+  }, [db, editId]);
 
   // Default / deep-linked account once accounts load. Accepts an id or a case-insensitive name.
   useEffect(() => {

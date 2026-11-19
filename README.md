@@ -29,7 +29,7 @@ To try it on an iPhone, serve it over HTTPS, open it in Safari, then **Share →
 | Activity | Search plus filters by date, account, type and category. Payment history. |
 | Analytics | Income vs expense (with a table view), category ranking, utilisation rings. |
 | iPhone | Standalone manifest, apple icon, safe areas, and an "Open on the Add screen" launch setting for one-tap entry. |
-| Backup | JSON export and import. Import merges by id, newest version wins. |
+| Backup | JSON export and validated import up to 32 MiB. Preview additions and replacements before merging by ID. Kaban rebuilds instalment schedules from the imported purchases. |
 | Privacy | Eye toggle (Home, Accounts, desktop sidebar) swaps every amount for a fixed-length `₱••••••` mask, so neither values nor digit counts show. Remembered per device. |
 | Banks | Bank / e-wallet / BNPL picker (BDO, BPI, Metrobank, GCash, Maya, Atome…) with bundled logos and brand colours. |
 | Sync queue | Every write also enqueues an outbox mutation (stable id + version) in the same IndexedDB transaction. |
@@ -57,14 +57,16 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key (or set NEXT_PUBLIC_SUPABA
 How it works:
 
 - Screens read and write IndexedDB only. `src/lib/repo.ts` adds each change to the outbox in the same transaction; `src/lib/sync.ts` drains it in batches a moment after writes, on focus, when back online, and every minute, with backoff on errors.
-- Postgres has one `records` table (`user_id, entity, id, version, data jsonb …`). Clients can only `select` their own rows (RLS, plus aal2 when 2FA is on). All writes go through `push_records()`, which keeps the higher `(version, updatedAt)` and enforces the quota.
-- Pulls use a per-user `server_seq` cursor. Instalment schedules are not synced; each device rebuilds them.
-- First sign-in uploads whatever is already on the device. Signing out erases the device (warning first about unsynced changes). Data left by a *different* account is wiped, never merged.
-- **Limits:** each user gets 10,000 records and 10 MB by default (`user_quota`). Past the limit the app keeps working locally and changes wait in the outbox, marked "Cloud full". Raise one user's limit with:
+- Postgres has one `records` table (`user_id, entity, id, version, data jsonb …`). Row-level security restricts direct reads to the caller. The sync functions also check ownership and require `aal2` for accounts enrolled in 2FA. `push_records()` validates records, keeps the higher `(version, updatedAt)`, and enforces the quota.
+- Each account has its own IndexedDB ledger, outbox, and cursor. Signing out closes the account ledger and keeps its offline records and pending changes in that browser for the same account. The local-only ledger is separate. To move local-only records into a cloud account, export from the local ledger, sign in, and confirm the import.
+- Pulls use a per-user `server_seq` cursor. Cloud deletion resets the account’s sync generation, so devices must refresh their ledger before syncing again. A device with older records retains its previous ledger as a recovery export under that account. Instalment schedules are rebuilt on each device.
+- **Limits** default to 10,000 stored rows (including deletion markers) and 10 MiB of record data per account (`user_quota`). Deletion markers stay until a full cloud reset. Past the limit the app keeps working locally and changes wait in the outbox, marked "Cloud full". A project administrator can raise the account limit.
 
 ```sql
 update user_quota set max_records = 50000, max_bytes = 52428800 where user_id = '<uuid>';
 ```
+
+For an existing deployment, apply the sync migrations before publishing the updated app. The account-isolation migration replaces the old upload RPC, so older clients must reload to resume uploads. On first use of the updated app, Kaban copies the old browser ledger and pending changes to the account recorded as its owner. An old ledger without an owner becomes the local-only ledger.
 
 ## Quick add
 

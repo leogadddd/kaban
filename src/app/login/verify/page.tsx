@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthScreen, CodeField } from "@/components/auth-ui";
 import { Button } from "@/components/ui";
-import { finishSignIn, friendlyAuthError, signOut, useSyncState, verifySignInCode } from "@/lib/sync";
+import { friendlyAuthError, signOut, useSyncState, verifySignInCode } from "@/lib/sync";
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function VerifyPage() {
   // Arrived without a half-finished sign-in (or already finished it): nothing to verify here.
   useEffect(() => {
     if (phase === "signed-out") router.replace("/login");
-    else if (userId && phase !== "mfa") void finishSignIn().then(() => router.replace("/home"));
+    else if (userId && phase !== "mfa") router.replace("/home");
   }, [userId, phase, router]);
 
   async function submit(e: FormEvent) {
@@ -26,8 +26,6 @@ export default function VerifyPage() {
     setError(undefined);
     try {
       await verifySignInCode(code);
-      await finishSignIn();
-      router.replace("/home");
     } catch (err) {
       setError(friendlyAuthError(err));
       setCode("");

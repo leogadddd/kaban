@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { finishSignIn, useSyncState } from "@/lib/sync";
+import { useSyncState } from "@/lib/sync";
 
 /**
  * Once a session is fully signed in (second factor done, if any), leave the auth flow for the app.
@@ -17,6 +17,6 @@ export function useLeaveWhenSignedIn(to = "/home") {
       router.replace("/login/verify");
       return;
     }
-    void finishSignIn().then(() => router.replace(to));
+    router.replace(to);
   }, [userId, phase, router, to]);
 }
