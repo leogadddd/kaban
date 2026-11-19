@@ -16,7 +16,7 @@ import type { AccountType } from "@/lib/types";
 
 export default function Page() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={null}>
       <AccountForm />
     </Suspense>
   );

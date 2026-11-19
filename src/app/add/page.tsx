@@ -23,7 +23,7 @@ import { ME, type Account, type Arrangement, type Txn, type TxnType } from "@/li
 
 export default function Page() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={null}>
       <Editor />
     </Suspense>
   );
