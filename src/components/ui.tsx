@@ -89,7 +89,7 @@ export function PageHeader({
 }) {
   const router = useRouter();
   return (
-    <header className={cx("pt-safe sticky top-0 z-20 bg-bg/85 px-4 pb-3 backdrop-blur-xl lg:static lg:bg-transparent lg:pt-6 lg:pb-5 lg:backdrop-blur-none", className)}>
+    <header className={cx("pt-safe sticky top-0 z-20 bg-bg/85 px-4 pb-3 backdrop-blur-sm lg:static lg:bg-transparent lg:pt-6 lg:pb-5 lg:backdrop-blur-none", className)}>
       <div className="flex min-h-12 items-center gap-2">
         {back &&
           (back === true ? (
@@ -283,7 +283,7 @@ export function Sheet({
     <AnimatePresence initial={appear}>
       {open && (
         <div className="fixed inset-0 z-50 lg:grid lg:place-items-center lg:p-8" role="dialog" aria-modal="true" aria-label={title}>
-          <motion.div className="absolute inset-0 bg-brand-deep/40 backdrop-blur-[2px] lg:bg-brand-deep/30 lg:backdrop-blur-none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+          <motion.div className="absolute inset-0 bg-brand-deep/40 lg:bg-brand-deep/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           {desktop ? (
             // Desktop: centered dialog that scales in.
             <motion.div

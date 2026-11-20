@@ -327,7 +327,7 @@ function Editor() {
 
   return (
     <div className="flex min-h-dvh flex-col lg:min-h-0">
-      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
+      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-sm lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
         {editId ? (
           <HapticButton onClick={close} wrapperClassName="-ml-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
             <X className="size-6" />
@@ -648,7 +648,7 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
 function StepScreen({ title, subtitle, onBack, onClose, animateIn = true, children }: { title: string; subtitle: string; onBack?: () => void; onClose: () => void; animateIn?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col lg:min-h-0">
-      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-xl lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
+      <header className="pt-safe sticky top-0 z-20 flex items-center justify-between bg-bg/85 px-4 pb-2 backdrop-blur-sm lg:static lg:border-b lg:border-line lg:bg-surface lg:px-6 lg:py-3 lg:backdrop-blur-none">
         {onBack ? (
           <HapticButton onClick={onBack} wrapperClassName="-ml-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
             <ChevronLeft className="size-6" />

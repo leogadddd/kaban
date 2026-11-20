@@ -4,7 +4,7 @@
 // event handler and await the answer; <DialogHost /> (mounted once in the app shell) renders it as a
 // Sheet, so it looks like the rest of Kaban: bottom sheet on phones, centered card on desktop.
 import { AlertTriangle, Info } from "lucide-react";
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useLedgerDatabase, visibleDatabase, type KabanDB } from "@/lib/db";
 import { Button, cx, inputCls, Sheet } from "@/components/ui";
 
@@ -85,8 +85,14 @@ export function DialogHost() {
 
 function DialogBody({ d }: { d: Pending }) {
   const [typed, setTyped] = useState("");
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const locked = !!d.typeToConfirm && typed.trim().toUpperCase() !== d.typeToConfirm.toUpperCase();
   const Icon = d.danger ? AlertTriangle : Info;
+
+  useEffect(() => {
+    if (!d.typeToConfirm) titleRef.current?.focus({ preventScroll: true });
+  }, [d.typeToConfirm]);
+
   return (
     <form
       className="space-y-4 pt-1"
@@ -100,7 +106,7 @@ function DialogBody({ d }: { d: Pending }) {
           <Icon className="size-5" />
         </span>
         <div className="min-w-0 pt-0.5">
-          <h2 className="text-lg leading-snug font-semibold">{d.title}</h2>
+          <h2 ref={titleRef} tabIndex={-1} className="text-lg leading-snug font-semibold focus:outline-none!">{d.title}</h2>
           {d.body && <div className="mt-1 text-sm text-ink-2">{d.body}</div>}
         </div>
       </div>
@@ -121,11 +127,11 @@ function DialogBody({ d }: { d: Pending }) {
         </label>
       )}
       {d.kind === "alert" ? (
-        <Button type="submit" wrapperClassName="w-full" autoFocus>{d.confirmLabel ?? "OK"}</Button>
+        <Button type="submit" wrapperClassName="w-full">{d.confirmLabel ?? "OK"}</Button>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <Button type="button" variant="secondary" onClick={() => settle(false)}>{d.cancelLabel ?? "Cancel"}</Button>
-          <Button type="submit" variant={d.danger ? "destructive" : "primary"} disabled={locked} autoFocus={!d.typeToConfirm}>
+          <Button type="submit" variant={d.danger ? "destructive" : "primary"} disabled={locked}>
             {d.confirmLabel ?? "OK"}
           </Button>
         </div>

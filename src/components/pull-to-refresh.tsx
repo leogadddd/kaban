@@ -35,6 +35,11 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
 
   // Lid and ring follow the finger directly (SVG attributes, no re-render per frame).
   useMotionValueEvent(pull, "change", (p) => {
+    // While the page is off its rest position, frosted headers skip their blur (see globals.css):
+    // re-blurring them on every finger move is what costs frames, and at 85% opacity it's not missed.
+    const root = document.documentElement;
+    if (p > 0) root.dataset.pulling ??= "";
+    else delete root.dataset.pulling;
     if (busy.current) return;
     const progress = Math.min(1, p / THRESHOLD);
     lid.current?.setAttribute("transform", `rotate(${-progress * 34} 14 30)`);
@@ -123,6 +128,7 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
     document.addEventListener("touchend", onEnd);
     document.addEventListener("touchcancel", onEnd);
     return () => {
+      delete document.documentElement.dataset.pulling;
       document.removeEventListener("touchstart", onStart);
       document.removeEventListener("touchmove", onMove);
       document.removeEventListener("touchend", onEnd);

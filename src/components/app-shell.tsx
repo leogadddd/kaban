@@ -202,7 +202,7 @@ function BottomNav({ pathname }: { pathname: string }) {
       {/* Dark mode: fade the page out behind the bar so it doesn't sit on same-toned cards. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 -z-10 hidden bg-gradient-to-t from-bg via-bg/85 to-transparent dark:block" />
       {/* Five equal slots so every highlight is the same size and centred in its slot. */}
-      <div className="grid grid-cols-5 items-center rounded-[1.75rem] border border-white/8 bg-night/95 p-1.5 text-white shadow-float backdrop-blur-xl dark:border-white/10 dark:bg-[#262d29]/95 dark:shadow-[0_18px_40px_-12px_rgb(0_0_0/0.9)]">
+      <div className="grid grid-cols-5 items-center rounded-[1.75rem] border border-white/8 bg-night/95 p-1.5 text-white shadow-float dark:border-white/10 dark:bg-[#262d29]/95 dark:shadow-[0_18px_40px_-12px_rgb(0_0_0/0.9)]">
         {NAV.map(({ href, label, icon: Icon, match }) => {
           if (href === "/add")
             return (
@@ -245,7 +245,7 @@ function NavItem({ href, label, icon: Icon, active }: { href: string; label: str
 function Sidebar({ pathname }: { pathname: string }) {
   const items = [...NAV.filter((n) => n.href !== "/add"), ...MORE];
   return (
-    <aside data-nav-peer style={{ viewTransitionName: "sidebar" }} className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface/70 px-4 py-6 backdrop-blur-xl lg:flex" aria-label="Primary">
+    <aside data-nav-peer style={{ viewTransitionName: "sidebar" }} className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface/70 px-4 py-6 lg:flex" aria-label="Primary">
       <Link href="/home" className="mb-6 flex items-center gap-2.5 px-2">
         <LogoMark size={34} />
         <span className="text-lg font-semibold tracking-tight">Kaban</span>
