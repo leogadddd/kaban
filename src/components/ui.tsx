@@ -4,7 +4,7 @@ import { HapticButton, HapticLink, type HapticButtonProps } from "@/components/h
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
-import { useEffect, useId, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { formatMoney } from "@/lib/money";
 import { useMoney } from "@/lib/privacy";
@@ -17,6 +17,7 @@ const noopSubscribe = () => () => {};
 /** Ids of currently open sheets, oldest first (for Escape handling). */
 const openSheets: string[] = [];
 let restoreSheetScroll: (() => void) | undefined;
+let sheetScrollLocks = 0;
 
 function lockSheetScroll() {
   const body = document.body;
@@ -45,6 +46,20 @@ function lockSheetScroll() {
     window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
   };
 }
+/** Remains mounted through the exit animation, including for nested sheets. */
+function SheetScrollLock() {
+  useLayoutEffect(() => {
+    if (sheetScrollLocks++ === 0) restoreSheetScroll = lockSheetScroll();
+    return () => {
+      if (--sheetScrollLocks === 0) {
+        restoreSheetScroll?.();
+        restoreSheetScroll = undefined;
+      }
+    };
+  }, []);
+  return null;
+}
+
 const DESKTOP_MQ = "(min-width: 1024px)";
 const subscribeDesktop = (cb: () => void) => {
   const m = window.matchMedia(DESKTOP_MQ);
@@ -302,9 +317,8 @@ export function Sheet({
   useEffect(() => {
     closeRef.current = onClose;
   });
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
-    if (openSheets.length === 0) restoreSheetScroll = lockSheetScroll();
     openSheets.push(sheetId);
     const onKey = (e: KeyboardEvent) => {
       // Only the most recently opened sheet reacts, so Escape peels nested sheets one at a time.
@@ -316,10 +330,6 @@ export function Sheet({
       window.removeEventListener("keydown", onKey);
       const i = openSheets.lastIndexOf(sheetId);
       if (i >= 0) openSheets.splice(i, 1);
-      if (openSheets.length === 0) {
-        restoreSheetScroll?.();
-        restoreSheetScroll = undefined;
-      }
     };
   }, [open, sheetId]);
   if (!mounted) return null;
@@ -327,6 +337,7 @@ export function Sheet({
     <AnimatePresence initial={appear}>
       {open && (
         <div className="fixed inset-0 z-50 lg:grid lg:place-items-center lg:p-8" style={transitionName ? { viewTransitionName: transitionName } : undefined} role="dialog" aria-modal="true" aria-label={title}>
+          <SheetScrollLock />
           <motion.div className="absolute inset-0 bg-brand-deep/40 lg:bg-brand-deep/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           {desktop ? (
             // Desktop: centered dialog that scales in.
@@ -365,15 +376,51 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
   const [expanded, setExpanded] = useState(false);
   const controls = useDragControls();
   const panel = useRef<HTMLDivElement>(null);
+  const header = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const dragged = useRef(false);
+  const [heights, setHeights] = useState<{ compact: number; expanded: number }>();
+
+  useLayoutEffect(() => {
+    const element = panel.current;
+    const heading = header.current;
+    const body = content.current;
+    if (!element || !heading || !body) return;
+    const measure = () => {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const panelStyle = getComputedStyle(element);
+      const keyboard = parseFloat(rootStyle.getPropertyValue("--kb")) || 0;
+      const safeTop = parseFloat(rootStyle.getPropertyValue("--safe-top")) || 0;
+      const viewport = element.parentElement?.clientHeight ?? window.innerHeight;
+      const padding = parseFloat(panelStyle.paddingTop) + parseFloat(panelStyle.paddingBottom);
+      const expandedHeight = Math.max(0, viewport - safeTop - keyboard);
+      const compactHeight = Math.max(0, Math.min(heading.offsetHeight + body.offsetHeight + padding, viewport * 0.88 - keyboard));
+      setHeights((previous) => previous?.compact === compactHeight && previous.expanded === expandedHeight
+        ? previous
+        : { compact: compactHeight, expanded: expandedHeight });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(heading);
+    observer.observe(body);
+    observer.observe(document.documentElement);
+    const keyboardObserver = new MutationObserver(measure);
+    keyboardObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["style", "data-kb"] });
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      keyboardObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
 
   return (
     <motion.div
       ref={panel}
       className="kb-sheet absolute inset-x-0 bottom-0 mx-auto flex max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
-      style={{ maxHeight: expanded ? "var(--sheet-available-height)" : "calc(88dvh - var(--kb, 0px))" }}
-      initial={{ y: "100%", height: "auto" }}
-      animate={{ y: 0, height: expanded ? "var(--sheet-available-height)" : "auto" }}
+      style={{ maxHeight: "var(--sheet-available-height)" }}
+      initial={{ y: "100%" }}
+      animate={{ y: 0, ...(heights && { height: expanded ? heights.expanded : heights.compact }) }}
       exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 32, stiffness: 340 }}
       drag="y"
@@ -392,31 +439,35 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
         }
       }}
     >
-      <button
-        type="button"
-        className="-mx-4 flex h-9 shrink-0 touch-none items-center justify-center cursor-grab active:cursor-grabbing"
-        aria-label={expanded ? "Collapse drawer" : "Expand drawer"}
-        aria-expanded={expanded}
-        onPointerDown={(event) => {
-          event.preventDefault();
-          dragged.current = false;
-          controls.start(event);
-        }}
-        onClick={(event) => {
-          if (event.detail === 0 || !dragged.current) setExpanded((value) => !value);
-        }}
-      >
-        <span className="h-1.5 w-10 rounded-full bg-line" />
-      </button>
-      {title && (
-        <div className="mb-3 flex shrink-0 items-center justify-between">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <HapticButton onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale" aria-label="Close">
-            <X className="size-5" />
-          </HapticButton>
-        </div>
-      )}
-      <div className="min-h-0 overflow-y-auto overscroll-contain">{children}</div>
+      <div ref={header} className="flow-root shrink-0">
+        <button
+          type="button"
+          className="-mx-4 flex h-9 w-[calc(100%+2rem)] shrink-0 touch-none items-center justify-center cursor-grab active:cursor-grabbing"
+          aria-label={expanded ? "Collapse drawer" : "Expand drawer"}
+          aria-expanded={expanded}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            dragged.current = false;
+            controls.start(event);
+          }}
+          onClick={(event) => {
+            if (event.detail === 0 || !dragged.current) setExpanded((value) => !value);
+          }}
+        >
+          <span className="h-1.5 w-10 rounded-full bg-line" />
+        </button>
+        {title && (
+          <div className="mb-3 flex shrink-0 items-center justify-between">
+            <h2 className="text-lg font-semibold">{title}</h2>
+            <HapticButton onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale" aria-label="Close">
+              <X className="size-5" />
+            </HapticButton>
+          </div>
+        )}
+      </div>
+      <div className="min-h-0 overflow-y-auto overscroll-contain">
+        <div ref={content} className="flow-root">{children}</div>
+      </div>
     </motion.div>
   );
 }
