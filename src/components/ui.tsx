@@ -389,12 +389,11 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
     const measure = () => {
       const rootStyle = getComputedStyle(document.documentElement);
       const panelStyle = getComputedStyle(element);
-      const keyboard = parseFloat(rootStyle.getPropertyValue("--kb")) || 0;
       const safeTop = parseFloat(rootStyle.getPropertyValue("--safe-top")) || 0;
       const viewport = element.parentElement?.clientHeight ?? window.innerHeight;
       const padding = parseFloat(panelStyle.paddingTop) + parseFloat(panelStyle.paddingBottom);
-      const expandedHeight = Math.max(0, viewport - safeTop - keyboard);
-      const compactHeight = Math.max(0, Math.min(heading.offsetHeight + body.offsetHeight + padding, viewport * 0.88 - keyboard));
+      const expandedHeight = Math.max(0, viewport - safeTop);
+      const compactHeight = Math.max(0, Math.min(heading.offsetHeight + body.offsetHeight + padding, viewport * 0.88));
       setHeights((previous) => previous?.compact === compactHeight && previous.expanded === expandedHeight
         ? previous
         : { compact: compactHeight, expanded: expandedHeight });
@@ -404,12 +403,9 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
     observer.observe(heading);
     observer.observe(body);
     observer.observe(document.documentElement);
-    const keyboardObserver = new MutationObserver(measure);
-    keyboardObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["style", "data-kb"] });
     window.addEventListener("resize", measure);
     return () => {
       observer.disconnect();
-      keyboardObserver.disconnect();
       window.removeEventListener("resize", measure);
     };
   }, []);
@@ -418,7 +414,6 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
     <motion.div
       ref={panel}
       className="kb-sheet absolute inset-x-0 bottom-0 mx-auto flex max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
-      style={{ maxHeight: "var(--sheet-available-height)" }}
       initial={{ y: "100%" }}
       animate={{ y: 0, ...(heights && { height: expanded ? heights.expanded : heights.compact }) }}
       exit={{ y: "100%" }}
@@ -465,7 +460,7 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
           </div>
         )}
       </div>
-      <div className="min-h-0 overflow-y-auto overscroll-contain">
+      <div data-viewport-scroll className="min-h-0 overflow-y-auto overscroll-contain">
         <div ref={content} className="flow-root">{children}</div>
       </div>
     </motion.div>

@@ -108,36 +108,57 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => installNavDirection(), []);
 
-  // iOS (and Android Chrome) overlay the keyboard instead of shrinking the page, so fixed action bars
-  // would sit behind it. Publish the keyboard's height as --kb; .kb-bar / .kb-sheet ride on top of it.
+  // One viewport measurement sizes both mobile form routes and sheets while the keyboard is up.
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
     const root = document.documentElement;
+    let frame = 0;
+
     const update = () => {
-      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      const open = kb > 80; // ignore browser toolbar show/hide
-      root.style.setProperty("--kb", `${open ? Math.round(kb) : 0}px`);
-      root.toggleAttribute("data-kb", open);
-      if (open) requestAnimationFrame(revealFocused);
+      const layoutHeight = root.clientHeight;
+      const top = Math.max(0, viewport.offsetTop);
+      const height = viewport.height;
+      const keyboardOpen = viewport.scale === 1 && layoutHeight - height > 80;
+      root.style.setProperty("--visible-viewport-top", `${top}px`);
+      root.style.setProperty("--visible-viewport-height", `${height}px`);
+      root.style.setProperty("--visible-viewport-bottom", `${Math.max(0, layoutHeight - top - height)}px`);
+      root.toggleAttribute("data-kb", keyboardOpen);
+
+      if (!keyboardOpen) return;
+      const field = document.activeElement;
+      if (!(field instanceof HTMLElement) || !field.matches("input, textarea, [contenteditable]")) return;
+      const scroller = field.closest<HTMLElement>("[data-viewport-scroll]");
+      if (!scroller || scroller.scrollHeight <= scroller.clientHeight) return;
+
+      const fieldRect = field.getBoundingClientRect();
+      const scrollRect = scroller.getBoundingClientRect();
+      const above = fieldRect.top - scrollRect.top - 8;
+      const below = fieldRect.bottom - scrollRect.bottom + 8;
+      // Keep the focused control in view without scrolling the document or moving the footer.
+      if (above < 0) scroller.scrollTop += above;
+      else if (below > 0) scroller.scrollTop += below;
     };
-    // The lifted bar sits between the keyboard and the page: keep the field being typed in above it.
-    const revealFocused = () => {
-      const el = document.activeElement as HTMLElement | null;
-      const bar = document.querySelector<HTMLElement>(".kb-bar");
-      if (!el || !bar || !el.matches("input, textarea, select, [contenteditable]") || el.closest(".kb-bar, .kb-sheet")) return;
-      const overlap = el.getBoundingClientRect().bottom - bar.getBoundingClientRect().top + 12;
-      if (overlap > 0) window.scrollBy({ top: overlap, behavior: "smooth" });
+
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
     };
-    const onFocus = () => setTimeout(() => root.hasAttribute("data-kb") && revealFocused(), 50);
-    document.addEventListener("focusin", onFocus);
-    update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
+    schedule();
+    window.addEventListener("resize", schedule);
+    viewport.addEventListener("resize", schedule);
+    viewport.addEventListener("scroll", schedule);
+    document.addEventListener("focusin", schedule);
     return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-      document.removeEventListener("focusin", onFocus);
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", schedule);
+      viewport.removeEventListener("resize", schedule);
+      viewport.removeEventListener("scroll", schedule);
+      document.removeEventListener("focusin", schedule);
+      root.style.removeProperty("--visible-viewport-top");
+      root.style.removeProperty("--visible-viewport-height");
+      root.style.removeProperty("--visible-viewport-bottom");
+      root.removeAttribute("data-kb");
     };
   }, []);
 
@@ -210,7 +231,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className={cx(
                 "min-h-dvh bg-bg",
                 // Desktop: modal-style routes (Add, New account) sit in a centered card instead of a full-height phone screen.
-                MODAL_ROUTES.includes(pathname) && "lg:my-8 lg:min-h-0 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-line lg:bg-surface lg:shadow-soft",
+                MODAL_ROUTES.includes(pathname) && "form-viewport lg:my-8 lg:min-h-0 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-line lg:bg-surface lg:shadow-soft",
               )}
             >
               <PullToRefresh enabled={PULL_TO_REFRESH.includes(pathname)}>{children}</PullToRefresh>
