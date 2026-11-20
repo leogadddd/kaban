@@ -164,7 +164,7 @@ function AccountChoice({ onBack, onSkip }: { onBack: () => void; onSkip: () => v
           <UserPlus className="size-4" /> Create an account
         </Button>
         <Button variant="secondary" wrapperClassName="w-full" onClick={() => router.push("/login")}>
-          <LogIn className="size-4" /> I have an account — sign in
+          <LogIn className="size-4" /> I have an account
         </Button>
         <Button variant="ghost" wrapperClassName="w-full" className="min-h-10 text-sm" onClick={onSkip}>
           Skip for now
