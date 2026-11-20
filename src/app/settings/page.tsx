@@ -1,77 +1,145 @@
 "use client";
 
-import { HapticButton, HapticLink } from "@/components/haptic-button";
-import { alertDialog, confirmDialog, confirmSignOut } from "@/components/dialog";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Cloud, Info, LogOut, Moon, Palette, Smartphone, SunMoon, Sun, Trash2, UserRound } from "lucide-react";
+import { useState } from "react";
+import { Bell, ChevronRight, Cloud, Info, LogOut, Search, ShieldCheck, SlidersHorizontal, Smartphone, Trash2, X } from "lucide-react";
+import { alertDialog, confirmDialog, confirmSignOut } from "@/components/dialog";
+import { PersonAvatar } from "@/components/family-ui";
+import { HapticLink } from "@/components/haptic-button";
 import { InstallSheet, requestInstall, useInstall } from "@/components/install";
-import { TwoFactorCard } from "@/components/two-factor";
-import { Button, Card, cx, PageHeader, SectionTitle } from "@/components/ui";
+import { searchSettings, SettingsAction, SettingsGroup, SettingsLink } from "@/components/settings-ui";
+import { ButtonLink, Card, inputCls, PageHeader } from "@/components/ui";
 import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
-import { LogoMark } from "@/lib/logo";
-import { wipeAll } from "@/lib/repo";
+import { useProfile } from "@/lib/family";
 import { resetOnboarded } from "@/lib/first-run";
+import { useNotifyPrefs } from "@/lib/notify";
+import { wipeAll } from "@/lib/repo";
 import { deleteCloudData, friendlyAuthError, signOut, useSyncState } from "@/lib/sync";
-import { setThemePref, useThemePref, type ThemePref } from "@/lib/theme";
-
-const VERSION = "0.1";
+import { useSyncPrefs } from "@/lib/sync-prefs";
 
 export default function SettingsPage() {
   const sync = useSyncState();
   const signedIn = !!sync.userId && sync.phase !== "mfa";
   const install = useInstall();
   const installed = install.standalone || install.installed;
+  const syncPrefs = useSyncPrefs();
+  const notify = useNotifyPrefs();
+  const [query, setQuery] = useState("");
+  const results = searchSettings(query, signedIn);
 
   return (
     <>
       <PageHeader title="Settings" back="/home" privacy={false} />
-      <div className="space-y-5 px-4 pb-4">
-        <Appearance />
-        {sync.configured && <AccountSection signedIn={signedIn} email={sync.email} />}
+      <div className="space-y-6 px-4 pb-6">
+        <label className="relative block">
+          <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-ink-3" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search settings"
+            aria-label="Search settings"
+            className={`${inputCls} pr-11 pl-10 [&::-webkit-search-cancel-button]:hidden`}
+          />
+          {query && (
+            <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-ink-3 active:bg-pale">
+              <X className="size-4" />
+            </button>
+          )}
+        </label>
 
-        {!installed && (
-          <Card className="space-y-3">
-            <SectionTitle><span className="flex items-center gap-1.5"><Smartphone className="size-4 text-brand" /> Install Kaban</span></SectionTitle>
-            <p className="text-sm text-ink-3">
-              {install.platform === "ios"
-                ? "Add Kaban to your Home Screen from Safari. It opens full screen and works offline."
-                : install.platform === "android"
-                  ? "Install Kaban from Chrome. It opens like an app and works offline."
-                  : "Install Kaban from Chrome or Edge, or add it to your phone's Home Screen."}
-            </p>
-            <Button variant="secondary" wrapperClassName="w-full" onClick={() => void requestInstall()}>
-              {install.platform === "desktop" ? "Install Kaban" : "Add to Home Screen"}
-            </Button>
-            <InstallSheet />
-          </Card>
+        {query.trim() ? (
+          results.length ? (
+            <SettingsGroup title="Results">
+              {results.map((r) => (
+                <SettingsLink key={r.label} href={r.href} label={r.label} detail={r.page} />
+              ))}
+            </SettingsGroup>
+          ) : (
+            <p className="px-1 py-6 text-center text-sm text-ink-3">No settings match “{query.trim()}”.</p>
+          )
+        ) : (
+          <>
+            {sync.configured && <AccountHeader signedIn={signedIn} email={sync.email} />}
+
+            <SettingsGroup title="Preferences">
+              <SettingsLink href="/settings/general" icon={SlidersHorizontal} label="General" detail="Theme, hide amounts" />
+              <SettingsLink href="/settings/notifications" icon={Bell} label="Notifications" detail={notify.cardDue ? "Payment reminders on" : "Off"} />
+              {sync.configured && (
+                <SettingsLink
+                  href="/settings/sync"
+                  icon={Cloud}
+                  label="Sync"
+                  detail={syncPrefs.auto ? `Every ${syncPrefs.intervalMin} min` : "Manual only"}
+                />
+              )}
+            </SettingsGroup>
+
+            {signedIn && (
+              <SettingsGroup title="Account">
+                <SettingsLink href="/settings/security" icon={ShieldCheck} label="Security" detail="Two-factor sign-in, password" />
+                <SettingsLink href="/sync" icon={Cloud} label="Sync & backup" detail="Cloud storage, export, import" />
+              </SettingsGroup>
+            )}
+
+            <div id="install" className="scroll-mt-24">
+              <SettingsGroup title="App">
+                {!installed && (
+                  <SettingsAction
+                    onClick={() => void requestInstall()}
+                    icon={Smartphone}
+                    label={install.platform === "desktop" ? "Install Kaban" : "Add to Home Screen"}
+                    detail="Opens full screen, works offline"
+                  />
+                )}
+                <SettingsLink href="/settings/about" icon={Info} label="About Kaban" detail={installed ? "Installed app" : "Running in browser"} />
+              </SettingsGroup>
+              <InstallSheet />
+            </div>
+
+            <DangerZone signedIn={signedIn} />
+          </>
         )}
-
-        <About installed={installed} />
-        {!signedIn && <EraseDevice />}
       </div>
     </>
   );
 }
 
-function AccountSection({ signedIn, email }: { signedIn: boolean; email?: string }) {
-  const router = useRouter();
-  const db = useLedgerDatabase();
-
+function AccountHeader({ signedIn, email }: { signedIn: boolean; email?: string }) {
+  const profile = useProfile();
   if (!signedIn)
     return (
       <Card className="space-y-3">
-        <SectionTitle><span className="flex items-center gap-1.5"><UserRound className="size-4 text-brand" /> Account</span></SectionTitle>
-        <p className="text-sm text-ink-3">Sign in to back up your records and use Kaban on more than one device. Everything still saves here first.</p>
-        <div className="grid grid-cols-2 gap-3">
-          <HapticLink href="/signup" wrapperClassName="grid" className="flex min-h-12 items-center justify-center rounded-2xl bg-brand font-medium text-on-brand shadow-soft">Create account</HapticLink>
-          <Link href="/login" className="flex min-h-12 items-center justify-center rounded-2xl bg-pale font-medium text-brand">Sign in</Link>
+        <div>
+          <p className="font-semibold">Back up with a free account</p>
+          <p className="text-sm text-ink-3">Sync across devices. Optional.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <ButtonLink href="/signup" wrapperClassName="grid" className="min-h-11 px-3 text-sm whitespace-nowrap">Create account</ButtonLink>
+          <ButtonLink href="/login" variant="secondary" wrapperClassName="grid" className="min-h-11 px-3 text-sm">Sign in</ButtonLink>
         </div>
       </Card>
     );
+  const name = profile?.display_name?.trim();
+  return (
+    <HapticLink href="/profile" wrapperClassName="block" className="flex items-center gap-3 rounded-3xl border border-line bg-surface p-4 shadow-soft active:bg-pale">
+      <PersonAvatar name={name || email} avatar={profile?.avatar} size={52} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-semibold">{name || "Your profile"}</span>
+        <span className="block truncate text-sm text-ink-3">{email}</span>
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-ink-3" />
+    </HapticLink>
+  );
+}
+
+/** Sign out and every destructive action, kept together at the bottom. */
+function DangerZone({ signedIn }: { signedIn: boolean }) {
+  const router = useRouter();
+  const db = useLedgerDatabase();
 
   async function doSignOut() {
-    if (!(await confirmSignOut()) || !isActiveDatabase(db)) return;
+    if (!(await confirmSignOut()) || !db || !isActiveDatabase(db)) return;
     await signOut();
     router.replace("/login");
   }
@@ -79,12 +147,12 @@ function AccountSection({ signedIn, email }: { signedIn: boolean; email?: string
   async function doDeleteCloud() {
     const ok = await confirmDialog({
       title: "Delete your cloud data?",
-      body: "Delete your account’s cloud records and reset sync on all your devices. This browser keeps a recovery copy you can export from Sync & backup.",
+      body: "Deletes your cloud records and resets sync on all your devices. This browser keeps a recovery copy you can export from Sync & backup.",
       confirmLabel: "Delete cloud data",
       danger: true,
       typeToConfirm: "DELETE",
     });
-    if (!ok || !isActiveDatabase(db)) return;
+    if (!ok || !db || !isActiveDatabase(db)) return;
     try {
       await deleteCloudData();
     } catch (e) {
@@ -92,126 +160,32 @@ function AccountSection({ signedIn, email }: { signedIn: boolean; email?: string
     }
   }
 
-  return (
-    <section className="space-y-3">
-      <SectionTitle>Account</SectionTitle>
-      <Card className="flex items-center gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-pale text-brand"><UserRound className="size-5" /></span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{email}</p>
-          <Link href="/sync" className="flex items-center gap-1 text-sm text-brand"><Cloud className="size-3.5" /> Sync &amp; backup</Link>
-        </div>
-      </Card>
-      <TwoFactorCard />
-      <Button variant="secondary" wrapperClassName="w-full" className="w-full" onClick={doSignOut}><LogOut className="size-4 shrink-0" /> Sign out</Button>
-      <Card className="flex items-center gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-expense/10 text-expense"><Trash2 className="size-5" /></span>
-        <div className="min-w-0 flex-1">
-          <p className="font-medium">Delete cloud data</p>
-          <p className="text-sm text-ink-3">Removes the synced copy on all devices.</p>
-        </div>
-        <Button variant="danger" wrapperClassName="shrink-0" className="min-h-10 px-4 text-sm" onClick={doDeleteCloud}>Delete</Button>
-      </Card>
-    </section>
-  );
-}
+  async function doErase() {
+    const ok = await confirmDialog({
+      title: "Erase everything on this device?",
+      body: "Every account, transaction and person is deleted from this device. This can't be undone — export a backup first if you might need it.",
+      confirmLabel: "Erase all local data",
+      danger: true,
+      typeToConfirm: "ERASE",
+    });
+    if (!ok || !db || !isActiveDatabase(db)) return;
+    await wipeAll(db);
+    resetOnboarded();
+    router.replace("/welcome");
+  }
 
-function About({ installed }: { installed: boolean }) {
   return (
-    <Card className="space-y-4">
-      <SectionTitle><span className="flex items-center gap-1.5"><Info className="size-4 text-brand" /> About</span></SectionTitle>
-      <div className="flex items-center gap-3">
-        <LogoMark size={44} />
-        <div>
-          <p className="font-semibold">Kaban</p>
-          <p className="text-sm text-ink-3">Version {VERSION} · Philippine peso · {installed ? "Installed app" : "Running in browser"}</p>
-        </div>
-      </div>
-      <p className="text-sm text-ink-2">
-        Kaban is a personal finance tracker for your cash, bank and e-wallet accounts, credit cards, instalments and the money people owe you. It
-        works offline: records are saved on this device first, and cloud sync is optional.
-      </p>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-        <dt className="text-ink-3">Storage</dt>
-        <dd className="text-right">On this device (IndexedDB)</dd>
-        <dt className="text-ink-3">Cloud</dt>
-        <dd className="text-right">Optional, with two-factor sign-in</dd>
-        <dt className="text-ink-3">Price</dt>
-        <dd className="text-right">Free</dd>
-      </dl>
-      <a href="/" target="_blank" rel="noopener noreferrer" className="block text-sm font-medium text-brand">Visit the Kaban website →</a>
-    </Card>
-  );
-}
-
-function EraseDevice() {
-  const router = useRouter();
-  const db = useLedgerDatabase();
-  return (
-    <Card className="space-y-2">
-      <SectionTitle>Danger zone</SectionTitle>
-      <p className="text-sm text-ink-3">Erase every account, transaction and person on this device. Export a backup first.</p>
-      <Button
-        variant="danger"
-        wrapperClassName="w-full"
-        onClick={async () => {
-          const ok = await confirmDialog({
-            title: "Erase everything on this device?",
-            body: "Every account, transaction and person is deleted from this device. This can't be undone — export a backup first if you might need it.",
-            confirmLabel: "Erase all local data",
-            danger: true,
-            typeToConfirm: "ERASE",
-          });
-          if (!ok || !db || !isActiveDatabase(db)) return;
-          await wipeAll(db);
-          resetOnboarded();
-          router.replace("/welcome");
-        }}
-      >
-        <Trash2 className="size-4" /> Erase all local data
-      </Button>
-    </Card>
-  );
-}
-
-const THEMES: { value: ThemePref; label: string; icon: typeof Sun; preview: string }[] = [
-  { value: "light", label: "Light", icon: Sun, preview: "bg-[#F7FAF7] [--pv-card:#FFFFFF] [--pv-accent:#176B4D]" },
-  { value: "dark", label: "Dark", icon: Moon, preview: "bg-[#141816] [--pv-card:#242A26] [--pv-accent:#4CD38F]" },
-  { value: "system", label: "System", icon: SunMoon, preview: "bg-[linear-gradient(90deg,#F7FAF7_50%,#141816_50%)] [--pv-card:linear-gradient(90deg,#FFFFFF_50%,#242A26_50%)] [--pv-accent:linear-gradient(90deg,#176B4D_50%,#4CD38F_50%)]" },
-];
-
-/** Light / Dark / System picker. Device-only: stored locally, applied before first paint by the layout script. */
-function Appearance() {
-  const pref = useThemePref();
-  return (
-    <Card className="space-y-3">
-      <SectionTitle><span className="flex items-center gap-1.5"><Palette className="size-4 text-brand" /> Appearance</span></SectionTitle>
-      <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">
-        {THEMES.map(({ value, label, icon: Icon, preview }) => {
-          const active = pref === value;
-          return (
-            <HapticButton
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => setThemePref(value)}
-              className={cx(
-                "flex flex-col items-center gap-2 rounded-2xl border-[1.5px] p-2 text-sm font-medium transition active:scale-[0.98]",
-                active ? "border-brand bg-pale text-ink" : "border-line bg-field text-ink-2",
-              )}
-            >
-              <span className={cx("relative h-14 w-full overflow-hidden rounded-xl ring-1 ring-black/5", preview)} aria-hidden="true">
-                <span className="absolute inset-x-2 top-2 h-2.5 rounded [background:var(--pv-card)]" />
-                <span className="absolute top-6 right-6 left-2 h-2.5 rounded [background:var(--pv-card)]" />
-                <span className={cx("absolute bottom-2 h-2 rounded [background:var(--pv-accent)]", value === "system" ? "left-[calc(50%-1.1rem)] w-9" : "left-2 w-5")} />
-              </span>
-              <span className="flex items-center gap-1"><Icon className={cx("size-3.5", active && "text-brand")} /> {label}</span>
-            </HapticButton>
-          );
-        })}
-      </div>
-      <p className="text-xs text-ink-3">System follows your phone&apos;s light or dark setting. Saved on this device only.</p>
-    </Card>
+    <div id="danger" className="scroll-mt-24">
+      <SettingsGroup title="Danger zone" footer={signedIn ? "Signing out keeps this device's copy; sign in again to see it." : "Export a backup from Sync & backup first."}>
+        {signedIn ? (
+          <>
+            <SettingsAction onClick={doSignOut} icon={LogOut} tone="danger" label="Sign out" />
+            <SettingsAction onClick={doDeleteCloud} icon={Trash2} tone="danger" label="Delete cloud data" detail="Removes the synced copy on all devices" />
+          </>
+        ) : (
+          <SettingsAction onClick={doErase} icon={Trash2} tone="danger" label="Erase this device" detail="Deletes every record stored here" />
+        )}
+      </SettingsGroup>
+    </div>
   );
 }

@@ -160,3 +160,14 @@ self.addEventListener("fetch", (event) => {
     }),
   );
 });
+
+// Tapping a reminder (lib/notify.ts) focuses an open Kaban window, or opens one.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+      const win = wins.find((w) => new URL(w.url).origin === self.location.origin);
+      return win ? win.focus() : self.clients.openWindow("/home");
+    }),
+  );
+});

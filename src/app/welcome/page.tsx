@@ -3,10 +3,11 @@
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, ChevronLeft, CloudUpload, LogIn, MonitorSmartphone, ShieldAlert, ShieldCheck, UserPlus } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, LogIn, ShieldAlert, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { HapticButton } from "@/components/haptic-button";
 import { Button, cx } from "@/components/ui";
+import { CLOUD_BENEFITS } from "@/components/cloud-benefits";
 import { LogoMark } from "@/lib/logo";
 import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
 import { setMeta } from "@/lib/repo";
@@ -14,11 +15,6 @@ import { cloudConfigured } from "@/lib/supabase";
 
 type Step = "intro" | "account" | "local";
 
-const BENEFITS = [
-  { icon: CloudUpload, t: "Automatic backup", d: "Your records are saved to the cloud, so a lost phone or cleared browser doesn't lose them." },
-  { icon: MonitorSmartphone, t: "Use it on every device", d: "Phone, tablet and computer stay in sync." },
-  { icon: ShieldCheck, t: "Private and protected", d: "Only your account can read your records. Add two-factor sign-in any time." },
-];
 
 export default function WelcomePage() {
   const [step, setStep] = useState<Step>("intro");
@@ -139,7 +135,7 @@ function AccountChoice({ onBack, onSkip }: { onBack: () => void; onSkip: () => v
         <p className="mt-1.5 text-[0.95rem] text-ink-2">A free account is optional, but it means you never lose your data.</p>
 
         <ul className="mt-6 space-y-4 [@media(max-height:640px)]:mt-4 [@media(max-height:640px)]:space-y-3">
-          {BENEFITS.map(({ icon: Icon, t, d }, i) => (
+          {CLOUD_BENEFITS.map(({ icon: Icon, t, d }, i) => (
             <motion.li
               key={t}
               className="flex gap-3"

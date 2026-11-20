@@ -29,9 +29,13 @@ import { LogoMark } from "@/lib/logo";
 import { PrivacySync, PrivacyToggle } from "./privacy-toggle";
 import { PullToRefresh } from "./pull-to-refresh";
 import { SyncPill } from "./sync-pill";
+import { Reminders } from "./reminders";
 import { cx } from "./ui";
 import { HapticLink } from "./haptic-button";
 import { groupHrefs } from "./section-tabs";
+
+/** Nested Settings pages (narrow single column, like Settings itself). */
+export const SETTINGS_ROUTES = ["/settings/general", "/settings/notifications", "/settings/sync", "/settings/security", "/settings/about"];
 
 const FAMILY_ROUTES = ["/family", "/family/new", "/family/invite", "/family/join", "/family/members", "/family/settings"];
 
@@ -62,7 +66,7 @@ const HIDE_NAV = ["/welcome", "/ready", "/add", "/accounts/new", ...AUTH_ROUTES]
 /** Screens presented like modals: full screen on phones, a centered card on desktop. */
 const MODAL_ROUTES = ["/add", "/accounts/new"];
 /** Form-like pages that read better as a single column on desktop. */
-const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", "/payments", "/profile", "/profile/edit", ...FAMILY_ROUTES.slice(1)];
+const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", ...SETTINGS_ROUTES, "/payments", "/profile", "/profile/edit", ...FAMILY_ROUTES.slice(1)];
 /** Read-only screens where pulling down from the top syncs with the cloud now (phones only). */
 const PULL_TO_REFRESH = ["/home", "/accounts", "/accounts/view", "/activity", "/people", "/owed", "/owed/person", "/instalments", "/payments", "/analytics", "/family", "/family/members"];
 /** Public pages that render without the app chrome or the onboarding gate. */
@@ -180,6 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
       <PrivacySync />
+      {!gated && <Reminders />}
       <DialogHost />
       <UndoToaster aboveNav={!hideNav} />
       {showSidebar && <Sidebar pathname={pathname} />}

@@ -11,6 +11,7 @@ import { exportBackup, getMeta, rebuildInstalments, setMeta } from "./repo";
 import { isEntity, validSyncedRecord } from "./record-validation";
 import { cloudConfigured, supabase, syncClient } from "./supabase";
 import type { OutboxEntry } from "./types";
+import { getSyncPrefs, onSyncPrefsChange } from "./sync-prefs";
 
 export type SyncPhase = "off" | "starting" | "signed-out" | "mfa" | "idle" | "syncing" | "offline" | "error" | "full";
 
@@ -60,7 +61,8 @@ export function useSyncState(): SyncState {
 
 const PUSH_BATCH = 200;
 const PULL_BATCH = 500;
-const IDLE_INTERVAL = 60_000;
+/** How often to check whether a background sync is due (the interval itself comes from sync-prefs). */
+const TICK = 15_000;
 const QUOTA_RETRY = 10 * 60_000;
 
 interface SyncAccount {
@@ -79,6 +81,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let running = false;
 let rerun = false;
 let failures = 0;
+let lastRunAt = 0;
 
 export function scheduleSync(delay = 0) {
   if (!account) return;
@@ -126,14 +129,18 @@ export function startSync() {
     set({ recovering: !!recoveringUser });
     if (!signingOut && (!session || session.user.id !== deletingUser)) queueAuth(session, event);
   });
-  window.addEventListener("online", () => scheduleSync());
+  window.addEventListener("online", () => getSyncPrefs().auto && scheduleSync());
   window.addEventListener("offline", () => account && set({ phase: "offline" }));
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") scheduleSync(500);
+    const prefs = getSyncPrefs();
+    if (document.visibilityState === "visible" && prefs.auto && prefs.onOpen) scheduleSync(500);
   });
   setInterval(() => {
-    if (document.visibilityState === "visible") scheduleSync();
-  }, IDLE_INTERVAL);
+    const prefs = getSyncPrefs();
+    if (document.visibilityState === "visible" && prefs.auto && Date.now() - lastRunAt >= prefs.intervalMin * 60_000 - 1000) scheduleSync();
+  }, TICK);
+  // Turning automatic sync back on catches up straight away.
+  onSyncPrefsChange(() => getSyncPrefs().auto && scheduleSync(500));
 }
 
 function assurance(session: Session) {
@@ -197,7 +204,10 @@ async function activateAccount(session: Session | null, change: number) {
   if (session) {
     // Observe the account's queue across tabs instead of relying on this tab's write events.
     const subscription = liveQuery(() => db.outbox.where("status").equals("pending").count()).subscribe({
-      next(count) { if (account?.db === db && count) scheduleSync(1500); },
+      next(count) {
+        const prefs = getSyncPrefs();
+        if (account?.db === db && count && prefs.auto && prefs.uploadNow) scheduleSync(1500);
+      },
       error(error) { console.error("sync queue unavailable", error); },
     });
     account = { session, db, stopWatching: () => subscription.unsubscribe() };
@@ -226,6 +236,7 @@ export async function runSync() {
     return;
   }
   running = true;
+  lastRunAt = Date.now();
   set({ phase: "syncing", error: undefined });
   const { db } = current;
   const client = syncClient(current.session.access_token);
