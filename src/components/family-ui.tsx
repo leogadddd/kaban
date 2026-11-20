@@ -367,7 +367,7 @@ export function ShareWithFamily({ value, onChange }: { value: ShareSetting[]; on
                   <input
                     type="checkbox"
                     {...{ switch: "" }}
-                    className="size-6 accent-[var(--color-brand)]"
+                    className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-line transition-colors checked:bg-brand focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface focus-visible:outline-none before:absolute before:top-0.5 before:left-0.5 before:size-6 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:before:translate-x-5"
                     checked={share.allowAdd !== false}
                     onChange={(e) => onChange(value.map((s) => (s.familyId === f.id ? { ...s, allowAdd: e.target.checked } : s)))}
                   />
