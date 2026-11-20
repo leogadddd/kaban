@@ -442,7 +442,7 @@ button,
 }
 .kb-sheet {
   --sheet-available-height: calc(100dvh - var(--safe-top) - var(--kb, 0px));
-  max-height: calc(88dvh - var(--kb, 0px));
+  max-height: var(--sheet-available-height);
 }
 /* The home indicator is hidden behind the keyboard, so drop the safe-area padding while it's up. */
 :root[data-kb] .kb-bar {

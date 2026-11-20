@@ -16,6 +16,35 @@ import { animatedBack } from "@/lib/nav-direction";
 const noopSubscribe = () => () => {};
 /** Ids of currently open sheets, oldest first (for Escape handling). */
 const openSheets: string[] = [];
+let restoreSheetScroll: (() => void) | undefined;
+
+function lockSheetScroll() {
+  const body = document.body;
+  const root = document.documentElement;
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
+  const previousBody = {
+    position: body.style.position,
+    top: body.style.top,
+    left: body.style.left,
+    width: body.style.width,
+    overflow: body.style.overflow,
+  };
+  const previousOverflow = root.style.overflow;
+  Object.assign(body.style, {
+    position: "fixed",
+    top: `${-scrollY}px`,
+    left: `${-scrollX}px`,
+    width: "100%",
+    overflow: "hidden",
+  });
+  root.style.overflow = "hidden";
+  return () => {
+    Object.assign(body.style, previousBody);
+    root.style.overflow = previousOverflow;
+    window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
+  };
+}
 const DESKTOP_MQ = "(min-width: 1024px)";
 const subscribeDesktop = (cb: () => void) => {
   const m = window.matchMedia(DESKTOP_MQ);
@@ -275,6 +304,7 @@ export function Sheet({
   });
   useEffect(() => {
     if (!open) return;
+    if (openSheets.length === 0) restoreSheetScroll = lockSheetScroll();
     openSheets.push(sheetId);
     const onKey = (e: KeyboardEvent) => {
       // Only the most recently opened sheet reacts, so Escape peels nested sheets one at a time.
@@ -286,6 +316,10 @@ export function Sheet({
       window.removeEventListener("keydown", onKey);
       const i = openSheets.lastIndexOf(sheetId);
       if (i >= 0) openSheets.splice(i, 1);
+      if (openSheets.length === 0) {
+        restoreSheetScroll?.();
+        restoreSheetScroll = undefined;
+      }
     };
   }, [open, sheetId]);
   if (!mounted) return null;
@@ -298,7 +332,7 @@ export function Sheet({
             // Desktop: centered dialog that scales in.
             <motion.div
               className="relative w-full max-w-md overflow-y-auto rounded-[2rem] bg-bg px-6 pt-5 pb-6 shadow-float"
-              style={{ maxHeight: "min(85dvh, 760px)" }}
+              style={{ maxHeight: "calc(100dvh - 4rem)" }}
               initial={{ opacity: 0, scale: 0.96, y: 14 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.97, y: 8 }}
@@ -336,8 +370,8 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
   return (
     <motion.div
       ref={panel}
-      className="kb-sheet absolute inset-x-0 bottom-0 mx-auto flex max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
-      style={{ height: expanded ? "var(--sheet-available-height)" : "auto", maxHeight: expanded ? "var(--sheet-available-height)" : undefined }}
+      className="kb-sheet absolute inset-x-0 bottom-0 mx-auto flex w-full flex-col overflow-hidden rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
+      style={{ height: expanded ? "var(--sheet-available-height)" : "auto", maxHeight: "var(--sheet-available-height)" }}
       initial={{ y: "100%" }}
       animate={{ y: 0 }}
       exit={{ y: "100%" }}
@@ -364,6 +398,7 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
         aria-label={expanded ? "Collapse drawer" : "Expand drawer"}
         aria-expanded={expanded}
         onPointerDown={(event) => {
+          event.preventDefault();
           dragged.current = false;
           controls.start(event);
         }}
