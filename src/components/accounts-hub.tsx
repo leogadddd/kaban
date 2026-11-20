@@ -84,7 +84,7 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
           return (
             <section key={type}>
               <GroupTitle icon={Icon}>{label}</GroupTitle>
-              <Card className="divide-y divide-line p-0">
+              <Card className="divide-y divide-line overflow-hidden p-0!">
                 {items.map((a) => {
                   const b = ledger.balances.get(a.id)!;
                   const bank = a.type === "cash" ? undefined : bankFor(a);
@@ -190,7 +190,7 @@ function PeoplePane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
       {people.length ? (
         <section>
           <GroupTitle icon={Users}>Split bills and lend to</GroupTitle>
-          <Card className="divide-y divide-line p-0">
+          <Card className="divide-y divide-line overflow-hidden p-0!">
             {people.map((p) => {
               const ds = ledger.debtStatus.filter((d) => d.debt.personId === p.id);
               const owes = ds.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
@@ -283,7 +283,7 @@ function OwedPane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
           <Chip active={filter === "settled"} onClick={() => setFilter("settled")}>Settled</Chip>
         </div>
         {rows.length ? (
-          <Card className="divide-y divide-line p-0">
+          <Card className="divide-y divide-line overflow-hidden p-0!">
             {rows.map((r) => {
               const pct = r.total ? ((r.total - r.outstanding) / r.total) * 100 : 0;
               return (
