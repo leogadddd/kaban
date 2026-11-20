@@ -9,6 +9,7 @@ import { confirmDialog } from "@/components/dialog";
 import { noticeToast } from "@/components/undo-toast";
 import { BankLogo } from "@/components/bank-logo";
 import { GroupTitle, Tile, Tiles } from "@/components/swipe-hub";
+import { NotificationsButton } from "@/components/notifications-ui";
 import { Button, ButtonLink, Card, Chip, cx, Field, inputCls, Loading, Money, PageHeader, Progress, SectionTitle, Sheet } from "@/components/ui";
 import { minorToInput, parseMinor } from "@/lib/money";
 import { bankFor } from "@/lib/banks";
@@ -49,6 +50,7 @@ function Header({ family }: { family?: Family }) {
       title="Family"
       action={
         <div className="flex items-center gap-2">
+          <NotificationsButton />
           <InboxButton />
           {family && (
             <HapticLink href={`/family/settings?id=${family.id}`} aria-label="Family settings" className="grid size-11 place-items-center rounded-full border border-line bg-surface">
@@ -64,7 +66,7 @@ function Header({ family }: { family?: Family }) {
 function SignedOut() {
   return (
     <>
-      <PageHeader title="Family" />
+      <PageHeader title="Family" action={<NotificationsButton />} />
       <div className="flex flex-col items-center px-6 pt-4 pb-10 text-center">
         <FamilyIllustration className="mb-4 w-56" />
         <p className="text-lg font-semibold">Track money together</p>
