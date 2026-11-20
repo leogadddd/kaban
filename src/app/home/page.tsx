@@ -189,8 +189,9 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
 
   return (
     <div className="intro-stagger space-y-5">
-      <div className="flex items-center gap-3 pb-4 pt-5">
-        <div className="@container min-w-0 flex-1">
+      {/* The chest stands on the hairline that closes the hero off from the cards below. */}
+      <div className="!mb-7 flex items-end gap-3 border-b border-line pt-5">
+        <div className="@container min-w-0 flex-1 pb-5">
           <p className="text-sm text-ink-3">Available funds · cash & debit</p>
           <motion.div key={totals.availableFunds} initial={{ opacity: 0.4, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
             <BigMoney minor={totals.availableFunds} className="block text-[clamp(2.25rem,17cqw,3.5rem)] leading-none tracking-tighter" centsClass="text-[0.57em]" />
@@ -199,7 +200,7 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
             Across {spendable} {spendable === 1 ? "account" : "accounts"}
           </p>
         </div>
-        <KabanChest amount={totals.availableFunds} hidden={hidden} className="size-26 lg:size-32" />
+        <KabanChest amount={totals.availableFunds} hidden={hidden} className="-mb-[13px] size-26 lg:-mb-[16px] lg:size-32" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">

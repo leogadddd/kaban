@@ -3,6 +3,7 @@
 import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { syncNow } from "@/lib/sync";
+import { ChestArt } from "./chest-art";
 import { cx } from "./ui";
 
 /** How far (px, after resistance) the page must be pulled before letting go refreshes. */
@@ -12,28 +13,29 @@ const HOLD = 64;
 const MAX = 128;
 /** Keep the loading animation up long enough to read as "refreshed", even when sync is instant or local-only. */
 const MIN_SPIN = 900;
-const RING = 2 * Math.PI * 21;
+/** How long the chest beams before tucking away again. */
+const DONE_MS = 450;
 const HAPTIC_MS = 8;
 
 /**
  * Touch-only pull-to-refresh, Reddit style: drag down from the top and the page slides down to reveal
- * the Kaban coffer. Its lid opens and a ring fills as you pull; let go past the line and the coffer hops
- * while the cloud sync runs. (The page keeps its native rubber-band scroll; only a downward pull from the very top is taken over here.)
+ * the Kaban mascot. Its lid lifts with the pull until its eyes peek out, it beams once you're past the
+ * line, hops while the cloud sync runs, then smiles and tucks away. (The page keeps its native rubber-band scroll; only a downward pull from the very top is taken over here.)
  */
 export function PullToRefresh({ enabled, children }: { enabled: boolean; children: ReactNode }) {
   const pull = useMotionValue(0);
   const [armed, setArmed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [done, setDone] = useState(false);
   const busy = useRef(false);
-  const lid = useRef<SVGPathElement>(null);
-  const ring = useRef<SVGCircleElement>(null);
+  const chest = useRef<SVGSVGElement>(null);
 
   const top = useTransform(pull, (p) => Math.max(0, p / 2 - 22));
   const opacity = useTransform(pull, [0, 24, 52], [0, 0.5, 1]);
   const scale = useTransform(pull, [0, THRESHOLD], [0.55, 1]);
   const tilt = useTransform(pull, [0, THRESHOLD, MAX], [-8, 0, 6]);
 
-  // Lid and ring follow the finger directly (SVG attributes, no re-render per frame).
+  // The lid follows the finger directly (SVG attributes, no re-render per frame).
   useMotionValueEvent(pull, "change", (p) => {
     // While the page is off its rest position, frosted headers skip their blur (see globals.css):
     // re-blurring them on every finger move is what costs frames, and at 85% opacity it's not missed.
@@ -42,8 +44,8 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
     else delete root.dataset.pulling;
     if (busy.current) return;
     const progress = Math.min(1, p / THRESHOLD);
-    lid.current?.setAttribute("transform", `rotate(${-progress * 34} 14 30)`);
-    ring.current?.setAttribute("stroke-dashoffset", String(RING * (1 - progress)));
+    const lift = progress * progress * 13 + Math.max(0, p - THRESHOLD) * 0.06;
+    chest.current?.querySelector(".kc-lid")?.setAttribute("transform", `translate(0 ${-lift.toFixed(2)}) rotate(${(progress * 3).toFixed(2)} 107 57)`);
   });
 
   useEffect(() => {
@@ -112,15 +114,22 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
       // A first pull can reach the threshold before the browser grants activation on touchend.
       if (e.type === "touchend" && !requestedVibration) navigator.vibrate?.(HAPTIC_MS);
       busy.current = true;
-      lid.current?.removeAttribute("transform"); // hand the lid to the CSS loading animation
+      chest.current?.querySelector(".kc-lid")?.removeAttribute("transform"); // hand the lid to the CSS loading animation
       setRefreshing(true);
       animate(pull, HOLD, { type: "spring", stiffness: 400, damping: 30 });
       const minSpin = new Promise((r) => setTimeout(r, MIN_SPIN));
-      void Promise.all([syncNow().catch(() => false), minSpin]).then(() => {
-        setRefreshing(false);
-        busy.current = false;
-        animate(pull, 0, { type: "spring", stiffness: 360, damping: 34 });
-      });
+      void Promise.all([syncNow().catch(() => false), minSpin])
+        .then(() => {
+          setRefreshing(false);
+          setDone(true);
+          // Hold the lid up so the smile shows.
+          chest.current?.querySelector(".kc-lid")?.setAttribute("transform", "translate(0 -13) rotate(3 107 57)");
+          return new Promise((r) => setTimeout(r, DONE_MS));
+        })
+        .then(() => {
+          busy.current = false;
+          animate(pull, 0, { type: "spring", stiffness: 360, damping: 34 }).then(() => setDone(false));
+        });
     };
 
     // A non-passive touchmove makes every scroll wait on the main thread, so only hold it while the page
@@ -160,31 +169,16 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
         style={{ y: top, opacity }}
         className="pointer-events-none fixed inset-x-0 top-[var(--safe-top)] flex justify-center lg:hidden"
       >
-        <motion.div style={{ scale, rotate: refreshing ? 0 : tilt }} className={cx("relative size-11", armed && !refreshing && "ptr-pop")}>
-          <svg viewBox="0 0 44 44" className={cx("absolute inset-0 size-11 -rotate-90 text-brand-2", refreshing && "ptr-ring-spin")} aria-hidden="true">
-            <circle cx="22" cy="22" r="21" fill="none" stroke="currentColor" strokeOpacity="0.18" strokeWidth="2" />
-            <circle
-              ref={ring}
-              cx="22"
-              cy="22"
-              r="21"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray={refreshing ? `${RING * 0.28} ${RING}` : RING}
-              strokeDashoffset={refreshing ? 0 : RING}
-            />
-          </svg>
-          <svg viewBox="0 0 64 64" className={cx("absolute inset-[5px] size-[34px]", refreshing && "ptr-hop")} aria-hidden="true">
-            <rect width="64" height="64" rx="16" fill="#176B4D" />
-            <path ref={lid} className={cx(refreshing && "ptr-lid")} d="M14 28c0-6.6 5.4-12 12-12h12c6.6 0 12 5.4 12 12v2H14v-2Z" fill="#E8F4EC" opacity="0.65" />
-            <rect x="14" y="30" width="36" height="20" rx="5" fill="#E8F4EC" />
-            <g className={cx(refreshing && "ptr-leaf")}>
-              <path d="M32 26c-4.5 3.2-5.5 8.4-2 12.4 1 1.1 2.6 1.1 4 0 3.5-4 2.5-9.2-2-12.4Z" fill="#2D936C" stroke="#176B4D" strokeWidth="1.6" />
-              <path d="M32 31v8" stroke="#176B4D" strokeWidth="1.6" strokeLinecap="round" />
-            </g>
-          </svg>
+        <motion.div
+          style={{ scale, rotate: refreshing || done ? 0 : tilt }}
+          className={cx("grid size-13 place-items-center rounded-full bg-surface shadow-float ring-1 ring-line", armed && !refreshing && "ptr-pop")}
+        >
+          <ChestArt
+            svgRef={chest}
+            effects={false}
+            eyes={done || (armed && !refreshing) ? "happy" : "open"}
+            className={cx("mt-1 size-[38px]", refreshing && "ptr-hop ptr-busy")}
+          />
         </motion.div>
       </motion.div>
       {/* Painted after the (non-z-indexed) indicator, so it covers it until pulled. The page slides down with the finger; at rest the transform is `none`, so fixed/sticky children behave normally. */}

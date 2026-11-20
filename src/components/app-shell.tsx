@@ -178,6 +178,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const hideNav = HIDE_NAV.includes(pathname);
   const gated = !AUTH_ROUTES.includes(pathname) && (!database || mode === null || (pathname === "/welcome" && !!userId) || (mode === undefined && !UNGATED.includes(pathname)));
   const showSidebar = !UNGATED.includes(pathname) && !gated;
+  const failed = phase === "error" && !database;
+
+  // Fade the launch splash (layout.tsx) out once there is a page to show.
+  useEffect(() => {
+    if (!gated || failed) document.documentElement.setAttribute("data-ready", "");
+  }, [gated, failed]);
 
   if (BARE.includes(pathname)) return <>{children}</>;
 

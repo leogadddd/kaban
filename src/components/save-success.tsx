@@ -2,7 +2,8 @@
 
 import { HapticButton } from "@/components/haptic-button";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Mascot, type MascotAction } from "./mascot";
 
 const COLORS = ["var(--color-brand)", "var(--color-brand-2)", "var(--color-income)", "var(--color-gold)", "var(--color-mint)", "var(--color-expense)"];
 
@@ -27,11 +28,12 @@ function makePieces(n: number): Piece[] {
   });
 }
 
-/** Full-screen "saved" celebration: ring pops in, check draws itself, confetti bursts. */
+/** Full-screen "saved" celebration: the mascot pops up and throws its lid open, coins and confetti burst. */
 export function SaveSuccess({ title, amount, subtitle, onDone }: { title: string; amount?: string; subtitle?: string; onDone: () => void }) {
   const reduce = useReducedMotion();
   const pieces = useMemo(() => makePieces(36), []);
   const playedHaptic = useRef(false);
+  const [cheer, setCheer] = useState<MascotAction>("celebrate");
 
   useEffect(() => {
     if (playedHaptic.current) return;
@@ -51,7 +53,7 @@ export function SaveSuccess({ title, amount, subtitle, onDone }: { title: string
     >
       <p className="sr-only" role="status">Transaction saved</p>
       <div className="flex flex-col items-center">
-        <div className="relative grid size-28 place-items-center">
+        <div className="relative grid size-36 place-items-center">
           {/* Ripples */}
           {!reduce &&
             [0, 1].map((i) => (
@@ -85,29 +87,15 @@ export function SaveSuccess({ title, amount, subtitle, onDone }: { title: string
               />
             ))}
 
-          {/* Filled disc */}
-          <motion.span
-            aria-hidden="true"
-            className="absolute inset-0 rounded-full bg-income shadow-lg shadow-income/30"
-            initial={reduce ? false : { scale: 0 }}
-            animate={{ scale: [0, 1.12, 1] }}
-            transition={{ duration: 0.5, ease, times: [0, 0.7, 1] }}
-          />
-
-          {/* Self-drawing check */}
-          <svg viewBox="0 0 52 52" className="relative size-14 text-on-brand" aria-hidden="true">
-            <motion.path
-              d="M14 27 l8 8 l16 -18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              initial={reduce ? false : { pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.4, delay: 0.32, ease: "easeOut" }}
-            />
-          </svg>
+          {/* The mascot pops up and celebrates in place of a check mark */}
+          <motion.div
+            className="relative size-full"
+            initial={reduce ? false : { scale: 0.4, opacity: 0, y: 16 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 420, damping: 20 }}
+          >
+            <Mascot action={cheer} onDone={() => setCheer("idle")} className="block size-full" />
+          </motion.div>
         </div>
 
         <motion.div

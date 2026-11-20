@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
-import { THEME_SCRIPT } from "@/lib/theme-script";
+import { SPLASH_SCRIPT, THEME_SCRIPT } from "@/lib/theme-script";
+import { ChestArt } from "@/components/chest-art";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -36,8 +37,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en-PH" className={`${geistSans.variable} ${geistMono.variable} antialiased`} data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_SCRIPT }} />
       </head>
       <body className="min-h-dvh">
+        {/* Launch splash: plain HTML + CSS so it paints before the app's JavaScript arrives (globals.css). */}
+        <div id="splash" aria-hidden="true">
+          <ChestArt eyes="open" effects={false} className="splash-chest" />
+          <p className="splash-name">Kaban</p>
+        </div>
         <AppShell>{children}</AppShell>
       </body>
     </html>
