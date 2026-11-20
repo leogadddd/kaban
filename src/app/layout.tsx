@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
-import { SPLASH_SCRIPT, THEME_SCRIPT } from "@/lib/theme-script";
+import { SPLASH_CSS, SPLASH_SCRIPT, THEME_SCRIPT } from "@/lib/theme-script";
 import { ChestArt } from "@/components/chest-art";
 import "./globals.css";
 
@@ -38,10 +38,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: SPLASH_SCRIPT }} />
+        <style dangerouslySetInnerHTML={{ __html: SPLASH_CSS }} />
       </head>
       <body className="min-h-dvh">
-        {/* Launch splash: plain HTML + CSS so it paints before the app's JavaScript arrives (globals.css). */}
-        <div id="splash" aria-hidden="true">
+        {/* Launch splash: plain HTML + inline CSS so it paints before the app's JavaScript arrives. The inline
+            display:none keeps it hidden even if that CSS is missing; SPLASH_CSS shows it with !important. */}
+        <div id="splash" aria-hidden="true" style={{ display: "none" }}>
           <ChestArt eyes="open" effects={false} className="splash-chest" />
           <p className="splash-name">Kaban</p>
         </div>
