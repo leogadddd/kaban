@@ -57,7 +57,7 @@ export function TwoFactorCard() {
           <CodeField value={code} onChange={setCode} error={error} />
           <div className="grid grid-cols-2 gap-3">
             <Button type="button" variant="secondary" onClick={() => setEnroll(undefined)}>Cancel</Button>
-            <Button type="submit" disabled={busy || code.length !== 6}>Enable two-factor sign-in</Button>
+            <Button type="submit" disabled={busy || code.length !== 6}>Turn on</Button>
           </div>
         </form>
       ) : on ? (
@@ -70,7 +70,7 @@ export function TwoFactorCard() {
               !(await confirmDialog({
                 title: "Turn off two-factor sign-in?",
                 body: "Signing in will only need your password again.",
-                confirmLabel: "Disable two-factor sign-in",
+                confirmLabel: "Turn off",
                 danger: true,
               }))
             )
@@ -86,7 +86,7 @@ export function TwoFactorCard() {
             }
           }}
         >
-          Disable two-factor sign-in
+          Turn off
         </Button>
       ) : (
         <Button

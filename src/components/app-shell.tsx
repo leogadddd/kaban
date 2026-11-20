@@ -35,7 +35,7 @@ import { HapticLink } from "./haptic-button";
 import { groupHrefs } from "./section-tabs";
 
 /** Nested Settings pages (narrow single column, like Settings itself). */
-export const SETTINGS_ROUTES = ["/settings/general", "/settings/notifications", "/settings/sync", "/settings/security", "/settings/about"];
+export const SETTINGS_ROUTES = ["/settings/general", "/settings/notifications", "/settings/sync", "/settings/security", "/settings/security/password", "/settings/about"];
 
 const FAMILY_ROUTES = ["/family", "/family/new", "/family/invite", "/family/join", "/family/members", "/family/settings"];
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { AlertTriangle, Cloud, CloudOff, Download, HardDrive, RefreshCw, Settings2, Upload } from "lucide-react";
+import { AlertTriangle, Cloud, CloudOff, Download, HardDrive, RefreshCw, Settings, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CLOUD_BENEFITS } from "@/components/cloud-benefits";
 import { confirmDialog } from "@/components/dialog";
@@ -26,7 +26,7 @@ export default function SyncPage() {
         action={
           sync.configured && (
             <HapticLink href="/settings/sync" aria-label="Sync settings" className="grid size-11 place-items-center rounded-full border border-line bg-surface">
-              <Settings2 className="size-4" />
+              <Settings className="size-4" />
             </HapticLink>
           )
         }
