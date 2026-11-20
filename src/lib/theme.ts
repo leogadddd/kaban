@@ -9,15 +9,15 @@ const EVENT = "kaban-theme";
 function read(): ThemePref {
   try {
     const v = localStorage.getItem(THEME_KEY);
-    return v === "light" || v === "dark" ? v : "system";
+    return v === "dark" || v === "system" ? v : "light";
   } catch {
-    return "system";
+    return "light";
   }
 }
 
 export function setThemePref(pref: ThemePref) {
   try {
-    if (pref === "system") localStorage.removeItem(THEME_KEY);
+    if (pref === "light") localStorage.removeItem(THEME_KEY);
     else localStorage.setItem(THEME_KEY, pref);
   } catch {}
   (window as unknown as { __kabanApplyTheme?: () => void }).__kabanApplyTheme?.();
@@ -34,5 +34,5 @@ function subscribe(cb: () => void) {
 }
 
 export function useThemePref(): ThemePref {
-  return useSyncExternalStore(subscribe, read, () => "system");
+  return useSyncExternalStore(subscribe, read, () => "light");
 }

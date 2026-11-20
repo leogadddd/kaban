@@ -138,7 +138,7 @@ function About({ installed }: { installed: boolean }) {
         <dt className="text-ink-3">Price</dt>
         <dd className="text-right">Free</dd>
       </dl>
-      <Link href="/" className="block text-sm font-medium text-brand">Visit the Kaban website →</Link>
+      <a href="/" target="_blank" rel="noopener noreferrer" className="block text-sm font-medium text-brand">Visit the Kaban website →</a>
     </Card>
   );
 }
