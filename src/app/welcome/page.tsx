@@ -223,7 +223,8 @@ function LocalConsent({ onBack }: { onBack: () => void }) {
           <span>
             I agree to the{" "}
             <Link href="/terms" className="font-medium text-brand underline-offset-2 hover:underline">Terms of Service</Link> and{" "}
-            <Link href="/privacy" className="font-medium text-brand underline-offset-2 hover:underline">Privacy Policy</Link>.
+            <Link href="/privacy" className="font-medium text-brand underline-offset-2 hover:underline">Privacy Policy</Link>. I&apos;m 13 or older, and if
+            I&apos;m under 18, my parent or guardian agrees too.
           </span>
         </label>
         <Button wrapperClassName="w-full" onClick={start} disabled={!agreed || busy || !db}>

@@ -104,21 +104,6 @@ export function ChestArt({
           </g>
         ))}
 
-        {effects && (
-          <g transform="translate(60 50)">
-            {Array.from({ length: 8 }, (_, i) => (
-              <g key={i} className={`kc-fx kc-coin-${i}`} style={fx}>
-                <circle r="6.5" fill={gold} />
-                <circle r="4.3" fill="none" stroke={deep} strokeOpacity="0.25" strokeWidth="1.2" />
-                <path d="M-1.6 -2.6h2.2a1.6 1.6 0 0 1 0 3.2h-2.2M-1.6 -2.6v5.4M-3 -0.9h5.4" stroke={deep} strokeOpacity="0.45" strokeWidth="1" fill="none" strokeLinecap="round" />
-              </g>
-            ))}
-            {[0, 1, 2].map((i) => (
-              <circle key={i} className={`kc-fx kc-dust-${i}`} r="4" fill="#85948B" style={fx} />
-            ))}
-          </g>
-        )}
-
         {/* Body */}
         <rect x="18" y="52" width="84" height="46" rx="8" fill={body} />
         <path d="M22 66h76M22 81h76" stroke={deep} strokeOpacity="0.35" strokeWidth="1.5" strokeLinecap="round" />
@@ -147,6 +132,22 @@ export function ChestArt({
           <circle cx="60" cy="64.2" r="1.4" fill={gold} />
           <rect x="59.4" y="64.4" width="1.2" height="2.8" rx="0.6" fill={gold} />
         </g>
+
+        {/* Coins and dust in front of the lid, so they burst out over the chest instead of hiding behind it. */}
+        {effects && (
+          <g transform="translate(60 50)">
+            {Array.from({ length: 8 }, (_, i) => (
+              <g key={i} className={`kc-fx kc-coin-${i}`} style={fx}>
+                <circle r="6.5" fill={gold} />
+                <circle r="4.3" fill="none" stroke={deep} strokeOpacity="0.25" strokeWidth="1.2" />
+                <path d="M-1.6 -2.6h2.2a1.6 1.6 0 0 1 0 3.2h-2.2M-1.6 -2.6v5.4M-3 -0.9h5.4" stroke={deep} strokeOpacity="0.45" strokeWidth="1" fill="none" strokeLinecap="round" />
+              </g>
+            ))}
+            {[0, 1, 2].map((i) => (
+              <circle key={i} className={`kc-fx kc-dust-${i}`} r="4" fill="#85948B" style={fx} />
+            ))}
+          </g>
+        )}
       </g>
     </svg>
   );

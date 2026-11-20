@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, ChevronRight, Cloud, Info, LogOut, Search, ShieldCheck, SlidersHorizontal, Smartphone, Trash2, X, Zap } from "lucide-react";
+import { Bell, ChevronRight, Cloud, Info, LogOut, Search, ShieldCheck, SlidersHorizontal, Smartphone, Trash2, UserX, X, Zap } from "lucide-react";
 import { alertDialog, confirmDialog, confirmSignOut } from "@/components/dialog";
 import { PersonAvatar } from "@/components/family-ui";
 import { HapticLink } from "@/components/haptic-button";
@@ -182,6 +182,7 @@ function DangerZone({ signedIn }: { signedIn: boolean }) {
           <>
             <SettingsAction onClick={doSignOut} icon={LogOut} tone="danger" label="Sign out" />
             <SettingsAction onClick={doDeleteCloud} icon={Trash2} tone="danger" label="Delete cloud data" detail="Removes the synced copy on all devices" />
+            <SettingsLink href="/settings/delete-account" icon={UserX} tone="danger" label="Delete account" detail="Erased after 30 days; recover any time before" />
           </>
         ) : (
           <SettingsAction onClick={doErase} icon={Trash2} tone="danger" label="Erase this device" detail="Deletes every record stored here" />

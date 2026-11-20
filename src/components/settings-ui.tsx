@@ -123,6 +123,7 @@ export const SETTINGS_INDEX: SettingsEntry[] = [
   { label: "Profile", page: "Account", href: "/profile", keywords: "name photo birthday email avatar", signedIn: true },
   { label: "Sign out", page: "Settings", href: "/settings#danger", keywords: "log out logout", signedIn: true },
   { label: "Delete cloud data", page: "Settings", href: "/settings#danger", keywords: "remove erase reset cloud", signedIn: true },
+  { label: "Delete account", page: "Delete account", href: "/settings/delete-account", keywords: "close remove erase account leave recover", signedIn: true },
   { label: "Erase this device", page: "Settings", href: "/settings#danger", keywords: "wipe reset delete local data", signedIn: false },
   { label: "Install Kaban", page: "Settings", href: "/settings#install", keywords: "home screen app pwa add" },
   { label: "About Kaban", page: "About", href: "/settings/about", keywords: "version info website terms privacy policy" },

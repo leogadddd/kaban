@@ -9,13 +9,19 @@ import { allTables, databaseFor, getDatabase, ledgerTables, migrateLedger, showD
 import { syncFamilyData } from "./family";
 import { syncAgreement } from "./legal";
 import { syncQuickAdd } from "./quick-add";
-import { exportBackup, getMeta, rebuildInstalments, setMeta } from "./repo";
+import { exportBackup, getMeta, rebuildInstalments, setMeta, wipeAll } from "./repo";
 import { isEntity, validSyncedRecord } from "./record-validation";
 import { cloudConfigured, supabase, syncClient } from "./supabase";
 import type { OutboxEntry } from "./types";
 import { getSyncPrefs, onSyncPrefsChange } from "./sync-prefs";
 
-export type SyncPhase = "off" | "starting" | "signed-out" | "mfa" | "idle" | "syncing" | "offline" | "error" | "full";
+export type SyncPhase = "off" | "starting" | "signed-out" | "mfa" | "idle" | "syncing" | "offline" | "error" | "full" | "deleted";
+
+/** The signed-in account asked to be deleted and is inside its 30-day grace period. */
+export interface AccountDeletion {
+  requestedAt: string;
+  purgeAfter: string;
+}
 
 export interface CloudQuota {
   records: number;
@@ -35,6 +41,8 @@ export interface SyncState {
   quota?: CloudQuota;
   /** Arrived from a password-reset email: show the "set a new password" form. */
   recovering: boolean;
+  /** Set while phase is "deleted": when the account will be erased for good. */
+  deletion?: AccountDeletion;
 }
 
 // ---------- Observable state ----------
@@ -166,7 +174,7 @@ function queueAuth(session: Session | null, event?: string) {
   }
   stopSync();
   showDatabase(null);
-  set({ phase: "starting", userId: undefined, email: undefined, quota: undefined, error: undefined, dataNotice: undefined, lastSyncedAt: undefined });
+  set({ phase: "starting", userId: undefined, email: undefined, quota: undefined, error: undefined, dataNotice: undefined, lastSyncedAt: undefined, deletion: undefined });
   // Leave Supabase's auth callback before doing async work.
   setTimeout(() => {
     void activateAccount(session, change).catch((error: Error) => {
@@ -189,6 +197,12 @@ async function activateAccount(session: Session | null, change: number) {
     if (mfa) {
       if (change === authChange) set({ phase: "mfa", userId, email: session.user.email });
       return;
+    }
+    // Scheduled for deletion: don't open the ledger, offer recovery instead. Offline, carry on as usual.
+    if (navigator.onLine) {
+      const deletion = await pendingDeletion(syncClient(session.access_token));
+      if (change !== authChange) return;
+      if (deletion) return showDeleted(session, deletion);
     }
   }
   const db = databaseFor(userId);
@@ -245,6 +259,14 @@ export async function runSync() {
   try {
     const quota = await fetchQuota(client);
     if (account !== current) return;
+    // Deleted from another device: stop uploading and show the recovery screen here too.
+    const deletion = await pendingDeletion(client);
+    if (account !== current) return;
+    if (deletion) {
+      ++authChange;
+      showDeleted(current.session, deletion);
+      return;
+    }
     if (!await reconcileGeneration(db, quota.generation)) {
       rerun = true;
       return;
@@ -474,8 +496,17 @@ function sb() {
 
 const origin = () => window.location.origin;
 
-export async function signUp(email: string, password: string): Promise<{ needsConfirm: boolean }> {
-  const { data, error } = await sb().auth.signUp({ email, password, options: { emailRedirectTo: `${origin()}/login` } });
+export async function signUp(
+  email: string,
+  password: string,
+  age: { birthday: string; guardianConsent: boolean },
+): Promise<{ needsConfirm: boolean }> {
+  // The server checks the age again, copies the birthday to the private profile and drops it from the auth metadata.
+  const { data, error } = await sb().auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: `${origin()}/login`, data: { birthday: age.birthday, guardian_consent: age.guardianConsent } },
+  });
   if (error) throw error;
   // Supabase hides "already registered" (no identities, no error) to prevent email probing; treat it the same.
   return { needsConfirm: !data.session };
@@ -513,6 +544,7 @@ export function friendlyAuthError(err: unknown) {
   const m = (err as Error)?.message ?? String(err);
   if (/failed to fetch|networkerror|load failed/i.test(m)) return "Can't reach the server. Check your connection and try again.";
   if (/invalid login credentials/i.test(m)) return "That email and password don't match.";
+  if (/database error saving new user/i.test(m)) return "Kaban couldn't create that account. Check your birthday (accounts are for 13 and older) and try again.";
   if (/email not confirmed/i.test(m)) return "Confirm your email first — check your inbox for the link.";
   if (/invalid totp|invalid.*code|code.*(expired|invalid)/i.test(m)) return "That code didn't work. Try the newest one from your app.";
   if (/rate limit|too many/i.test(m)) return "Too many attempts. Wait a minute and try again.";
@@ -535,6 +567,60 @@ export async function signOut() {
     const { data } = await sb().auth.getSession();
     queueAuth(data.session);
   }
+}
+
+// ---------- Account deletion (30-day grace period) ----------
+
+async function pendingDeletion(client: SupabaseClient): Promise<AccountDeletion | null> {
+  const { data, error } = await client.rpc("get_my_account_deletion");
+  // An older server without the function, or a network blip: never block the ledger on it.
+  if (error) return null;
+  return parseDeletion(data);
+}
+
+function parseDeletion(data: unknown): AccountDeletion | null {
+  const d = data as { pending?: boolean; requested_at?: string; purge_after?: string } | null;
+  return d?.pending && d.purge_after ? { requestedAt: d.requested_at ?? d.purge_after, purgeAfter: d.purge_after } : null;
+}
+
+function showDeleted(session: Session, deletion: AccountDeletion) {
+  stopSync();
+  showDatabase(null);
+  set({ phase: "deleted", userId: session.user.id, email: session.user.email, deletion });
+}
+
+/**
+ * Schedules the signed-in account for deletion in 30 days. Uploads pending changes first (so recovering
+ * brings everything back), then clears this device's copy. Other devices show the recovery screen on
+ * their next sync.
+ */
+export async function requestAccountDeletion() {
+  const current = account;
+  if (!current) throw new Error("Sign in before deleting your account.");
+  if (!navigator.onLine) throw new Error("You're offline. Connect to the internet to delete your account.");
+  await syncNow();
+  if (account !== current) throw new Error("Your account changed. Try again.");
+  if (await current.db.outbox.where("status").equals("pending").count())
+    throw new Error("Some changes haven't uploaded yet. Make sure you're online and try again, so nothing is lost if you recover your account.");
+  const { data, error } = await syncClient(current.session.access_token).rpc("request_account_deletion");
+  if (error?.code === "PGRST202") throw new Error("Account deletion isn't available on the server yet.");
+  checkError(error);
+  const deletion = parseDeletion(data);
+  if (!deletion) throw new Error("Kaban couldn't schedule the deletion. Try again.");
+  ++authChange;
+  showDeleted(current.session, deletion);
+  // Everything is in the cloud for the grace period; this device doesn't need to keep a copy.
+  await wipeAll(current.db).catch((e) => console.warn("couldn't clear this device's copy", e));
+}
+
+/** Cancels a scheduled deletion and opens the account again. */
+export async function recoverAccount() {
+  const { data } = await sb().auth.getSession();
+  const session = data.session;
+  if (!session) throw new Error("Sign in again to recover your account.");
+  const { error } = await syncClient(session.access_token).rpc("cancel_account_deletion");
+  checkError(error);
+  queueAuth(session);
 }
 
 export async function deleteCloudData() {

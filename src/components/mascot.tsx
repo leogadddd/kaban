@@ -102,7 +102,7 @@ async function perform(action: MascotAction, go: Go, wait: (ms: number) => Promi
       await go(".kc-coin-0", { x: 0, y: -74, opacity: 0, rotate: 0 }, { duration: 0 });
       void openLid(-14, 3, spring(500, 18));
       await go(".kc-coin-0", { y: [-74, -8], opacity: [0, 1], rotate: [0, 300] }, { duration: 0.5, ease: "easeIn" });
-      void go(".kc-coin-0", { y: 4, opacity: 0 }, { duration: 0.1 });
+      void go(".kc-coin-0", { y: -3, opacity: 0 }, { duration: 0.08 });
       void closeLid(spring(700, 22));
       await go(".kc-rig", { scaleY: [1, 0.86, 1.06, 1], scaleX: [1, 1.1, 0.97, 1] }, { duration: 0.5, ease: "easeOut" });
       sparkle();

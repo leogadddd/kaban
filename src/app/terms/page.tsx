@@ -45,10 +45,15 @@ const SECTIONS: LegalSection[] = [
     id: "eligibility",
     title: "Who can use Kaban",
     body: (
-      <p>
-        You need to be at least 18 years old, or have the permission of a parent or guardian who agrees to these Terms for you. You must be able to enter
-        into a binding agreement under the laws that apply to you.
-      </p>
+      <>
+        <p>You need to be at least <b>13 years old</b> to use Kaban.</p>
+        <p>
+          If you are between 13 and 17, a parent or guardian must read these Terms and the Privacy Policy and agree to them with you. They are responsible
+          for your use of Kaban, including any account you create. We ask for your birthday when you create an account to check this, and we don&apos;t
+          create accounts for anyone under 13.
+        </p>
+        <p>If you are 18 or older, you confirm that you can enter into a binding agreement under the laws that apply to you.</p>
+      </>
     ),
   },
   {
@@ -183,8 +188,8 @@ const SECTIONS: LegalSection[] = [
     title: "Ending your use",
     body: (
       <p>
-        You can stop using Kaban whenever you like: export your records, delete your cloud data from <b>Settings</b>, and contact us if you also want your sign-in
-        removed. We may close accounts that break these Terms, or that have been inactive for a long time, after giving notice where we reasonably can.
+        You can stop using Kaban whenever you like. Export your records, then use <b>Settings → Delete account</b>: your account is erased 30 days later, and
+        you can recover it by signing in before then. We may close accounts that break these Terms, or that have been inactive for a long time, after giving notice where we reasonably can.
       </p>
     ),
   },

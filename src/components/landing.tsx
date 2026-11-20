@@ -103,7 +103,8 @@ export function HeroStage() {
     <div ref={ref} className="relative mx-auto h-[36rem] w-full max-w-[28rem]" aria-hidden="true">
       <div className="absolute inset-x-8 top-6 -z-10 h-[28rem] rounded-full bg-brand-2/25 blur-3xl" />
       <motion.div
-        className="absolute top-0 right-4 bottom-10 left-16 overflow-hidden rounded-[2.6rem] border-[10px] border-ink bg-bg shadow-float sm:left-20"
+        // Real phone proportions (about 9:19.5), not stretched to the column's width.
+        className="absolute top-0 right-6 h-[33.5rem] w-[15.5rem] overflow-hidden rounded-[2.6rem] border-[10px] border-ink bg-bg shadow-float sm:right-10"
         initial={{ opacity: 0, y: 40, rotate: 2 }}
         animate={{ opacity: 1, y: 0, rotate: 2 }}
         transition={{ type: "spring", stiffness: 120, damping: 18 }}
@@ -117,7 +118,7 @@ export function HeroStage() {
           </motion.p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <div className="rounded-2xl bg-ink p-2.5 text-white">
-              <p className="text-[0.55rem] text-white/60">Credit outstanding</p>
+              <p className="text-[0.55rem] text-white/60">Card balance</p>
               <p className="num text-sm font-semibold">₱47,940.50</p>
             </div>
             <div className="rounded-2xl bg-brand-2 p-2.5 text-white">

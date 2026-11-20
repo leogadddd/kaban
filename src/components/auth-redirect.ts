@@ -17,6 +17,10 @@ export function useLeaveWhenSignedIn(to = "/home") {
       router.replace("/login/verify");
       return;
     }
+    if (phase === "deleted") {
+      router.replace("/account/deleted");
+      return;
+    }
     router.replace(to);
   }, [userId, phase, router, to]);
 }

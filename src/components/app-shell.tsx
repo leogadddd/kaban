@@ -36,7 +36,7 @@ import { HapticLink } from "./haptic-button";
 import { groupHrefs } from "./section-tabs";
 
 /** Nested Settings pages (narrow single column, like Settings itself). */
-export const SETTINGS_ROUTES = ["/settings/general", "/settings/notifications", "/settings/sync", "/settings/security", "/settings/security/password", "/settings/about", "/settings/quick-add"];
+export const SETTINGS_ROUTES = ["/settings/general", "/settings/notifications", "/settings/sync", "/settings/security", "/settings/security/password", "/settings/about", "/settings/quick-add", "/settings/delete-account"];
 
 const FAMILY_ROUTES = ["/family", "/family/new", "/family/invite", "/family/join", "/family/members", "/family/settings"];
 
@@ -59,8 +59,10 @@ const MORE: { href: string; label: string; short?: string; icon: typeof Users }[
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+/** Where a signed-in account scheduled for deletion is held until it recovers or signs out. */
+export const ACCOUNT_DELETED = "/account/deleted";
 /** Sign-in flow: full-screen, no app chrome, reachable before onboarding (a new device signs in from Welcome). */
-export const AUTH_ROUTES = ["/login", "/login/verify", "/signup", "/forgot-password", "/reset-password"];
+export const AUTH_ROUTES = ["/login", "/login/verify", "/signup", "/forgot-password", "/reset-password", ACCOUNT_DELETED];
 /** Pages that render before the device has been set up. */
 const UNGATED = ["/welcome", "/ready", ...AUTH_ROUTES];
 const HIDE_NAV = ["/welcome", "/ready", "/add", "/accounts/new", ...AUTH_ROUTES];
@@ -95,6 +97,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (pathname === "/welcome" && database && userId) router.replace("/home");
     // Welcome is a first-run screen only; a returning, signed-out device signs in instead.
     else if (pathname === "/welcome" && mode === undefined && isOnboarded()) router.replace("/login");
+    if (phase === "deleted") {
+      if (pathname !== ACCOUNT_DELETED && !BARE.includes(pathname)) router.replace(ACCOUNT_DELETED);
+      return;
+    }
     if (UNGATED.includes(pathname) || BARE.includes(pathname)) return;
     if (phase === "mfa") router.replace("/login/verify");
     else if (mode === undefined) router.replace(entryPath());

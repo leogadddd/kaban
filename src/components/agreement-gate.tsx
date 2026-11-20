@@ -109,7 +109,7 @@ export function AgreementGate() {
                 />
                 <Check className="pointer-events-none absolute size-3.5 text-on-brand opacity-0 peer-checked:opacity-100" strokeWidth={3} />
               </span>
-              <span>I have read and agree to the Terms of Service and the Privacy Policy.</span>
+              <span>I have read and agree to the Terms of Service and the Privacy Policy. I&apos;m 13 or older, and if I&apos;m under 18, my parent or guardian agrees too.</span>
             </label>
 
             <Button wrapperClassName="mt-4 w-full" className={cx(!checked && "opacity-60")} onClick={agree} disabled={!checked || busy}>

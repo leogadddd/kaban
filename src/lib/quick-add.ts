@@ -39,6 +39,11 @@ export const PENDING = "quickAdd:pending";
 const DECIDED = "quickAdd:decided";
 
 export const QUICK_ADD_URL = `${SITE_URL}/api/quick-add`;
+/**
+ * iCloud link to the ready-made "Add to Kaban" shortcut (shared from the Shortcuts app). It asks for the
+ * person's token when they add it, so the shared shortcut itself holds no secret. See README → Quick add.
+ */
+export const QUICK_ADD_SHORTCUT_URL = process.env.NEXT_PUBLIC_QUICK_ADD_SHORTCUT_URL?.trim() || "";
 
 type Decision = "approved" | "rejected";
 

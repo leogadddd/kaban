@@ -1,11 +1,11 @@
 "use client";
 
-import { Check, Copy, KeyRound, Plus, Trash2, Zap } from "lucide-react";
+import { Check, ChevronDown, Copy, KeyRound, Plus, Trash2, Zap } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { alertDialog, confirmDialog } from "@/components/dialog";
 import { SettingsGroup, SettingsRow } from "@/components/settings-ui";
 import { Button, Card, Field, inputCls, PageHeader, Sheet } from "@/components/ui";
-import { createToken, listTokens, QUICK_ADD_URL, revokeToken, type QuickToken } from "@/lib/quick-add";
+import { createToken, listTokens, QUICK_ADD_SHORTCUT_URL, QUICK_ADD_URL, revokeToken, type QuickToken } from "@/lib/quick-add";
 import { useSyncState } from "@/lib/sync";
 
 export default function QuickAddPage() {
@@ -23,6 +23,12 @@ export default function QuickAddPage() {
             waits for your approval the next time you open the app. Nothing is saved until you approve it.
           </p>
         </Card>
+        {signedIn && (
+          <Card>
+            <p className="mb-3 font-semibold">Set it up on your iPhone</p>
+            <ShortcutGuide />
+          </Card>
+        )}
         {signedIn ? <Tokens /> : <p className="rounded-2xl bg-pale p-3 text-sm text-ink-2">Sign in to use quick add. It needs a free account so Shortcuts can reach you.</p>}
       </div>
     </>
@@ -177,28 +183,71 @@ function TokenSheet({ token, onClose }: { token?: string; onClose: () => void })
         <div className="space-y-4">
           <p className="rounded-2xl bg-gold/15 p-3 text-sm text-ink-2">Copy it now. Kaban only shows it once. If you lose it, revoke it and make a new one.</p>
           <CopyRow label="Token" value={token} secret />
-          <CopyRow label="Address" value={QUICK_ADD_URL} />
-
-          <div className="space-y-3">
-            <p className="font-semibold">Set up the shortcut</p>
-            <ol className="space-y-3">
-              <Step n={1}>Open the <B>Shortcuts</B> app and tap <B>+</B> to make a new shortcut.</Step>
-              <Step n={2}>Add <B>Ask for Input</B>, set it to <B>Number</B>, prompt “Amount”.</Step>
-              <Step n={3}>Add another <B>Ask for Input</B> (Text), prompt “What for?”.</Step>
-              <Step n={4}>
-                Add <B>Get Contents of URL</B> with the address above. Tap <B>Show More</B>: Method <B>POST</B>, add header <B>Authorization</B> ={" "}
-                <B>Bearer</B> followed by a space and your token. Request Body <B>JSON</B> with <B>amount</B> = the first input and <B>description</B> = the second.
-              </Step>
-              <Step n={5}>Add <B>Get Dictionary Value</B> for key <B>message</B>, then <B>Show Notification</B> with it.</Step>
-              <Step n={6}>Tap the shortcut’s name → <B>Add to Home Screen</B>, or set it on the Action Button.</Step>
-            </ol>
-            <p className="text-xs text-ink-3">
-              Optional JSON fields: <span className="num">type</span> (expense or income), <span className="num">category</span>, <span className="num">account</span> (the account’s name), <span className="num">date</span> (YYYY-MM-DD). You can change any of them when you approve.
-            </p>
-          </div>
+          <ShortcutGuide hasToken />
           <Button wrapperClassName="w-full" className="w-full" onClick={onClose}>Done</Button>
         </div>
       )}
     </Sheet>
+  );
+}
+
+/** How to set up the iPhone shortcut: the ready-made one (when published) and the build-it-yourself steps. */
+function ShortcutGuide({ hasToken }: { hasToken?: boolean }) {
+  const tokenStep = hasToken ? <>Copy your token above.</> : <>Create a token below and copy it. Kaban shows it only once.</>;
+  return (
+    <div className="space-y-4">
+      {QUICK_ADD_SHORTCUT_URL && (
+        <div className="space-y-3 rounded-2xl bg-pale/70 p-4">
+          <p className="font-semibold">Add the ready-made shortcut</p>
+          <ol className="space-y-3">
+            <Step n={1}>{tokenStep}</Step>
+            <Step n={2}>On your iPhone, tap <B>Add to Shortcuts</B> below. The Shortcuts app opens.</Step>
+            <Step n={3}>Tap <B>Set Up Shortcut</B>. When it asks for your Kaban token, paste it, then tap <B>Add Shortcut</B>.</Step>
+            <Step n={4}>Run <B>Add to Kaban</B>: type the amount, then what it was for. You&apos;ll see “Sent to Kaban”.</Step>
+            <Step n={5}>Open Kaban and tap the <B>bell</B> on Home to approve the entry.</Step>
+          </ol>
+          <a
+            href={QUICK_ADD_SHORTCUT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand font-medium text-on-brand shadow-soft active:scale-[0.98]"
+          >
+            <Zap className="size-4" /> Add to Shortcuts
+          </a>
+          <p className="text-xs text-ink-3">Works on iPhone, iPad and Mac. The shortcut holds only your token and sends entries to Kaban, nothing else.</p>
+        </div>
+      )}
+
+      <details className="group space-y-3" open={!QUICK_ADD_SHORTCUT_URL}>
+        <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between font-semibold [&::-webkit-details-marker]:hidden">
+          {QUICK_ADD_SHORTCUT_URL ? "Or build it yourself" : "Build the shortcut (about 3 minutes)"}
+          <ChevronDown className="size-4 text-ink-3 transition group-open:rotate-180" />
+        </summary>
+        <CopyRow label="Address" value={QUICK_ADD_URL} />
+        <ol className="space-y-3">
+          <Step n={1}>{tokenStep}</Step>
+          <Step n={2}>Open the <B>Shortcuts</B> app, tap <B>+</B>, then tap the name at the top and rename it <B>Add to Kaban</B>.</Step>
+          <Step n={3}>Tap <B>Add Action</B>, search <B>Ask for Input</B> and add it. Tap <B>Text</B> and change it to <B>Number</B>. Tap <B>Prompt</B> and type <B>Amount</B>.</Step>
+          <Step n={4}>Add a second <B>Ask for Input</B>. Leave it as <B>Text</B> and set the prompt to <B>What for?</B></Step>
+          <Step n={5}>Add <B>Get Contents of URL</B>. Tap <B>URL</B> and paste the address above. Then tap the <B>›</B> arrow to show more options.</Step>
+          <Step n={6}>Set <B>Method</B> to <B>POST</B>. Under <B>Headers</B>, tap <B>Add new header</B>: key <B>Authorization</B>, value <B>Bearer</B>, a space, then paste your token.</Step>
+          <Step n={7}>
+            Set <B>Request Body</B> to <B>JSON</B>. Tap <B>Add new field</B> → <B>Number</B>: key <B>amount</B>, and for the value tap <B>Select Variable</B> and pick the first
+            <B> Provided Input</B>. Add another field → <B>Text</B>: key <B>description</B>, value the second <B>Provided Input</B>.
+          </Step>
+          <Step n={8}>Add <B>Get Dictionary Value</B>. Set it to get the value for key <B>message</B> in <B>Contents of URL</B>.</Step>
+          <Step n={9}>Add <B>Show Notification</B> and set its text to <B>Dictionary Value</B>. Tap <B>Done</B>.</Step>
+          <Step n={10}>Run it once to test: you should see “Sent to Kaban”. Approve the entry from the <B>bell</B> on Kaban&apos;s Home.</Step>
+        </ol>
+        <div className="space-y-1.5 rounded-2xl bg-bg p-3 text-xs text-ink-3">
+          <p><span className="font-medium text-ink-2">Quicker access:</span> long-press the shortcut → <B>Share</B> → <B>Add to Home Screen</B>, or on iPhone 15 Pro and later go to Settings → Action Button → Shortcut → Add to Kaban.</p>
+          <p>
+            <span className="font-medium text-ink-2">Optional fields</span> you can add to the JSON: <span className="num">type</span> (expense or income), <span className="num">category</span>,{" "}
+            <span className="num">account</span> (an account&apos;s name), <span className="num">date</span> (YYYY-MM-DD). You can change any of them when you approve.
+          </p>
+          <p><span className="font-medium text-ink-2">“This token isn&apos;t valid”:</span> check there&apos;s exactly one space after Bearer, or make a new token.</p>
+        </div>
+      </details>
+    </div>
   );
 }

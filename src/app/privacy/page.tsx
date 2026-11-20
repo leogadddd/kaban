@@ -48,7 +48,8 @@ const SECTIONS: LegalSection[] = [
         <ul>
           <li><b>Sign-in details:</b> your email address, a securely hashed password (we never see it in plain text), and your two-factor authenticator if you set one up.</li>
           <li><b>Your records:</b> the accounts, transactions, instalments, people, splits and balances you enter, including any notes and categories.</li>
-          <li><b>Your profile, if you fill it in:</b> display name, photo and birthday. Your birthday is never shown to others.</li>
+          <li><b>Your birthday,</b> asked when you create an account so we can check you are old enough, and whether a parent or guardian agreed if you are under 18. It is saved on your private profile and never shown to others.</li>
+          <li><b>Your profile, if you fill it in:</b> display name and photo.</li>
           <li><b>Family details, if you use families:</b> the families you belong to, your role, join requests, and the snapshots of accounts you choose to share.</li>
           <li><b>Quick add:</b> your quick add tokens (stored as a one-way hash, never the token itself) and the entries sent with them, with whether you approved or rejected each one.</li>
           <li><b>Your agreement:</b> which version of these policies and the Terms you agreed to, and when.</li>
@@ -134,11 +135,17 @@ const SECTIONS: LegalSection[] = [
     id: "retention",
     title: "How long we keep it",
     body: (
+      <>
       <p>
         We keep your cloud data for as long as you have an account. You can delete your synced records at any time from <b>Settings</b>, and revoke quick add
-        tokens there too. If you want your whole account removed, including your sign-in, profile and family memberships,
-        contact us and we will delete it, except anything we must keep by law. Server logs are kept for a short period.
+        tokens there too.
       </p>
+      <p>
+        To remove your whole account, use <b>Settings → Delete account</b>. Your quick add tokens stop working right away, and the account is scheduled for
+        deletion 30 days later. Until then, signing in lets you recover everything. After 30 days your sign-in, synced records, profile and family memberships
+        are erased permanently; families you own pass to another member. We keep only what the law requires. Server logs are kept for a short period.
+      </p>
+      </>
     ),
   },
   {
@@ -161,7 +168,15 @@ const SECTIONS: LegalSection[] = [
   {
     id: "children",
     title: "Children",
-    body: <p>Kaban isn&apos;t meant for children under 18 without a parent or guardian. If you think a child gave us personal information, contact us and we will delete it.</p>,
+    body: (
+      <>
+        <p>
+          Kaban is for people 13 and older. Anyone between 13 and 17 needs a parent or guardian to agree to the Terms and this policy, and we record that
+          they did when the account is created. We don&apos;t knowingly create accounts for, or collect personal information from, children under 13.
+        </p>
+        <p>If you believe a child under 13 has given us personal information, contact us and we will delete it. Parents and guardians of users under 18 can ask us to see, correct or delete their child&apos;s information.</p>
+      </>
+    ),
   },
   {
     id: "changes",
