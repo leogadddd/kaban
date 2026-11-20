@@ -154,6 +154,10 @@ input[type="month"] {
   min-width: 0;
   max-width: 100%;
   text-align: left;
+  /* As a block, iOS pins the value to the top of a min-height box; padding + line-height that fill
+     the 48px field exactly (11 + 24 + 11 + 2px border) keep it vertically centred. */
+  padding-block: 11px;
+  line-height: 1.5rem;
 }
 input[type="date"]::-webkit-date-and-time-value,
 input[type="month"]::-webkit-date-and-time-value {
