@@ -26,6 +26,16 @@ export function undoToast(title: string, undo: () => Promise<unknown>) {
   }} />, { duration: Infinity });
 }
 
+/** Short confirmation or error line in the same dark card style. */
+export function noticeToast(title: string, tone: "ok" | "error" = "ok") {
+  toast.custom(() => (
+    <div role={tone === "error" ? "alert" : "status"} className="flex w-[min(calc(100vw-2rem),24rem)] items-center gap-3 rounded-2xl bg-night px-4 py-3 text-white shadow-soft dark:border dark:border-line">
+      <span aria-hidden className={tone === "error" ? "size-2 shrink-0 rounded-full bg-expense" : "size-2 shrink-0 rounded-full bg-mint"} />
+      <p className="min-w-0 flex-1 text-sm font-medium">{title}</p>
+    </div>
+  ), { duration: tone === "error" ? 5000 : 2800 });
+}
+
 function UndoCard({ id, title, onUndo }: { id: string | number; title: string; onUndo: () => void }) {
   const [left, setLeft] = useState(UNDO_MS);
   useEffect(() => {

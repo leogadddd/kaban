@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Settings,
   Users,
+  UsersRound,
   WalletCards,
 } from "lucide-react";
 import { requestPersistence, useLedgerDatabase } from "@/lib/db";
@@ -31,16 +32,19 @@ import { cx } from "./ui";
 import { HapticLink } from "./haptic-button";
 import { groupHrefs } from "./section-tabs";
 
+const FAMILY_ROUTES = ["/family", "/family/new", "/family/invite", "/family/join", "/family/members", "/family/settings"];
+
 /** Bottom tabs. `match` lists the pages that light a tab up (its section tabs live on those pages). */
 const NAV = [
   { href: "/home", label: "Home", icon: Home, match: ["/home"] },
   { href: "/accounts", label: "Accounts", icon: WalletCards, match: groupHrefs("accounts") },
   { href: "/add", label: "Add", icon: Plus, match: [] },
-  { href: "/activity", label: "Activity", icon: List, match: groupHrefs("activity") },
+  { href: "/family", label: "Family", icon: UsersRound, match: FAMILY_ROUTES },
   { href: "/analytics", label: "Analytics", icon: BarChart3, match: ["/analytics"] },
 ] as const;
 
 const MORE: { href: string; label: string; short?: string; icon: typeof Users }[] = [
+  { href: "/activity", label: "Activity", icon: List },
   { href: "/people", label: "People", icon: Users },
   { href: "/owed", label: "Who Owes Me", short: "Owed to me", icon: HandCoins },
   { href: "/instalments", label: "Instalments", icon: CalendarClock },
@@ -57,9 +61,9 @@ const HIDE_NAV = ["/welcome", "/ready", "/add", "/accounts/new", ...AUTH_ROUTES]
 /** Screens presented like modals: full screen on phones, a centered card on desktop. */
 const MODAL_ROUTES = ["/add", "/accounts/new"];
 /** Form-like pages that read better as a single column on desktop. */
-const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", "/payments"];
+const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", "/payments", "/profile", "/profile/edit", ...FAMILY_ROUTES.slice(1)];
 /** Read-only screens where pulling down from the top syncs with the cloud now (phones only). */
-const PULL_TO_REFRESH = ["/home", "/accounts", "/accounts/view", "/activity", "/people", "/owed", "/owed/person", "/instalments", "/payments", "/analytics"];
+const PULL_TO_REFRESH = ["/home", "/accounts", "/accounts/view", "/activity", "/people", "/owed", "/owed/person", "/instalments", "/payments", "/analytics", "/family", "/family/members"];
 /** Public pages that render without the app chrome or the onboarding gate. */
 const BARE = ["/", "/terms", "/privacy"];
 

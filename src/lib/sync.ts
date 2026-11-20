@@ -6,6 +6,7 @@ import { liveQuery } from "dexie";
 import { useSyncExternalStore } from "react";
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { allTables, databaseFor, getDatabase, ledgerTables, migrateLedger, showDatabase, type KabanDB } from "./db";
+import { syncFamilyData } from "./family";
 import { exportBackup, getMeta, rebuildInstalments, setMeta } from "./repo";
 import { isEntity, validSyncedRecord } from "./record-validation";
 import { cloudConfigured, supabase, syncClient } from "./supabase";
@@ -237,6 +238,9 @@ export async function runSync() {
     }
     const full = await push(current, client, quota.generation);
     await pull(current, client, quota.generation);
+    if (account !== current) return;
+    // Profile, families and shared-account snapshots. Never throws, never touches ledger tables.
+    await syncFamilyData(db, client);
     if (account !== current) return;
     const latest = await fetchQuota(client);
     if (latest.generation !== quota.generation) {

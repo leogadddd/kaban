@@ -1,10 +1,12 @@
 "use client";
 
-import { ChevronRight, CircleUserRound, LogIn, RefreshCw, Settings, UserPlus } from "lucide-react";
+import { ChevronRight, CircleUserRound, List, LogIn, RefreshCw, Settings, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cloudConfigured } from "@/lib/supabase";
 import { useSyncState } from "@/lib/sync";
+import { useProfile } from "@/lib/family";
+import { PersonAvatar } from "./family-ui";
 import { HapticButton } from "./haptic-button";
 import { Sheet } from "./ui";
 
@@ -28,9 +30,11 @@ export function ProfileButton() {
     router.push(href);
   }
   const { email, userId } = useSyncState();
-  const initial = email?.[0]?.toUpperCase();
+  const profile = useProfile();
+  const name = profile?.display_name?.trim();
 
   const rows = [
+    { href: "/activity", label: "Activity", icon: List },
     { href: "/sync", label: "Sync & Backup", icon: RefreshCw },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
@@ -41,22 +45,28 @@ export function ProfileButton() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Profile and settings"
-        className="grid size-10 place-items-center rounded-full bg-pale font-semibold text-brand ring-1 ring-line"
+        className="grid size-10 place-items-center overflow-hidden rounded-full bg-pale font-semibold text-brand ring-1 ring-line"
       >
-        {userId && initial ? initial : <CircleUserRound className="size-5" />}
+        {userId ? <PersonAvatar name={name || email} avatar={profile?.avatar} size={40} /> : <CircleUserRound className="size-5" />}
       </HapticButton>
 
       <Sheet open={open} onClose={() => setOpen(false)} title="You" appear={false}>
         <div className="space-y-4 pb-2">
-          <div className="flex items-center gap-3 rounded-3xl border border-line bg-surface p-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-pale text-lg font-semibold text-brand">
-              {userId && initial ? initial : <CircleUserRound className="size-6" />}
-            </span>
+          <HapticButton
+            type="button"
+            onClick={() => openPage("/profile")}
+            wrapperClassName="grid"
+            className="flex w-full items-center gap-3 rounded-3xl border border-line bg-surface p-4 text-left active:bg-pale"
+          >
+            {userId ? <PersonAvatar name={name || email} avatar={profile?.avatar} size={48} /> : (
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-pale text-brand"><CircleUserRound className="size-6" /></span>
+            )}
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{userId ? email ?? "Signed in" : "On this device"}</p>
-              <p className="text-sm text-ink-3">{userId ? "Backed up and syncing" : "Not backed up to the cloud"}</p>
+              <p className="truncate font-semibold">{userId ? name || email || "Signed in" : "On this device"}</p>
+              <p className="truncate text-sm text-ink-3">{userId ? (name ? email : "View profile") : "Not backed up to the cloud"}</p>
             </div>
-          </div>
+            <ChevronRight className="size-4 text-ink-3" />
+          </HapticButton>
 
           {!userId && cloudConfigured && (
             <div className="grid grid-cols-2 gap-2">

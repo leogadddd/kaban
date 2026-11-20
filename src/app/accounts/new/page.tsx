@@ -14,6 +14,8 @@ import { BankLogo } from "@/components/bank-logo";
 import { BANKS, bankById, bankFor } from "@/lib/banks";
 import { ACCOUNT_COLORS, saveAccount } from "@/lib/repo";
 import type { AccountType } from "@/lib/types";
+import { ShareWithFamily } from "@/components/family-ui";
+import { setAccountShares, useShareSettings, type ShareVisibility } from "@/lib/family";
 
 export default function Page() {
   return (
@@ -44,6 +46,8 @@ function AccountForm() {
   const [color, setColor] = useState(ACCOUNT_COLORS[0]);
   const [error, setError] = useState<string>();
   const [loaded, setLoaded] = useState(!editId);
+  const shareSettings = useShareSettings();
+  const [shares, setShares] = useState<{ familyId: string; visibility: ShareVisibility }[]>();
 
   useEffect(() => {
     if (!editId || !db) return;
@@ -100,6 +104,7 @@ function AccountForm() {
         },
         editId,
       );
+      if (shares) await setAccountShares(id, shares);
       router.replace(first ? "/home" : `/accounts/view?id=${id}`);
     } catch (err) {
       setError((err as Error).message);
@@ -243,6 +248,8 @@ function AccountForm() {
             ))}
           </div>
         </div>
+
+        {editId && <ShareWithFamily value={shares ?? shareSettings?.[editId] ?? []} onChange={setShares} />}
 
         {error && <p className="rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         {/* Actions stay pinned to the bottom (like Add) so Skip is visible without scrolling. */}
