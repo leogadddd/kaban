@@ -11,6 +11,7 @@ import {
   respondJoinRequest,
   useFamilies,
   type FamilyMember,
+  type ShareSetting,
   type ShareVisibility,
 } from "@/lib/family";
 import { LogoMark } from "@/lib/logo";
@@ -339,7 +340,7 @@ export function FamilyForm({ initial, submitLabel, onSubmit, disabled }: { initi
 
 // ---------- Account sharing (Edit account) ----------
 
-export function ShareWithFamily({ value, onChange }: { value: { familyId: string; visibility: ShareVisibility }[]; onChange: (v: { familyId: string; visibility: ShareVisibility }[]) => void }) {
+export function ShareWithFamily({ value, onChange }: { value: ShareSetting[]; onChange: (v: ShareSetting[]) => void }) {
   const state = useFamilies();
   const families = state?.families ?? [];
   if (!families.length) return null;
@@ -363,7 +364,7 @@ export function ShareWithFamily({ value, onChange }: { value: { familyId: string
                   className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-line transition-colors checked:bg-brand focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface focus-visible:outline-none before:absolute before:top-0.5 before:left-0.5 before:size-6 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:before:translate-x-5"
                   checked={!!share}
                   onChange={(e) =>
-                    onChange(e.target.checked ? [...value, { familyId: f.id, visibility: "balance" }] : value.filter((s) => s.familyId !== f.id))
+                    onChange(e.target.checked ? [...value, { familyId: f.id, visibility: "balance", allowAdd: true }] : value.filter((s) => s.familyId !== f.id))
                   }
                 />
               </label>
@@ -378,11 +379,26 @@ export function ShareWithFamily({ value, onChange }: { value: { familyId: string
                   ]}
                 />
               )}
+              {share && (
+                <label className="flex items-center gap-3 rounded-2xl bg-pale px-3 py-2.5">
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium">Members can add transactions</span>
+                    <span className="block text-xs text-ink-3">What they add shows up in your ledger, with their name.</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    {...{ switch: "" }}
+                    className="size-6 accent-[var(--color-brand)]"
+                    checked={share.allowAdd !== false}
+                    onChange={(e) => onChange(value.map((s) => (s.familyId === f.id ? { ...s, allowAdd: e.target.checked } : s)))}
+                  />
+                </label>
+              )}
             </div>
           );
         })}
       </div>
-      <p className="px-1 text-xs text-ink-3">Read-only for others. Notes and who you split with stay private. Updates upload in the background.</p>
+      <p className="px-1 text-xs text-ink-3">Others can&apos;t edit your records. Your notes and who you split with stay private. Updates upload in the background.</p>
     </section>
   );
 }

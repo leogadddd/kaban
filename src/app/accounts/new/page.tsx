@@ -15,7 +15,7 @@ import { BANKS, bankById, bankFor } from "@/lib/banks";
 import { ACCOUNT_COLORS, saveAccount } from "@/lib/repo";
 import type { AccountType } from "@/lib/types";
 import { ShareWithFamily } from "@/components/family-ui";
-import { setAccountShares, useShareSettings, type ShareVisibility } from "@/lib/family";
+import { setAccountShares, useShareSettings, type ShareSetting } from "@/lib/family";
 
 export default function Page() {
   return (
@@ -47,7 +47,7 @@ function AccountForm() {
   const [error, setError] = useState<string>();
   const [loaded, setLoaded] = useState(!editId);
   const shareSettings = useShareSettings();
-  const [shares, setShares] = useState<{ familyId: string; visibility: ShareVisibility }[]>();
+  const [shares, setShares] = useState<ShareSetting[]>();
 
   useEffect(() => {
     if (!editId || !db) return;

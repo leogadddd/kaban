@@ -99,7 +99,7 @@ function Invite() {
               <Button onClick={share} wrapperClassName="grid"><Share className="size-4" /> Share link</Button>
               <Button variant="secondary" disabled={busy} onClick={() => newCode(true)} wrapperClassName="grid"><RefreshCw className="size-4" /> New code</Button>
             </div>
-            <p className="text-center text-xs text-ink-3">Expires {formatDayLong(invite!.expires_at.slice(0, 10))}. An admin approves every request, so a forwarded code can&apos;t let anyone in on its own.</p>
+            <p className="text-center text-xs text-ink-3">Expires {formatDayLong(invite!.expires_at.slice(0, 10))}.</p>
           </>
         )}
       </div>

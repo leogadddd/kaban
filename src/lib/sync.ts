@@ -251,7 +251,7 @@ export async function runSync() {
     await pull(current, client, quota.generation);
     if (account !== current) return;
     // Profile, families and shared-account snapshots. Never throws, never touches ledger tables.
-    await syncFamilyData(db, client);
+    await syncFamilyData(db, client, current.session.user.id);
     if (account !== current) return;
     const latest = await fetchQuota(client);
     if (latest.generation !== quota.generation) {

@@ -22,7 +22,8 @@ import { useLedger } from "@/lib/hooks";
 import { animatedBack } from "@/lib/nav-direction";
 import { formatMoney, minorToInput, parseMinor, splitEvenly } from "@/lib/money";
 import { savePerson, saveTransaction, setTransactionVoid } from "@/lib/repo";
-import { runSync } from "@/lib/sync";
+import { runSync, useSyncState } from "@/lib/sync";
+import { addFamilyTransaction, FAMILY_TXN_TYPES, sharedTargets, useFamilies, type SharedTarget } from "@/lib/family";
 import { ME, type Account, type Arrangement, type Txn, type TxnType } from "@/lib/types";
 
 export default function Page() {
@@ -147,16 +148,24 @@ function Editor() {
     if (type === "card_payment" && !toAccountId) setToAccountId(fallbackCredit?.id ?? "");
   }, [ledger.ready, ledger.activeAccounts, params, type, editId, toAccountId]);
 
+  // Accounts other family members shared with this user (expense, income and refund only; not when editing).
+  const { userId } = useSyncState();
+  const familyState = useFamilies();
+  const targets = useMemo(() => (editId ? [] : sharedTargets(familyState, userId)), [editId, familyState, userId]);
+  const sharedMap = useMemo(() => new Map(targets.map((t) => [t.key, t])), [targets]);
+  const sharedFor = (t: TxnType) => (FAMILY_TXN_TYPES.includes(t) ? targets.map((x) => x.account) : []);
   const accounts = ledger.activeAccounts.concat(
     // keep archived accounts selectable when editing an old record
     ledger.accounts.filter((a) => a.archived && (a.id === accountId || a.id === toAccountId)),
+    sharedFor(type),
   );
   const fromChoices = accounts.filter((a) => {
     if (type === "income" || type === "transfer" || type === "card_payment" || type === "reimbursement") return a.type !== "credit";
     return true;
   });
-  const toChoices = accounts.filter((a) => (type === "card_payment" ? a.type === "credit" : a.type !== "credit" && a.id !== accountId));
-  const account = ledger.accountById.get(accountId);
+  const toChoices = accounts.filter((a) => !sharedMap.has(a.id) && (type === "card_payment" ? a.type === "credit" : a.type !== "credit" && a.id !== accountId));
+  const shared = sharedMap.get(accountId);
+  const account = ledger.accountById.get(accountId) ?? shared?.account;
 
   // Keep selection valid when switching type.
   useEffect(() => {
@@ -168,7 +177,7 @@ function Editor() {
 
   const amountMinor = parseMinor(amount) ?? 0;
   const isCreditPurchase = type === "expense" && account?.type === "credit";
-  const canSplit = type === "expense";
+  const canSplit = type === "expense" && !shared;
   const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
   const showCategories = type === "expense" || type === "income";
 
@@ -184,13 +193,13 @@ function Editor() {
   const remaining = amountMinor - allocated;
 
   const schedulePreview = useMemo(() => {
-    if (!isCreditPurchase || !account) return null;
+    if (!isCreditPurchase || !account || shared) return null;
     const s = statementFor(account, date);
     if (arrangement === "regular") return `Billed on the ${formatDayLong(s)} statement`;
     if (arrangement === "deferred") return `Deferred to the ${formatDayLong(shiftStatement(account, s, 1))} statement`;
     const parts = splitEvenly(amountMinor, months);
     return `${months} × ${formatMoney(parts[parts.length - 1] ?? 0)} · ${formatDayLong(s)} → ${formatDayLong(shiftStatement(account, s, months - 1))}`;
-  }, [isCreditPurchase, account, date, arrangement, months, amountMinor]);
+  }, [isCreditPurchase, account, shared, date, arrangement, months, amountMinor]);
 
   function toggleParticipant(id: string) {
     setParticipants((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -215,6 +224,20 @@ function Editor() {
     }
     setSaving(true);
     try {
+      if (shared) {
+        await addFamilyTransaction(shared, {
+          type,
+          amountMinor,
+          date,
+          description: description.trim() || defaultDescription(type, category),
+          category: showCategories ? category || "Other" : undefined,
+          notes: notes.trim() || undefined,
+          arrangement: isCreditPurchase ? arrangement : undefined,
+          instalmentCount: isCreditPurchase && arrangement === "instalment" ? months : undefined,
+        });
+        setSaved(true);
+        return;
+      }
       await saveTransaction(
         {
           type,
@@ -246,14 +269,18 @@ function Editor() {
       <SaveSuccess
         title={editId ? "Changes saved" : `${TYPE_LABEL[type]} added`}
         amount={amountMinor > 0 ? fmtMoney(amountMinor) : undefined}
-        subtitle={description.trim() || defaultDescription(type, category, ledger.accountById.get(toAccountId))}
+        subtitle={
+          shared
+            ? `Added to ${shared.ownerName}'s ${shared.account.name}. It shows in their ledger after their phone syncs.`
+            : description.trim() || defaultDescription(type, category, ledger.accountById.get(toAccountId))
+        }
         onDone={() => router.replace("/home")}
       />
     );
 
   if (!ledger.ready || existing === undefined) return <Loading />;
   if (editId && existing === null) return <p className="p-6">Transaction not found.</p>;
-  if (!ledger.activeAccounts.length)
+  if (!ledger.activeAccounts.length && !targets.length)
     return (
       <div className="pt-safe p-6 text-center">
         <p className="font-semibold">Add an account first</p>
@@ -266,7 +293,7 @@ function Editor() {
 
   function chooseType(t: TxnType) {
     setType(t);
-    const choices = accounts.filter((a) => (t === "income" || t === "transfer" || t === "card_payment" ? a.type !== "credit" : true));
+    const choices = ledger.activeAccounts.concat(sharedFor(t)).filter((a) => (t === "income" || t === "transfer" || t === "card_payment" ? a.type !== "credit" : true));
     if (choices.length === 1) {
       setAccountId(choices[0].id);
       setStep("form");
@@ -317,6 +344,7 @@ function Editor() {
         <AccountList
           accounts={fromChoices}
           ledger={ledger}
+          shared={sharedMap}
           onPick={(id) => {
             setAccountId(id);
             setStep("form");
@@ -391,6 +419,7 @@ function Editor() {
 
         {/* Accounts */}
         <AccountPicker
+          shared={sharedMap}
           label={type === "card_payment" ? "Pay from" : type === "transfer" ? "From" : type === "income" ? "Into" : isReimbursement ? "Received into" : "Account"}
           accounts={fromChoices}
           value={accountId}
@@ -605,14 +634,18 @@ function defaultDescription(type: TxnType, category: string, to?: Account) {
   return category || TYPE_LABEL[type];
 }
 
-function AccountPicker({ label, accounts, value, onChange, ledger }: { label: string; accounts: Account[]; value: string; onChange: (id: string) => void; ledger: ReturnType<typeof useLedger> }) {
+type SharedMap = Map<string, SharedTarget>;
+const balanceOf = (ledger: ReturnType<typeof useLedger>, shared: SharedMap | undefined, id: string) => ledger.balances.get(id) ?? shared?.get(id);
+
+function AccountPicker({ label, accounts, value, onChange, ledger, shared }: { label: string; accounts: Account[]; value: string; onChange: (id: string) => void; ledger: ReturnType<typeof useLedger>; shared?: SharedMap }) {
   const { fmt } = useMoney();
   return (
     <div>
       <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">{label}</p>
       <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="radiogroup" aria-label={label}>
         {accounts.map((a) => {
-          const b = ledger.balances.get(a.id);
+          const b = balanceOf(ledger, shared, a.id);
+          const owner = shared?.get(a.id)?.ownerName;
           const active = a.id === value;
           return (
             <HapticButton
@@ -636,6 +669,7 @@ function AccountPicker({ label, accounts, value, onChange, ledger }: { label: st
               <span className={cx("num amount block text-xs", active ? "text-white/75" : "text-ink-3")}>
                 {a.type === "credit" ? `${fmt(b?.available ?? 0, { compact: true })} available` : fmt(b?.balance ?? 0)}
               </span>
+              {owner && <span className={cx("block truncate text-[0.68rem]", active ? "text-white/75" : "text-ink-3")}>{owner}&apos;s · shared</span>}
             </HapticButton>
           );
         })}
@@ -669,16 +703,19 @@ function StepScreen({ title, subtitle, onBack, onClose, animateIn = true, childr
   );
 }
 
-function AccountList({ accounts, ledger, onPick }: { accounts: Account[]; ledger: ReturnType<typeof useLedger>; onPick: (id: string) => void }) {
+function AccountList({ accounts, ledger, onPick, shared }: { accounts: Account[]; ledger: ReturnType<typeof useLedger>; onPick: (id: string) => void; shared?: SharedMap }) {
   const { fmt } = useMoney();
+  const firstShared = accounts.findIndex((a) => shared?.has(a.id));
   return (
     <div className="space-y-2">
-      {accounts.map((a) => {
-        const b = ledger.balances.get(a.id);
+      {accounts.map((a, i) => {
+        const b = balanceOf(ledger, shared, a.id);
+        const target = shared?.get(a.id);
         const bank = a.type === "cash" ? undefined : bankFor(a);
         return (
+          <div key={a.id}>
+          {i === firstShared && <p className="px-1 pt-3 pb-1 text-xs font-semibold tracking-wide text-ink-3 uppercase">Shared with you</p>}
           <HapticButton
-            key={a.id}
             type="button"
             onClick={() => onPick(a.id)}
             wrapperClassName="w-full"
@@ -691,7 +728,9 @@ function AccountList({ accounts, ledger, onPick }: { accounts: Account[]; ledger
             )}
             <span className="min-w-0 flex-1">
               <span className="block truncate font-medium">{a.name}</span>
-              <span className="block text-xs text-ink-3">{a.type === "credit" ? "Credit card" : a.type === "cash" ? "Cash" : "Debit"}{a.last4 ? ` · •••• ${a.last4}` : ""}</span>
+              <span className="block truncate text-xs text-ink-3">
+                {target ? `${target.ownerName}'s · ${target.familyName}` : <>{a.type === "credit" ? "Credit card" : a.type === "cash" ? "Cash" : "Debit"}{a.last4 ? ` · •••• ${a.last4}` : ""}</>}
+              </span>
             </span>
             <span className="num amount text-right text-sm font-semibold">
               {a.type === "credit" ? fmt(b?.available ?? 0, { compact: true }) : fmt(b?.balance ?? 0)}
@@ -699,6 +738,7 @@ function AccountList({ accounts, ledger, onPick }: { accounts: Account[]; ledger
             </span>
             <ChevronRight className="size-4 shrink-0 text-ink-3" />
           </HapticButton>
+          </div>
         );
       })}
     </div>

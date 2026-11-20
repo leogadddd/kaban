@@ -7,14 +7,14 @@
 // it when it changes. Nothing here writes to the personal ledger tables or their outbox.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KabanDB } from "./db";
-import { visibleDatabase } from "./db";
+import { uid, visibleDatabase } from "./db";
 import { cycleInfo } from "./billing";
 import { todayISO } from "./dates";
 import { accountBalances, effectOn } from "./finance";
 import { useMeta } from "./hooks";
 import { getMeta, setMeta } from "./repo";
 import { supabase } from "./supabase";
-import type { AccountType, TxnType } from "./types";
+import type { Account, AccountType, Txn, TxnType } from "./types";
 
 // ---------- Types ----------
 
@@ -56,6 +56,8 @@ export interface SnapshotTxn {
   date: string;
   description: string;
   category?: string;
+  /** Family member who added it from their phone (absent: the owner did). */
+  by?: string;
 }
 
 export interface AccountSnapshot {
@@ -83,6 +85,8 @@ export interface SharedAccount {
   owner_id: string;
   account_id: string;
   visibility: ShareVisibility;
+  /** Members may add transactions to it (missing on servers before contributions: treat as false). */
+  allow_add?: boolean;
   snapshot: AccountSnapshot;
   updated_at: string;
 }
@@ -99,6 +103,8 @@ export interface Family {
   invite: { code: string; expires_at: string } | null;
   requests: JoinRequest[];
   shared: SharedAccount[];
+  /** Ids of this user's added transactions the owner hasn't brought in yet. */
+  my_pending: string[];
 }
 
 export interface MyRequest {
@@ -119,19 +125,28 @@ export interface FamilyState {
 }
 
 /** accountId → the families it is shared with. */
-export type ShareSettings = Record<string, { familyId: string; visibility: ShareVisibility }[]>;
+export interface ShareSetting {
+  familyId: string;
+  visibility: ShareVisibility;
+  /** Members can add transactions (default on). */
+  allowAdd?: boolean;
+}
+export type ShareSettings = Record<string, ShareSetting[]>;
 
 const PROFILE = "profile";
 const FAMILIES = "families";
 const SHARES = "familyShares";
 const PUBLISHED = "familyPublished";
 const UNAVAILABLE = "familyUnavailable";
+const QUEUE = "familyQueue";
+const AUTHORS = "familyAuthors";
 
 // ---------- Hooks ----------
 
 export const useProfile = () => useMeta<Profile>(PROFILE);
 export const useFamilies = () => useMeta<FamilyState>(FAMILIES);
 export const useShareSettings = () => useMeta<ShareSettings>(SHARES);
+export const useFamilyQueue = () => useMeta<QueuedTxn[]>(QUEUE);
 
 export const isAdmin = (f: Pick<Family, "role">) => f.role === "owner" || f.role === "admin";
 /** A family becomes active once someone else has joined. */
@@ -247,7 +262,7 @@ export async function refreshFamilies(db?: KabanDB, c: SupabaseClient = client()
   const target = ledger(db);
   const data = await rpc<Omit<FamilyState, "fetchedAt">>("get_my_families", undefined, c);
   const state: FamilyState = {
-    families: (data.families ?? []).map((f) => ({ ...f, members: f.members ?? [], requests: f.requests ?? [], shared: f.shared ?? [] })),
+    families: (data.families ?? []).map((f) => ({ ...f, members: f.members ?? [], requests: f.requests ?? [], shared: f.shared ?? [], my_pending: f.my_pending ?? [] })),
     my_requests: data.my_requests ?? [],
     max_families: data.max_families ?? 1,
     fetchedAt: Date.now(),
@@ -299,7 +314,7 @@ export const removeMember = (familyId: string, userId: string) => act<void>("rem
 // ---------- Sharing ----------
 
 /** Local choice; the background publisher sends or withdraws the snapshot. */
-export async function setAccountShares(accountId: string, shares: { familyId: string; visibility: ShareVisibility }[], db?: KabanDB) {
+export async function setAccountShares(accountId: string, shares: ShareSetting[], db?: KabanDB) {
   const target = ledger(db);
   await target.transaction("rw", target.meta, async () => {
     const all = { ...((await getMeta<ShareSettings>(SHARES, target)) ?? {}) };
@@ -314,7 +329,7 @@ export async function setAccountShares(accountId: string, shares: { familyId: st
 const SNAPSHOT_DAYS = 120;
 const SNAPSHOT_TXNS = 150;
 
-async function buildSnapshot(db: KabanDB, accountId: string, visibility: ShareVisibility): Promise<AccountSnapshot | null> {
+async function buildSnapshot(db: KabanDB, accountId: string, visibility: ShareVisibility, authors: Record<string, string>): Promise<AccountSnapshot | null> {
   const account = await db.accounts.get(accountId);
   if (!account) return null;
   const txns = await db.transactions.where("accountId").equals(accountId).or("toAccountId").equals(accountId).toArray();
@@ -355,6 +370,7 @@ async function buildSnapshot(db: KabanDB, accountId: string, visibility: ShareVi
         date: t.date,
         description: t.description,
         ...(t.category && { category: t.category }),
+        ...(authors[t.id] && { by: authors[t.id] }),
       }));
   }
   return snapshot;
@@ -373,20 +389,21 @@ async function publishShares(db: KabanDB, c: SupabaseClient, state: FamilyState)
   const familyIds = new Set(state.families.map((f) => f.id));
   const wanted = new Set<string>();
   const dropped: { accountId: string; familyId: string }[] = [];
+  const authors = (await getMeta<Record<string, string>>(AUTHORS, db)) ?? {};
 
   for (const [accountId, shares] of Object.entries(desired)) {
-    for (const { familyId, visibility } of shares) {
+    for (const { familyId, visibility, allowAdd = true } of shares) {
       if (!familyIds.has(familyId)) {
         dropped.push({ accountId, familyId });
         continue;
       }
       const key = `${familyId}:${accountId}`;
-      const snapshot = await buildSnapshot(db, accountId, visibility);
+      const snapshot = await buildSnapshot(db, accountId, visibility, authors);
       if (!snapshot) continue;
       wanted.add(key);
-      const print = `${visibility}:${fingerprint(snapshot)}`;
+      const print = `${visibility}:${allowAdd ? "add" : "read"}:${fingerprint(snapshot)}`;
       if (published[key] === print) continue;
-      const status = await rpc<string>("publish_shared_account", { p_family: familyId, p_account: accountId, p_visibility: visibility, p_snapshot: { ...snapshot, builtAt: Date.now() } }, c);
+      const status = await rpc<string>("publish_shared_account", { p_family: familyId, p_account: accountId, p_visibility: visibility, p_snapshot: { ...snapshot, builtAt: Date.now() }, p_allow_add: allowAdd }, c);
       if (status === "ok") published[key] = print;
       else if (status === "gone") dropped.push({ accountId, familyId });
     }
@@ -411,20 +428,238 @@ async function publishShares(db: KabanDB, c: SupabaseClient, state: FamilyState)
   });
 }
 
+// ---------- Adding to someone else's shared account ----------
+
+/** A transaction a member added to another person's shared account, waiting on this device. */
+export interface QueuedTxn {
+  id: string;
+  familyId: string;
+  ownerId: string;
+  accountId: string;
+  accountName: string;
+  txn: Txn;
+  /** queued: not sent yet. sent: on the server, waiting for the owner's device. failed: refused. */
+  status: "queued" | "sent" | "failed";
+  error?: string;
+  queuedAt: number;
+}
+
+export interface SharedTarget {
+  /** Stable synthetic account id for pickers; never stored in a ledger. */
+  key: string;
+  familyId: string;
+  familyName: string;
+  ownerId: string;
+  ownerName: string;
+  /** A read-only stand-in built from the snapshot, shaped like a ledger account. */
+  account: Account;
+  balance: number;
+  available?: number;
+}
+
+export const SHARED_PREFIX = "shared~";
+export const isSharedKey = (id: string) => id.startsWith(SHARED_PREFIX);
+
+/** Accounts other members shared with this user and allow adding to. */
+export function sharedTargets(state: FamilyState | null | undefined, myId: string | undefined): SharedTarget[] {
+  if (!state || !myId) return [];
+  const out: SharedTarget[] = [];
+  for (const f of state.families) {
+    const names = new Map(f.members.map((m) => [m.user_id, memberName(m)]));
+    for (const s of f.shared) {
+      if (s.owner_id === myId || !s.allow_add || !names.has(s.owner_id)) continue;
+      const a = s.snapshot.account;
+      const key = `${SHARED_PREFIX}${f.id}~${s.owner_id}~${s.account_id}`;
+      out.push({
+        key,
+        familyId: f.id,
+        familyName: f.name,
+        ownerId: s.owner_id,
+        ownerName: names.get(s.owner_id)!,
+        balance: s.snapshot.balanceMinor,
+        available: s.snapshot.availableMinor,
+        account: {
+          id: key,
+          type: a.type,
+          name: a.name,
+          color: a.color,
+          bankId: a.bankId,
+          issuer: a.issuer,
+          last4: a.last4,
+          creditLimitMinor: a.creditLimitMinor,
+          openingMinor: 0,
+          openingDate: "1970-01-01",
+          archived: false,
+          sortOrder: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          version: 0,
+        },
+      });
+    }
+  }
+  return out;
+}
+
+export const FAMILY_TXN_TYPES: TxnType[] = ["expense", "income", "refund"];
+
+export type FamilyTxnInput = Pick<Txn, "type" | "amountMinor" | "date" | "description"> & Partial<Pick<Txn, "category" | "notes" | "arrangement" | "instalmentCount">>;
+
+/**
+ * Save a transaction on someone else's shared account. It lands in this device's queue at once and is
+ * sent in the background; the owner's device adds it to their ledger the next time it syncs.
+ */
+export async function addFamilyTransaction(target: SharedTarget, input: FamilyTxnInput, db?: KabanDB) {
+  const ledgerDb = ledger(db);
+  const credit = target.account.type === "credit";
+  if (!FAMILY_TXN_TYPES.includes(input.type)) throw new FamilyError("Only expenses, income and refunds can be added to a shared account.");
+  if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor <= 0) throw new FamilyError("Enter an amount greater than zero");
+  if (input.type === "income" && credit) throw new FamilyError("Income must go to a cash or debit account");
+  const instalment = credit && input.type === "expense" && input.arrangement === "instalment";
+  if (instalment && !(input.instalmentCount && input.instalmentCount >= 2 && input.instalmentCount <= 60)) throw new FamilyError("Instalments need 2–60 months");
+  const now = Date.now();
+  const txn: Txn = {
+    id: uid(),
+    type: input.type,
+    accountId: target.key.split("~")[3],
+    amountMinor: input.amountMinor,
+    currency: "PHP",
+    date: input.date,
+    description: input.description,
+    ...(input.category && { category: input.category }),
+    ...(input.notes && { notes: input.notes }),
+    ...(credit && input.type === "expense" && input.arrangement && { arrangement: input.arrangement }),
+    ...(instalment && { instalmentCount: input.instalmentCount }),
+    state: "active",
+    createdAt: now,
+    updatedAt: now,
+    version: 1,
+  };
+  const entry: QueuedTxn = {
+    id: txn.id,
+    familyId: target.familyId,
+    ownerId: target.ownerId,
+    accountId: txn.accountId,
+    accountName: target.account.name,
+    txn,
+    status: "queued",
+    queuedAt: now,
+  };
+  await ledgerDb.transaction("rw", ledgerDb.meta, async () => {
+    const queue = (await getMeta<QueuedTxn[]>(QUEUE, ledgerDb)) ?? [];
+    await setMeta(QUEUE, [...queue, entry], ledgerDb);
+  });
+  const { scheduleSync } = await import("./sync");
+  scheduleSync(300);
+  return txn.id;
+}
+
+/** Take back something added to a shared account before the owner's device brings it in. */
+export async function removeQueuedTransaction(id: string, db?: KabanDB) {
+  const target = ledger(db);
+  const entry = ((await getMeta<QueuedTxn[]>(QUEUE, target)) ?? []).find((q) => q.id === id);
+  if (!entry) return;
+  if (entry.status === "sent") await rpc<void>("cancel_family_transaction", { p_id: id });
+  await target.transaction("rw", target.meta, async () => {
+    const queue = (await getMeta<QueuedTxn[]>(QUEUE, target)) ?? [];
+    await setMeta(QUEUE, queue.filter((q) => q.id !== id), target);
+  });
+}
+
+async function updateQueue(db: KabanDB, fn: (q: QueuedTxn[]) => QueuedTxn[]) {
+  await db.transaction("rw", db.meta, async () => setMeta(QUEUE, fn((await getMeta<QueuedTxn[]>(QUEUE, db)) ?? []), db));
+}
+
+const REFUSED: Record<string, string> = {
+  not_shared: "This account isn't shared for adding any more.",
+  invalid: "The server couldn't accept this transaction.",
+  limit: "Too many transactions are waiting. Try again once the owner syncs.",
+};
+
+async function pushQueue(db: KabanDB, c: SupabaseClient) {
+  const queued = ((await getMeta<QueuedTxn[]>(QUEUE, db)) ?? []).filter((q) => q.status === "queued");
+  for (const q of queued) {
+    const status = await rpc<string>("add_family_transaction", { p_family: q.familyId, p_owner: q.ownerId, p_account: q.accountId, p_txn: q.txn }, c);
+    await updateQueue(db, (all) =>
+      all.map((e) => (e.id !== q.id ? e : status === "ok" ? { ...e, status: "sent", error: undefined } : { ...e, status: "failed", error: REFUSED[status] ?? status })),
+    );
+  }
+}
+
+/** Sent entries the server no longer lists as pending were brought in by the owner (or cancelled). */
+async function reconcileQueue(db: KabanDB, state: FamilyState) {
+  const pending = new Map(state.families.map((f) => [f.id, new Set(f.my_pending)]));
+  await updateQueue(db, (all) => all.filter((q) => q.status !== "sent" || !!pending.get(q.familyId)?.has(q.id)));
+}
+
+interface Contribution {
+  id: string;
+  family_id: string | null;
+  account_id: string;
+  author_id: string;
+  author_name: string | null;
+  data: Txn;
+}
+
+/** Owner side: bring members' transactions into this ledger, then tell the server they're in. */
+async function importContributions(db: KabanDB, c: SupabaseClient) {
+  const rows = await rpc<Contribution[]>("pull_family_contributions", undefined, c);
+  if (!rows?.length) return;
+  const { importFamilyTransaction } = await import("./repo");
+  const done: string[] = [];
+  const authors: Record<string, string> = {};
+  for (const row of rows) {
+    if (row.data?.id !== row.id || row.data.accountId !== row.account_id) {
+      done.push(row.id); // Malformed: keep it on the server, stop retrying.
+      continue;
+    }
+    const result = await importFamilyTransaction(db, row.data, { userId: row.author_id, name: row.author_name?.trim() || "Family member" });
+    if (result === "missing") continue; // Account not on this device yet; try again next sync.
+    if (result !== "invalid") authors[row.id] = row.author_id;
+    done.push(row.id);
+  }
+  if (Object.keys(authors).length) {
+    await db.transaction("rw", db.meta, async () => {
+      const all = (await getMeta<Record<string, string>>(AUTHORS, db)) ?? {};
+      await setMeta(AUTHORS, { ...all, ...authors }, db);
+    });
+  }
+  if (done.length) await rpc<void>("ack_family_contributions", { p_ids: done }, c);
+}
+
 /**
  * Called by the sync loop after the ledger has synced. Never throws: family trouble must not affect the
- * personal ledger. A server without the family tables yet (older backend) is remembered and retried hourly.
+ * personal ledger. Each step runs on its own so one failing (or missing on an older server) doesn't stop
+ * the rest. A server without the family tables at all is remembered and retried hourly.
  */
-export async function syncFamilyData(db: KabanDB, c: SupabaseClient) {
+export async function syncFamilyData(db: KabanDB, c: SupabaseClient, myId: string) {
+  const step = async (name: string, fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+    } catch (error) {
+      console.warn(`family sync: ${name} skipped`, error);
+    }
+  };
+  let state: FamilyState | undefined;
   try {
     const unavailableAt = await getMeta<number>(UNAVAILABLE, db);
     if (unavailableAt && Date.now() - unavailableAt < 60 * 60_000) return;
-    await syncProfile(db, c);
-    const state = await refreshFamilies(db, c);
-    await publishShares(db, c, state);
+    await step("profile", () => syncProfile(db, c));
+    await step("queue", () => pushQueue(db, c));
+    await step("import", () => importContributions(db, c));
+    state = await refreshFamilies(db, c);
     if (unavailableAt) await db.meta.delete(UNAVAILABLE);
   } catch (error) {
     if ((error as FamilyError).reason === "unavailable") await setMeta(UNAVAILABLE, Date.now(), db).catch(() => {});
     else console.warn("family sync skipped", error);
+    return;
   }
+  await step("reconcile", () => reconcileQueue(db, state!));
+  await step("people", async () => {
+    const { ensureFamilyPeople } = await import("./repo");
+    const seen = new Map<string, string>();
+    for (const f of state!.families) for (const m of f.members) if (m.user_id !== myId && m.display_name?.trim()) seen.set(m.user_id, m.display_name.trim());
+    await ensureFamilyPeople(db, [...seen].map(([userId, name]) => ({ userId, name })));
+  });
+  await step("publish", () => publishShares(db, c, state!));
 }

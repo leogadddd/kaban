@@ -7,7 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DebtSheet, RepaySheet, type RepayTarget } from "@/components/debt-sheets";
-import { Avatar, BigMoney, Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, Progress, Segmented } from "@/components/ui";
+import { Avatar, BigMoney, Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, Progress, SectionTitle, Segmented } from "@/components/ui";
+import { GroupedTxns } from "@/components/txn-row";
 import { formatDay } from "@/lib/dates";
 import { useLedger } from "@/lib/hooks";
 import { setPersonArchived, voidDebt } from "@/lib/repo";
@@ -38,6 +39,8 @@ function PersonDebts() {
   const total = all.reduce((s, d) => s + d.debt.amountMinor, 0);
   const repaid = all.reduce((s, d) => s + d.repaid, 0);
   const openCount = all.filter((d) => !d.settled).length;
+  // Transactions a family member added to this user's shared accounts (linked on import).
+  const added = ledger.txns.filter((t) => t.personId === id && t.type !== "reimbursement" && t.state === "active");
 
   return (
     <>
@@ -139,6 +142,14 @@ function PersonDebts() {
           </div>
         ) : (
           <EmptyState icon={<Check className="size-6" />} title={tab === "open" ? `${person.name} is all settled` : "No history yet"} />
+        )}
+
+        {added.length > 0 && (
+          <section>
+            <SectionTitle>Added by {person.name}</SectionTitle>
+            <p className="-mt-1 mb-2 px-1 text-xs text-ink-3">From their phone, on accounts you share with your family.</p>
+            <GroupedTxns txns={added} ledger={ledger} />
+          </section>
         )}
 
         <Button

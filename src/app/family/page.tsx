@@ -1,16 +1,18 @@
 "use client";
 
-import { CalendarClock, ChevronRight, CloudOff, Eye, LogIn, QrCode, ScanLine, Settings, Share2, UserPlus, Users, Wallet } from "lucide-react";
+import { CalendarClock, ChevronRight, Clock, X, CloudOff, Eye, LogIn, QrCode, ScanLine, Settings, Share2, UserPlus, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FamilyIllustration, FamilyMark, InboxButton, MemberAvatar, pickFamily, useCurrentFamily } from "@/components/family-ui";
-import { HapticLink } from "@/components/haptic-button";
+import { HapticButton, HapticLink } from "@/components/haptic-button";
+import { confirmDialog } from "@/components/dialog";
+import { noticeToast } from "@/components/undo-toast";
 import { BankLogo } from "@/components/bank-logo";
 import { GroupTitle, Tile, Tiles } from "@/components/swipe-hub";
 import { ButtonLink, Card, Chip, cx, Loading, Money, PageHeader, Progress, SectionTitle } from "@/components/ui";
 import { bankFor } from "@/lib/banks";
 import { formatDay, relativeDayLabel, todayISO } from "@/lib/dates";
-import { isAdmin, isForming, memberName, refreshFamilies, type Family, type FamilyMember, type SharedAccount, type SnapshotTxn } from "@/lib/family";
+import { isAdmin, isForming, memberName, refreshFamilies, removeQueuedTransaction, useFamilyQueue, type Family, type FamilyMember, type SharedAccount, type SnapshotTxn } from "@/lib/family";
 import { useOnline } from "@/lib/hooks";
 import { cloudConfigured } from "@/lib/supabase";
 import { useSyncState } from "@/lib/sync";
@@ -150,6 +152,8 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
           </Card>
         )}
 
+        <PendingFromMe family={family} />
+
         {!family.shared.length ? (
           <Card className="text-center">
             <span className="mx-auto mb-2 grid size-12 place-items-center rounded-2xl bg-pale text-brand"><Share2 className="size-5" /></span>
@@ -248,10 +252,13 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
                 <Card className="divide-y divide-line p-0">
                   {data.recent.map(({ t, s }) => (
                     <div key={`${s.owner_id}:${t.id}:${s.account_id}`} className="flex items-center gap-3 px-4 py-3">
-                      <MemberAvatar member={members.get(s.owner_id)} size={32} />
+                      <MemberAvatar member={members.get(t.by ?? s.owner_id)} size={32} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{t.description || t.category || "Transaction"}</p>
-                        <p className="truncate text-xs text-ink-3">{formatDay(t.date)} · {s.snapshot.account.name}</p>
+                        <p className="truncate text-xs text-ink-3">
+                          {formatDay(t.date)} · {s.snapshot.account.name}
+                          {t.by && t.by !== s.owner_id && <> · added by {who(members.get(t.by), t.by, myId)}</>}
+                        </p>
                       </div>
                       <Money minor={s.snapshot.account.type === "credit" ? -t.effect : t.effect} sign tone="auto" className="text-sm font-semibold" />
                     </div>
@@ -270,6 +277,53 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
         </Link>
       </div>
     </>
+  );
+}
+
+/** What this user added to others' shared accounts that the owner's phone hasn't brought in yet. */
+function PendingFromMe({ family }: { family: Family }) {
+  const queue = (useFamilyQueue() ?? []).filter((q) => q.familyId === family.id);
+  const owners = new Map(family.members.map((m) => [m.user_id, memberName(m)]));
+  const [busy, setBusy] = useState<string>();
+  if (!queue.length) return null;
+  return (
+    <section>
+      <GroupTitle icon={Clock}>Waiting to show up</GroupTitle>
+      <Card className="divide-y divide-line p-0">
+        {queue.map((q) => (
+          <div key={q.id} className="flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{q.txn.description}</p>
+              <p className={cx("truncate text-xs", q.status === "failed" ? "text-expense" : "text-ink-3")}>
+                {q.status === "failed"
+                  ? q.error ?? "Couldn't be added"
+                  : `${owners.get(q.ownerId) ?? "Owner"}'s ${q.accountName} · ${q.status === "queued" ? "sending…" : `appears once ${owners.get(q.ownerId) ?? "they"} syncs`}`}
+              </p>
+            </div>
+            <Money minor={q.txn.type === "expense" ? -q.txn.amountMinor : q.txn.amountMinor} sign tone="auto" className="text-sm font-semibold" />
+            <HapticButton
+              type="button"
+              disabled={busy === q.id}
+              aria-label={`Remove ${q.txn.description}`}
+              onClick={async () => {
+                if (!(await confirmDialog({ title: "Remove this transaction?", body: `It won't be added to ${owners.get(q.ownerId) ?? "their"}'s ${q.accountName}.`, confirmLabel: "Remove", danger: true }))) return;
+                setBusy(q.id);
+                try {
+                  await removeQueuedTransaction(q.id);
+                } catch (e) {
+                  noticeToast((e as Error).message, "error");
+                } finally {
+                  setBusy(undefined);
+                }
+              }}
+              className="grid size-9 place-items-center rounded-full bg-pale text-ink-2 disabled:opacity-40"
+            >
+              <X className="size-4" />
+            </HapticButton>
+          </div>
+        ))}
+      </Card>
+    </section>
   );
 }
 

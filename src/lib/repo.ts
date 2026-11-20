@@ -221,6 +221,88 @@ async function applySplits(db: KabanDB, txn: Txn, splits: SplitInput[]) {
   }
 }
 
+/**
+ * Bring a family member's transaction on one of this user's shared accounts into the ledger, exactly once.
+ * The member also appears in People (created the first time), and the transaction is linked to them.
+ * Ids and timestamps come from the member's device, so every device of the owner writes the same record.
+ */
+export async function importFamilyTransaction(
+  db: KabanDB,
+  incoming: Txn,
+  author: { userId: string; name: string },
+): Promise<"ok" | "exists" | "missing" | "invalid"> {
+  return db.transaction("rw", allTables(db), async () => {
+    if (await db.transactions.get(incoming.id)) return "exists";
+    const accounts = new Map((await db.accounts.toArray()).map((a) => [a.id, a]));
+    const acc = accounts.get(incoming.accountId);
+    if (!acc) return "missing";
+    const personId = await familyPerson(db, author);
+    const txn: Txn = {
+      id: incoming.id,
+      type: incoming.type,
+      accountId: acc.id,
+      amountMinor: incoming.amountMinor,
+      currency: "PHP",
+      date: incoming.date,
+      description: incoming.description,
+      ...(incoming.category && { category: incoming.category }),
+      notes: incoming.notes ? `${incoming.notes}\nAdded by ${author.name}` : `Added by ${author.name}`,
+      ...(incoming.arrangement && { arrangement: incoming.arrangement }),
+      ...(incoming.arrangement === "instalment" && { instalmentCount: incoming.instalmentCount }),
+      personId,
+      state: "active",
+      createdAt: incoming.createdAt,
+      updatedAt: incoming.updatedAt,
+      version: 1,
+    };
+    try {
+      validateTxn(txn, accounts);
+    } catch {
+      return "invalid";
+    }
+    if (!["expense", "income", "refund"].includes(txn.type)) return "invalid";
+    await db.transactions.put(txn);
+    await enqueue(db, "transaction", txn.id, txn.version, txn);
+    const schedule = buildSchedule(acc, txn);
+    if (schedule.length) await db.instalments.bulkAdd(schedule);
+    return "ok";
+  });
+}
+
+/** Make sure every named family member is in People, so debts can be recorded with them. */
+export async function ensureFamilyPeople(db: KabanDB, members: { userId: string; name: string }[]) {
+  if (!members.length) return;
+  const links = ((await db.meta.get("familyPeople"))?.value as Record<string, string> | undefined) ?? {};
+  const missing: { userId: string; name: string }[] = [];
+  for (const m of members) if (!links[m.userId] || !(await db.people.get(links[m.userId]))) missing.push(m);
+  if (!missing.length) return;
+  await db.transaction("rw", allTables(db), async () => {
+    for (const m of missing) await familyPerson(db, m);
+  });
+}
+
+/** The People entry for a family member: remembered, else one with the same name, else a new one. */
+async function familyPerson(db: KabanDB, author: { userId: string; name: string }) {
+  const links = ((await db.meta.get("familyPeople"))?.value as Record<string, string> | undefined) ?? {};
+  const linked = links[author.userId] && (await db.people.get(links[author.userId]));
+  if (linked) return linked.id;
+  // Same id on every device of this user, so two devices importing at once don't make two people.
+  const id = `fm-${author.userId}`.slice(0, 80);
+  let person = await db.people.get(id);
+  if (!person) {
+    const wanted = author.name.trim().toLowerCase();
+    person = (await db.people.toArray()).find((p) => !p.archived && p.name.trim().toLowerCase() === wanted);
+  }
+  if (!person) {
+    const now = Date.now();
+    person = { id, name: author.name.trim() || "Family member", color: PERSON_COLORS[(await db.people.count()) % PERSON_COLORS.length], archived: false, createdAt: now, updatedAt: now, version: 1 };
+    await db.people.add(person);
+    await enqueue(db, "person", person.id, 1, person);
+  }
+  await db.meta.put({ key: "familyPeople", value: { ...links, [author.userId]: person.id } });
+  return person.id;
+}
+
 /** Void instead of delete, keeping an audit trail. Linked debts are voided too. */
 export async function setTransactionVoid(id: string, voided: boolean) {
   const db = getDatabase();
