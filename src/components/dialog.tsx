@@ -129,9 +129,11 @@ function DialogBody({ d }: { d: Pending }) {
       {d.kind === "alert" ? (
         <Button type="submit" wrapperClassName="w-full">{d.confirmLabel ?? "OK"}</Button>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <Button type="button" variant="secondary" onClick={() => settle(false)}>{d.cancelLabel ?? "Cancel"}</Button>
-          <Button type="submit" variant={d.danger ? "destructive" : "primary"} disabled={locked}>
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" variant="secondary" wrapperClassName="grid min-w-max flex-1" className="px-3! text-sm whitespace-nowrap" onClick={() => settle(false)}>
+            {d.cancelLabel ?? "Cancel"}
+          </Button>
+          <Button type="submit" variant={d.danger ? "destructive" : "primary"} wrapperClassName="grid min-w-max flex-1" className="px-3! text-sm whitespace-nowrap" disabled={locked}>
             {d.confirmLabel ?? "OK"}
           </Button>
         </div>

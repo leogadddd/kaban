@@ -26,9 +26,13 @@ export default function Page() {
             <p className="mt-1 text-sm text-ink-3">Create an account to get a profile, back up your ledger and join a family.</p>
           </Card>
           {cloudConfigured && (
-            <div className="grid grid-cols-2 gap-2">
-              <ButtonLink href="/signup" wrapperClassName="grid"><UserPlus className="size-4" /> Create account</ButtonLink>
-              <ButtonLink href="/login" variant="secondary" wrapperClassName="grid"><LogIn className="size-4" /> Sign in</ButtonLink>
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink href="/signup" wrapperClassName="grid min-w-max flex-1" className="px-3! text-sm whitespace-nowrap">
+                <UserPlus className="size-4 shrink-0" /> Create account
+              </ButtonLink>
+              <ButtonLink href="/login" variant="secondary" wrapperClassName="grid min-w-max flex-1" className="px-3! text-sm whitespace-nowrap">
+                <LogIn className="size-4 shrink-0" /> Sign in
+              </ButtonLink>
             </div>
           )}
         </div>
