@@ -29,3 +29,6 @@ export const SITE_KEYWORDS = [
   "GCash expense tracker",
   "BDO BPI credit card tracker",
 ];
+
+/** Where people reach us about their data or the policies. Set NEXT_PUBLIC_CONTACT_EMAIL to show it on the legal pages. */
+export const SITE_CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "";

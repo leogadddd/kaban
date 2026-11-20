@@ -21,6 +21,7 @@ import {
 import { requestPersistence, useLedgerDatabase } from "@/lib/db";
 import { startSync, useSyncState } from "@/lib/sync";
 import { entryPath, isOnboarded, markOnboarded } from "@/lib/first-run";
+import { AgreementGate } from "./agreement-gate";
 import { DialogHost } from "./dialog";
 import { UndoToaster } from "./undo-toast";
 import { useMeta } from "@/lib/hooks";
@@ -197,6 +198,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
       <PrivacySync />
       {!gated && <Reminders />}
+      {!gated && !UNGATED.includes(pathname) && <AgreementGate />}
       <DialogHost />
       <UndoToaster aboveNav={!hideNav} />
       {showSidebar && <Sidebar pathname={pathname} />}

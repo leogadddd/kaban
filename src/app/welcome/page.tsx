@@ -10,6 +10,7 @@ import { Button, cx } from "@/components/ui";
 import { CLOUD_BENEFITS } from "@/components/cloud-benefits";
 import { LogoMark } from "@/lib/logo";
 import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
+import { acceptAgreement } from "@/lib/legal";
 import { setMeta } from "@/lib/repo";
 import { cloudConfigured } from "@/lib/supabase";
 
@@ -183,7 +184,7 @@ function LocalConsent({ onBack }: { onBack: () => void }) {
     if (!db || !agreed) return;
     setBusy(true);
     const now = Date.now();
-    await setMeta("termsAcceptedAt", now, db);
+    await acceptAgreement(db, now);
     await setMeta("mode", "local", db);
     await setMeta("startedAt", now, db);
     if (!isActiveDatabase(db)) return;
@@ -221,7 +222,7 @@ function LocalConsent({ onBack }: { onBack: () => void }) {
           </span>
           <span>
             I agree to the{" "}
-            <Link href="/terms" className="font-medium text-brand underline-offset-2 hover:underline">Terms and Conditions</Link> and{" "}
+            <Link href="/terms" className="font-medium text-brand underline-offset-2 hover:underline">Terms of Service</Link> and{" "}
             <Link href="/privacy" className="font-medium text-brand underline-offset-2 hover:underline">Privacy Policy</Link>.
           </span>
         </label>

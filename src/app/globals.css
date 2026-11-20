@@ -465,3 +465,39 @@ button,
   .scan-line { animation: none; }
 }
 
+
+/* Terms and Privacy body copy. */
+.legal-body ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.legal-body b {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+/* Landing: endless bank-logo strip. */
+@keyframes logo-scroll {
+  to {
+    transform: translateX(calc(-50% - 0.375rem));
+  }
+}
+.logo-track {
+  animation: logo-scroll 45s linear infinite;
+}
+.logo-marquee:hover .logo-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-track {
+    animation: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: auto;
+  }
+  .logo-track > [aria-hidden="true"] {
+    display: none;
+  }
+}

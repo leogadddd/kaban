@@ -29,7 +29,7 @@ export default function AboutPage() {
         </SettingsGroup>
 
         <SettingsGroup>
-          <SettingsLink href="/terms" icon={FileText} tone="muted" label="Terms and Conditions" />
+          <SettingsLink href="/terms" icon={FileText} tone="muted" label="Terms of Service" />
           <SettingsLink href="/privacy" icon={Shield} tone="muted" label="Privacy Policy" />
           <a href="/" target="_blank" rel="noopener noreferrer" className="flex min-h-14 items-center gap-3 px-4 py-2.5 active:bg-pale">
             <span className="grid size-9 place-items-center rounded-xl bg-line/60 text-ink-2"><ExternalLink className="size-[1.1rem]" /></span>
