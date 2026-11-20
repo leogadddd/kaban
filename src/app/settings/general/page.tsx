@@ -1,14 +1,16 @@
 "use client";
 
-import { EyeOff, Moon, Sun, SunMoon } from "lucide-react";
+import { Ban, EyeOff, Moon, Sun, SunMoon } from "lucide-react";
 import { HapticButton } from "@/components/haptic-button";
 import { usePrivacy } from "@/components/privacy-toggle";
 import { SettingsGroup, SettingsSwitch } from "@/components/settings-ui";
 import { cx, PageHeader } from "@/components/ui";
+import { useHideVoided } from "@/lib/display-prefs";
 import { setThemePref, useThemePref, type ThemePref } from "@/lib/theme";
 
 export default function GeneralSettingsPage() {
   const [hidden, toggleHidden] = usePrivacy();
+  const [hideVoided, setHideVoided] = useHideVoided();
   return (
     <>
       <PageHeader title="General" back="/settings" privacy={false} />
@@ -21,6 +23,10 @@ export default function GeneralSettingsPage() {
 
         <SettingsGroup title="Privacy" footer="Masks every balance and amount, e.g. when someone's looking at your screen.">
           <SettingsSwitch icon={EyeOff} label="Hide amounts" checked={hidden} onChange={() => toggleHidden()} />
+        </SettingsGroup>
+
+        <SettingsGroup title="Transactions" footer="Voided transactions stay saved and never count toward balances. Find them in Activity with the “Show voided” filter.">
+          <SettingsSwitch icon={Ban} label="Hide voided transactions" detail="On Home, account and card pages" checked={hideVoided} onChange={setHideVoided} />
         </SettingsGroup>
       </div>
     </>

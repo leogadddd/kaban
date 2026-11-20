@@ -111,6 +111,7 @@ export interface SettingsEntry {
 export const SETTINGS_INDEX: SettingsEntry[] = [
   { label: "Theme", page: "General", href: "/settings/general", keywords: "appearance dark mode light system colour color" },
   { label: "Hide amounts", page: "General", href: "/settings/general", keywords: "privacy blur mask balances money hidden" },
+  { label: "Hide voided transactions", page: "General", href: "/settings/general", keywords: "void voided cancelled deleted remove hide clutter" },
   { label: "Payment reminders", page: "Notifications", href: "/settings/notifications", keywords: "notifications alerts credit card due date remind" },
   { label: "Notifications", page: "Notifications", href: "/settings/notifications", keywords: "push alerts permission" },
   { label: "Automatic sync", page: "Sync", href: "/settings/sync", keywords: "cloud background auto" },

@@ -12,6 +12,7 @@ import { PrivacyToggle } from "@/components/privacy-toggle";
 import { ProfileButton } from "@/components/profile-menu";
 import { NotificationsButton } from "@/components/notifications-ui";
 import { TxnRow } from "@/components/txn-row";
+import { useHideVoided } from "@/lib/display-prefs";
 import { BigMoney, ButtonLink, Card, EmptyState, Loading, Money, SectionTitle, Segmented } from "@/components/ui";
 import { dailySpend } from "@/lib/finance";
 import { useIsDesktop, useLedger } from "@/lib/hooks";
@@ -176,6 +177,8 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
   const monthSpend = trend.reduce((s, d) => s + d.amount, 0);
   const spendable = activeAccounts.filter((a) => a.type !== "credit").length;
   const { hidden } = useMoney();
+  const [hideVoided] = useHideVoided();
+  const recent = hideVoided ? txns.filter((t) => t.state !== "void") : txns;
 
   if (!activeAccounts.length)
     return (
@@ -244,8 +247,8 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
       <section>
         <SectionTitle action={<Link href="/activity" className="text-sm font-medium text-brand">See all</Link>}>Recent activity</SectionTitle>
         <Card className="p-1.5">
-          {txns.length ? (
-            txns.slice(0, 6).map((t) => <TxnRow key={t.id} t={t} ledger={ledger} />)
+          {recent.length ? (
+            recent.slice(0, 6).map((t) => <TxnRow key={t.id} t={t} ledger={ledger} />)
           ) : (
             <p className="p-4 text-sm text-ink-3">
               Nothing yet. Tap <b>+</b> to add your first transaction.

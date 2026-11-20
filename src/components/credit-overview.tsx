@@ -12,12 +12,14 @@ import { bankFor } from "@/lib/banks";
 import { BigMoney, ButtonLink, Card, Chip, EmptyState, Money, SectionTitle } from "./ui";
 import { UtilisationRing } from "./charts";
 import { TxnRow } from "./txn-row";
+import { useHideVoided } from "@/lib/display-prefs";
 
 export function CreditOverview({ ledger, accountId, showSelector = true }: { ledger: Ledger; accountId?: string; showSelector?: boolean }) {
   const cards = ledger.activeAccounts.filter((a) => a.type === "credit");
   const [selected, setSelected] = useState<string | undefined>(accountId);
   const acc = cards.find((c) => c.id === (accountId ?? selected)) ?? cards[0];
   const today = todayISO();
+  const [hideVoided] = useHideVoided();
 
   const view = (() => {
     if (!acc) return null;
@@ -29,7 +31,7 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
       .filter((e) => e.accountId === acc.id && e.statementDate >= cyc.nextClosing && ledger.txns.find((t) => t.id === e.transactionId)?.state === "active")
       .sort((a, b) => a.statementDate.localeCompare(b.statementDate))
       .slice(0, 4);
-    const activity = ledger.txns.filter((t) => t.accountId === acc.id || t.toAccountId === acc.id).slice(0, 5);
+    const activity = ledger.txns.filter((t) => (t.accountId === acc.id || t.toAccountId === acc.id) && !(hideVoided && t.state === "void")).slice(0, 5);
     return { b, cyc, current, dueStatement, upcomingInst, activity };
   })();
 

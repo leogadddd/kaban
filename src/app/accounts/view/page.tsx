@@ -10,6 +10,7 @@ import { CreditOverview } from "@/components/credit-overview";
 import { confirmDialog } from "@/components/dialog";
 import { undoToast } from "@/components/undo-toast";
 import { GroupedTxns } from "@/components/txn-row";
+import { useHideVoided } from "@/lib/display-prefs";
 import { Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, SectionTitle } from "@/components/ui";
 import { formatDayLong } from "@/lib/dates";
 import { useLedger } from "@/lib/hooks";
@@ -26,11 +27,12 @@ export default function Page() {
 function AccountView() {
   const id = useSearchParams().get("id") ?? "";
   const ledger = useLedger();
+  const [hideVoided] = useHideVoided();
   if (!ledger.ready) return <Loading />;
   const acc = ledger.accountById.get(id);
   if (!acc) return <EmptyState title="Account not found" action={<Link href="/accounts" className="text-brand">Back to accounts</Link>} />;
   const b = ledger.balances.get(id)!;
-  const txns = ledger.txns.filter((t) => t.accountId === id || t.toAccountId === id);
+  const txns = ledger.txns.filter((t) => (t.accountId === id || t.toAccountId === id) && !(hideVoided && t.state === "void"));
   const credit = acc.type === "credit";
 
   return (
