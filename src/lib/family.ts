@@ -7,7 +7,7 @@
 // it when it changes. Nothing here writes to the personal ledger tables or their outbox.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KabanDB } from "./db";
-import { uid, visibleDatabase } from "./db";
+import { allTables, uid, visibleDatabase } from "./db";
 import { cycleInfo } from "./billing";
 import { todayISO } from "./dates";
 import { accountBalances, effectOn } from "./finance";
@@ -105,6 +105,8 @@ export interface Family {
   shared: SharedAccount[];
   /** Ids of this user's added transactions the owner hasn't brought in yet. */
   my_pending: string[];
+  /** Edits of this user's the owner's device turned down because the owner had changed it. */
+  my_conflicts?: string[];
 }
 
 export interface MyRequest {
@@ -262,7 +264,7 @@ export async function refreshFamilies(db?: KabanDB, c: SupabaseClient = client()
   const target = ledger(db);
   const data = await rpc<Omit<FamilyState, "fetchedAt">>("get_my_families", undefined, c);
   const state: FamilyState = {
-    families: (data.families ?? []).map((f) => ({ ...f, members: f.members ?? [], requests: f.requests ?? [], shared: f.shared ?? [], my_pending: f.my_pending ?? [] })),
+    families: (data.families ?? []).map((f) => ({ ...f, members: f.members ?? [], requests: f.requests ?? [], shared: f.shared ?? [], my_pending: f.my_pending ?? [], my_conflicts: f.my_conflicts ?? [] })),
     my_requests: data.my_requests ?? [],
     max_families: data.max_families ?? 1,
     fetchedAt: Date.now(),
@@ -438,8 +440,18 @@ export interface QueuedTxn {
   accountId: string;
   accountName: string;
   txn: Txn;
-  /** queued: not sent yet. sent: on the server, waiting for the owner's device. failed: refused. */
-  status: "queued" | "sent" | "failed";
+  /**
+   * queued: not sent yet. sent: on the server, waiting for the owner's device. imported: in the owner's
+   * ledger (kept so it can still be edited). conflict: the owner changed it, so this edit wasn't applied.
+   * failed: refused by the server.
+   */
+  status: "queued" | "sent" | "imported" | "conflict" | "failed";
+  /** new: first send. edit: a change to something already sent. */
+  op?: "new" | "edit";
+  /** For edits: updatedAt of the version the owner has. */
+  baseUpdatedMs?: number;
+  /** Card payments: this user's own linked expense (same id) and whether the owner pays it back. */
+  payMode?: "gift" | "loan";
   error?: string;
   queuedAt: number;
 }
@@ -540,9 +552,10 @@ export async function addFamilyTransaction(target: SharedTarget, input: FamilyTx
     familyId: target.familyId,
     ownerId: target.ownerId,
     accountId: txn.accountId,
-    accountName: target.account.name,
+    accountName: `${target.ownerName}'s ${target.account.name}`,
     txn,
     status: "queued",
+    op: "new",
     queuedAt: now,
   };
   await ledgerDb.transaction("rw", ledgerDb.meta, async () => {
@@ -559,11 +572,157 @@ export async function removeQueuedTransaction(id: string, db?: KabanDB) {
   const target = ledger(db);
   const entry = ((await getMeta<QueuedTxn[]>(QUEUE, target)) ?? []).find((q) => q.id === id);
   if (!entry) return;
+  // Already on the server or in the owner's ledger: send a void so it disappears there too.
+  if ((entry.status === "sent" && entry.op === "edit") || entry.status === "imported") return editFamilyEntry(id, { state: "void" }, target);
   if (entry.status === "sent") await rpc<void>("cancel_family_transaction", { p_id: id });
-  await target.transaction("rw", target.meta, async () => {
+  await target.transaction("rw", allTables(target), async () => {
     const queue = (await getMeta<QueuedTxn[]>(QUEUE, target)) ?? [];
     await setMeta(QUEUE, queue.filter((q) => q.id !== id), target);
+    // The owner kept their own version after a conflict, so this side stays too.
+    if (entry.txn.type === "member_payment" && entry.status !== "conflict") await voidLinked(target, id);
   });
+}
+
+async function voidLinked(db: KabanDB, id: string) {
+  const local = await db.transactions.get(id);
+  if (local && local.state === "active") {
+    const { setTransactionVoid } = await import("./repo");
+    await setTransactionVoid(id, true, db);
+  }
+}
+
+export type FamilyEdit = Partial<Pick<Txn, "amountMinor" | "date" | "description" | "category" | "notes" | "state">>;
+
+/** Whether an entry this user added can still be changed from their phone. */
+export const canEditEntry = (q: QueuedTxn) => q.txn.state === "active" && (q.status === "queued" || q.status === "sent" || q.status === "imported");
+
+/**
+ * Change (or void) something this user added to a shared account. Saved here at once; the owner's phone
+ * applies it on its next sync unless the owner already changed that transaction.
+ */
+export async function editFamilyEntry(id: string, change: FamilyEdit, db?: KabanDB) {
+  const target = ledger(db);
+  if (change.amountMinor !== undefined && (!Number.isSafeInteger(change.amountMinor) || change.amountMinor <= 0)) throw new FamilyError("Enter an amount greater than zero");
+  const { saveTransaction, familyPersonFor } = await import("./repo");
+  await target.transaction("rw", allTables(target), async () => {
+    const queue = (await getMeta<QueuedTxn[]>(QUEUE, target)) ?? [];
+    const entry = queue.find((q) => q.id === id);
+    if (!entry || !canEditEntry(entry)) throw new FamilyError("This can't be changed any more.");
+    const now = Date.now();
+    const next: Txn = { ...entry.txn, ...change, updatedAt: now };
+    if (!next.notes) delete next.notes;
+    if (!next.category) delete next.category;
+    let updated: QueuedTxn;
+    if (entry.status === "queued" && entry.op !== "edit") {
+      // Never left this phone: just replace it.
+      updated = { ...entry, txn: next };
+    } else {
+      updated = {
+        ...entry,
+        txn: { ...next, version: entry.txn.version + 1 },
+        status: "queued",
+        op: "edit",
+        // Keep the owner's version as the base across several quick edits.
+        baseUpdatedMs: entry.status === "imported" ? entry.txn.updatedAt : entry.op === "edit" ? entry.baseUpdatedMs : entry.txn.updatedAt,
+        error: undefined,
+      };
+    }
+    await setMeta(QUEUE, queue.map((q) => (q.id === id ? updated : q)), target);
+
+    // A card payment's own half lives in this ledger: keep it in step.
+    if (entry.txn.type === "member_payment") {
+      if (next.state === "void") await voidLinked(target, id);
+      else if (await target.transactions.get(id)) {
+        const local = (await target.transactions.get(id))!;
+        const owner = entry.payMode === "loan" ? await familyPersonFor(target, { userId: entry.ownerId, name: ownerLabel(entry) }) : undefined;
+        await saveTransaction(
+          {
+            type: "expense",
+            accountId: local.accountId,
+            amountMinor: next.amountMinor,
+            date: next.date,
+            description: local.description,
+            category: local.category,
+            notes: next.notes,
+            splits: owner ? [{ personId: owner, amountMinor: next.amountMinor }] : [],
+          },
+          id,
+          target,
+        );
+      }
+    }
+  });
+  const { scheduleSync } = await import("./sync");
+  scheduleSync(300);
+}
+
+const ownerLabel = (q: QueuedTxn) => q.accountName.split("'s ")[0] || "Family member";
+
+/**
+ * Pay someone else's shared credit card from one of this user's own accounts. Two linked records: an
+ * expense here (optionally split fully to the owner, so it shows in Who Owes Me) and a "paid by family"
+ * entry for the owner's card that their phone brings in.
+ */
+export async function payFamilyCard(
+  target: SharedTarget,
+  input: { fromAccountId: string; amountMinor: number; date: string; notes?: string; mode: "gift" | "loan" },
+  db?: KabanDB,
+) {
+  const d = ledger(db);
+  if (target.account.type !== "credit") throw new FamilyError("Pick a credit card to pay.");
+  if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor <= 0) throw new FamilyError("Enter an amount greater than zero");
+  const { saveTransaction, familyPersonFor } = await import("./repo");
+  const id = uid();
+  const now = Date.now();
+  const cardLabel = `${target.ownerName}'s ${target.account.name}`;
+  const txn: Txn = {
+    id,
+    type: "member_payment",
+    accountId: target.key.split("~")[3],
+    amountMinor: input.amountMinor,
+    currency: "PHP",
+    date: input.date,
+    description: "Card payment",
+    ...(input.notes && { notes: input.notes }),
+    state: "active",
+    createdAt: now,
+    updatedAt: now,
+    version: 1,
+  };
+  await d.transaction("rw", allTables(d), async () => {
+    const owner = input.mode === "loan" ? await familyPersonFor(d, { userId: target.ownerId, name: target.ownerName }) : undefined;
+    await saveTransaction(
+      {
+        type: "expense",
+        accountId: input.fromAccountId,
+        amountMinor: input.amountMinor,
+        date: input.date,
+        description: `Paid ${cardLabel}`,
+        category: "Family",
+        notes: input.notes,
+        splits: owner ? [{ personId: owner, amountMinor: input.amountMinor }] : undefined,
+      },
+      undefined,
+      d,
+      id,
+    );
+    const entry: QueuedTxn = {
+      id,
+      familyId: target.familyId,
+      ownerId: target.ownerId,
+      accountId: txn.accountId,
+      accountName: cardLabel,
+      txn,
+      status: "queued",
+      op: "new",
+      payMode: input.mode,
+      queuedAt: now,
+    };
+    await setMeta(QUEUE, [...((await getMeta<QueuedTxn[]>(QUEUE, d)) ?? []), entry], d);
+  });
+  const { scheduleSync } = await import("./sync");
+  scheduleSync(300);
+  return id;
 }
 
 async function updateQueue(db: KabanDB, fn: (q: QueuedTxn[]) => QueuedTxn[]) {
@@ -579,17 +738,39 @@ const REFUSED: Record<string, string> = {
 async function pushQueue(db: KabanDB, c: SupabaseClient) {
   const queued = ((await getMeta<QueuedTxn[]>(QUEUE, db)) ?? []).filter((q) => q.status === "queued");
   for (const q of queued) {
-    const status = await rpc<string>("add_family_transaction", { p_family: q.familyId, p_owner: q.ownerId, p_account: q.accountId, p_txn: q.txn }, c);
+    const status =
+      q.op === "edit"
+        ? await rpc<string>("update_family_transaction", { p_txn: q.txn, p_base_updated_ms: q.baseUpdatedMs ?? null }, c)
+        : await rpc<string>("add_family_transaction", { p_family: q.familyId, p_owner: q.ownerId, p_account: q.accountId, p_txn: q.txn }, c);
     await updateQueue(db, (all) =>
-      all.map((e) => (e.id !== q.id ? e : status === "ok" ? { ...e, status: "sent", error: undefined } : { ...e, status: "failed", error: REFUSED[status] ?? status })),
+      all.map((e) => {
+        // Edited again while this send was in flight: leave the newer version queued.
+        if (e.id !== q.id || e.txn.updatedAt !== q.txn.updatedAt) return e;
+        if (status === "ok") return { ...e, status: "sent", error: undefined };
+        if (status === "conflict") return { ...e, status: "conflict", error: undefined };
+        return { ...e, status: "failed", error: REFUSED[status] ?? status };
+      }),
     );
   }
 }
 
 /** Sent entries the server no longer lists as pending were brought in by the owner (or cancelled). */
+const KEEP_HISTORY_MS = 90 * 86_400_000;
+
 async function reconcileQueue(db: KabanDB, state: FamilyState) {
   const pending = new Map(state.families.map((f) => [f.id, new Set(f.my_pending)]));
-  await updateQueue(db, (all) => all.filter((q) => q.status !== "sent" || !!pending.get(q.familyId)?.has(q.id)));
+  const conflicts = new Map(state.families.map((f) => [f.id, new Set(f.my_conflicts ?? [])]));
+  const cutoff = Date.now() - KEEP_HISTORY_MS;
+  await updateQueue(db, (all) =>
+    all
+      .map((q): QueuedTxn => {
+        if (q.status !== "sent" || !pending.has(q.familyId) || pending.get(q.familyId)!.has(q.id)) return q;
+        return { ...q, status: conflicts.get(q.familyId)?.has(q.id) ? "conflict" : "imported" };
+      })
+      // Settled history ages out; anything still on its way is kept.
+      .filter((q) => !["imported", "conflict"].includes(q.status) || q.queuedAt > cutoff)
+      .slice(-300),
+  );
 }
 
 interface Contribution {
@@ -598,6 +779,8 @@ interface Contribution {
   account_id: string;
   author_id: string;
   author_name: string | null;
+  kind?: "new" | "edit";
+  base_updated_ms?: number | null;
   data: Txn;
 }
 
@@ -605,16 +788,22 @@ interface Contribution {
 async function importContributions(db: KabanDB, c: SupabaseClient) {
   const rows = await rpc<Contribution[]>("pull_family_contributions", undefined, c);
   if (!rows?.length) return;
-  const { importFamilyTransaction } = await import("./repo");
+  const { applyFamilyEdit, importFamilyTransaction } = await import("./repo");
   const done: string[] = [];
+  const rejected: string[] = [];
   const authors: Record<string, string> = {};
   for (const row of rows) {
     if (row.data?.id !== row.id || row.data.accountId !== row.account_id) {
       done.push(row.id); // Malformed: keep it on the server, stop retrying.
       continue;
     }
-    const result = await importFamilyTransaction(db, row.data, { userId: row.author_id, name: row.author_name?.trim() || "Family member" });
+    const author = { userId: row.author_id, name: row.author_name?.trim() || "Family member" };
+    const result = row.kind === "edit" ? await applyFamilyEdit(db, row.data, row.base_updated_ms ?? null, author) : await importFamilyTransaction(db, row.data, author);
     if (result === "missing") continue; // Account not on this device yet; try again next sync.
+    if (result === "conflict") {
+      rejected.push(row.id);
+      continue;
+    }
     if (result !== "invalid") authors[row.id] = row.author_id;
     done.push(row.id);
   }
@@ -625,6 +814,7 @@ async function importContributions(db: KabanDB, c: SupabaseClient) {
     });
   }
   if (done.length) await rpc<void>("ack_family_contributions", { p_ids: done }, c);
+  if (rejected.length) await rpc<void>("reject_family_contributions", { p_ids: rejected }, c);
 }
 
 /**

@@ -108,6 +108,7 @@ function validateTxn(t: TxnInput, accounts: Map<string, Account>) {
     if (!dst || dst.type !== "credit") throw new Error("Choose the credit card to pay");
     if (src.type === "credit") throw new Error("Pay from a cash or debit account");
   }
+  if (t.type === "member_payment" && src.type !== "credit") throw new Error("Family payments are only for credit cards");
   if ((t.type === "income" || t.type === "reimbursement") && src.type === "credit")
     throw new Error("Income must go to a cash or debit account");
   if (t.arrangement === "instalment") {
@@ -141,12 +142,13 @@ function buildSchedule(acc: Account, t: Txn): InstalmentEntry[] {
   });
 }
 
-export async function saveTransaction(input: TxnInput, id?: string, db = getDatabase()): Promise<string> {
-  return db.transaction("rw", allTables(db), () => writeTransaction(db, input, id));
+/** `newId` picks the id of a new record (used to link a family card payment to its other half). */
+export async function saveTransaction(input: TxnInput, id?: string, db = getDatabase(), newId?: string): Promise<string> {
+  return db.transaction("rw", allTables(db), () => writeTransaction(db, input, id, newId));
 }
 
 /** The body of saveTransaction. Must run inside an open rw transaction over ALL_TABLES (no nesting needed). */
-async function writeTransaction(db: KabanDB, input: TxnInput, id?: string): Promise<string> {
+async function writeTransaction(db: KabanDB, input: TxnInput, id?: string, newId?: string): Promise<string> {
   {
     const accounts = new Map((await db.accounts.toArray()).map((a) => [a.id, a]));
     validateTxn(input, accounts);
@@ -157,7 +159,7 @@ async function writeTransaction(db: KabanDB, input: TxnInput, id?: string): Prom
 
     const txn: Txn = prev
       ? { ...prev, ...fields, updatedAt: now, version: prev.version + 1 }
-      : { ...fields, id: uid(), currency: "PHP", state: "active", createdAt: now, updatedAt: now, version: 1 };
+      : { ...fields, id: newId ?? uid(), currency: "PHP", state: "active", createdAt: now, updatedAt: now, version: 1 };
     if (txn.type !== "transfer" && txn.type !== "card_payment") delete txn.toAccountId;
     if (txn.arrangement !== "instalment") delete txn.instalmentCount;
     await db.transactions.put(txn);
@@ -250,17 +252,17 @@ export async function importFamilyTransaction(
       ...(incoming.arrangement && { arrangement: incoming.arrangement }),
       ...(incoming.arrangement === "instalment" && { instalmentCount: incoming.instalmentCount }),
       personId,
-      state: "active",
+      state: incoming.state === "void" ? "void" : "active",
       createdAt: incoming.createdAt,
       updatedAt: incoming.updatedAt,
-      version: 1,
+      version: incoming.version,
     };
     try {
       validateTxn(txn, accounts);
     } catch {
       return "invalid";
     }
-    if (!["expense", "income", "refund"].includes(txn.type)) return "invalid";
+    if (!["expense", "income", "refund", "member_payment"].includes(txn.type)) return "invalid";
     await db.transactions.put(txn);
     await enqueue(db, "transaction", txn.id, txn.version, txn);
     const schedule = buildSchedule(acc, txn);
@@ -268,6 +270,60 @@ export async function importFamilyTransaction(
     return "ok";
   });
 }
+
+/**
+ * Apply a member's change to something they added. Only when this ledger still has exactly the version
+ * they edited (`baseUpdatedMs`); if the owner changed it since, the owner's version stays ("conflict").
+ * Same inputs give the same record on every device of the owner.
+ */
+export async function applyFamilyEdit(
+  db: KabanDB,
+  incoming: Txn,
+  baseUpdatedMs: number | null,
+  author: { userId: string; name: string },
+): Promise<"ok" | "exists" | "missing" | "invalid" | "conflict"> {
+  const local = await db.transactions.get(incoming.id);
+  if (!local) return importFamilyTransaction(db, incoming, author);
+  if (local.version === incoming.version && local.updatedAt === incoming.updatedAt) return "exists";
+  if (local.updatedAt !== baseUpdatedMs || local.version !== incoming.version - 1) return "conflict";
+  return db.transaction("rw", allTables(db), async () => {
+    const accounts = new Map((await db.accounts.toArray()).map((a) => [a.id, a]));
+    const acc = accounts.get(local.accountId);
+    if (!acc || incoming.accountId !== local.accountId || incoming.type !== local.type) return "invalid";
+    const txn: Txn = {
+      id: local.id,
+      type: local.type,
+      accountId: acc.id,
+      amountMinor: incoming.amountMinor,
+      currency: "PHP",
+      date: incoming.date,
+      description: incoming.description,
+      ...(incoming.category && { category: incoming.category }),
+      notes: incoming.notes ? `${incoming.notes}\nAdded by ${author.name}` : `Added by ${author.name}`,
+      ...(incoming.arrangement && { arrangement: incoming.arrangement }),
+      ...(incoming.arrangement === "instalment" && { instalmentCount: incoming.instalmentCount }),
+      ...(local.personId && { personId: local.personId }),
+      state: incoming.state === "void" ? "void" : "active",
+      createdAt: local.createdAt,
+      updatedAt: incoming.updatedAt,
+      version: incoming.version,
+    };
+    try {
+      validateTxn(txn, accounts);
+    } catch {
+      return "invalid";
+    }
+    await db.transactions.put(txn);
+    await enqueue(db, "transaction", txn.id, txn.version, txn);
+    await db.instalments.where("transactionId").equals(txn.id).delete();
+    const schedule = buildSchedule(acc, txn);
+    if (schedule.length) await db.instalments.bulkAdd(schedule);
+    return "ok";
+  });
+}
+
+/** People entry for a family member, creating it if needed. Call inside an rw transaction over allTables. */
+export const familyPersonFor = (db: KabanDB, author: { userId: string; name: string }) => familyPerson(db, author);
 
 /** Make sure every named family member is in People, so debts can be recorded with them. */
 export async function ensureFamilyPeople(db: KabanDB, members: { userId: string; name: string }[]) {
@@ -304,8 +360,7 @@ async function familyPerson(db: KabanDB, author: { userId: string; name: string 
 }
 
 /** Void instead of delete, keeping an audit trail. Linked debts are voided too. */
-export async function setTransactionVoid(id: string, voided: boolean) {
-  const db = getDatabase();
+export async function setTransactionVoid(id: string, voided: boolean, db = getDatabase()) {
   await db.transaction("rw", allTables(db), async () => {
     const t = await db.transactions.get(id);
     if (!t) return;

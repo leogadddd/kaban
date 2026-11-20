@@ -164,7 +164,7 @@ function AllPane({ ledger }: { ledger: Ledger }) {
 function PaymentsPane({ ledger }: { ledger: Ledger }) {
   const [kind, setKind] = useState<"card" | "received">("card");
   const active = ledger.txns.filter((t) => t.state === "active");
-  const card = active.filter((t) => t.type === "card_payment");
+  const card = active.filter((t) => t.type === "card_payment" || t.type === "member_payment");
   const received = active.filter((t) => t.type === "reimbursement");
   const items = kind === "card" ? card : received;
   const sum = (ts: typeof active) => ts.reduce((s, t) => s + t.amountMinor, 0);

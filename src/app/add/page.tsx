@@ -23,7 +23,7 @@ import { animatedBack } from "@/lib/nav-direction";
 import { formatMoney, minorToInput, parseMinor, splitEvenly } from "@/lib/money";
 import { savePerson, saveTransaction, setTransactionVoid } from "@/lib/repo";
 import { runSync, useSyncState } from "@/lib/sync";
-import { addFamilyTransaction, FAMILY_TXN_TYPES, sharedTargets, useFamilies, type SharedTarget } from "@/lib/family";
+import { addFamilyTransaction, FAMILY_TXN_TYPES, payFamilyCard, sharedTargets, useFamilies, type SharedTarget } from "@/lib/family";
 import { ME, type Account, type Arrangement, type Txn, type TxnType } from "@/lib/types";
 
 export default function Page() {
@@ -43,6 +43,7 @@ const ADD_TRANSACTION_LABEL: Record<TxnType, string> = {
   refund: "Record refund",
   adjustment: "Record balance adjustment",
   reimbursement: "Record reimbursement",
+  member_payment: "Record family payment",
 };
 const INSTALMENT_PRESETS = [3, 6, 9, 12, 18, 24, 36];
 
@@ -163,8 +164,13 @@ function Editor() {
     if (type === "income" || type === "transfer" || type === "card_payment" || type === "reimbursement") return a.type !== "credit";
     return true;
   });
-  const toChoices = accounts.filter((a) => !sharedMap.has(a.id) && (type === "card_payment" ? a.type === "credit" : a.type !== "credit" && a.id !== accountId));
+  const toChoices = accounts
+    .filter((a) => !sharedMap.has(a.id) && (type === "card_payment" ? a.type === "credit" : a.type !== "credit" && a.id !== accountId))
+    // Family members' shared cards can be paid from your own money too.
+    .concat(type === "card_payment" ? targets.filter((t) => t.account.type === "credit").map((t) => t.account) : []);
   const shared = sharedMap.get(accountId);
+  const sharedCard = type === "card_payment" ? sharedMap.get(toAccountId) : undefined;
+  const [payMode, setPayMode] = useState<"gift" | "loan">("gift");
   const account = ledger.accountById.get(accountId) ?? shared?.account;
 
   // Keep selection valid when switching type.
@@ -224,6 +230,12 @@ function Editor() {
     }
     setSaving(true);
     try {
+      if (sharedCard) {
+        await payFamilyCard(sharedCard, { fromAccountId: accountId, amountMinor, date, notes: notes.trim() || undefined, mode: payMode });
+        setSaved(true);
+        void runSync();
+        return;
+      }
       if (shared) {
         await addFamilyTransaction(shared, {
           type,
@@ -270,7 +282,9 @@ function Editor() {
         title={editId ? "Changes saved" : `${TYPE_LABEL[type]} added`}
         amount={amountMinor > 0 ? fmtMoney(amountMinor) : undefined}
         subtitle={
-          shared
+          sharedCard
+            ? `Paid ${sharedCard.ownerName}'s ${sharedCard.account.name}. It shows on their card after their phone syncs.`
+            : shared
             ? `Added to ${shared.ownerName}'s ${shared.account.name}. It shows in their ledger after their phone syncs.`
             : description.trim() || defaultDescription(type, category, ledger.accountById.get(toAccountId))
         }
@@ -379,6 +393,8 @@ function Editor() {
         {/* Type */}
         {isReimbursement ? (
           <p className="rounded-2xl bg-pale p-3 text-sm text-brand">Reimbursement from {ledger.personById.get(existing?.personId ?? "")?.name ?? "someone"} — linked to a debt in Who Owes Me.</p>
+        ) : type === "member_payment" ? (
+          <p className="rounded-2xl bg-pale p-3 text-sm text-brand">Paid by {ledger.personById.get(existing?.personId ?? "")?.name ?? "a family member"} from their own money. It lowers this card&apos;s balance and isn&apos;t counted as your spending.</p>
         ) : editId ? (
           <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" role="tablist" aria-label="Transaction type">
             {TYPES.map((t) => (
@@ -427,10 +443,28 @@ function Editor() {
           ledger={ledger}
         />
         {(type === "transfer" || type === "card_payment") && (
-          <AccountPicker label={type === "card_payment" ? "Card to pay" : "To"} accounts={toChoices} value={toAccountId} onChange={setToAccountId} ledger={ledger} />
+          <AccountPicker label={type === "card_payment" ? "Card to pay" : "To"} accounts={toChoices} value={toAccountId} onChange={setToAccountId} ledger={ledger} shared={sharedMap} />
         )}
-        {type === "card_payment" && (
+        {type === "card_payment" && !sharedCard && (
           <p className="-mt-2 px-1 text-xs text-ink-3">Lowers both the source balance and the card&apos;s outstanding. Not counted as spending.</p>
+        )}
+        {sharedCard && (
+          <div className="space-y-2">
+            <p className="px-1 text-sm font-medium text-ink-2">Is this a gift or a loan?</p>
+            <Segmented<"gift" | "loan">
+              value={payMode}
+              onChange={setPayMode}
+              options={[
+                { value: "gift", label: "Family expense" },
+                { value: "loan", label: `${sharedCard.ownerName} pays me back` },
+              ]}
+            />
+            <p className="px-1 text-xs text-ink-3">
+              {payMode === "gift"
+                ? `Counted as your spending. ${sharedCard.ownerName}'s card goes down once their phone syncs.`
+                : `Shows in Who Owes Me as ${sharedCard.ownerName} owing you. Their card goes down once their phone syncs.`}
+            </p>
+          </div>
         )}
 
         {/* Credit arrangement */}

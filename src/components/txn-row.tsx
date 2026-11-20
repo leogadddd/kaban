@@ -31,6 +31,8 @@ export function displayAmount(t: Txn, accById: Map<string, Account>, perspective
           return isSrc ? { amount: -t.amountMinor, tone: "neutral" } : { amount: t.amountMinor, tone: "income" };
         case "adjustment":
           return { amount: acc.type === "credit" ? -t.amountMinor : t.amountMinor, tone: "neutral" };
+        case "member_payment":
+          return { amount: t.amountMinor, tone: "income" };
       }
     }
   }
@@ -43,6 +45,8 @@ export function displayAmount(t: Txn, accById: Map<string, Account>, perspective
       return { amount: t.amountMinor, tone: "income" };
     case "adjustment":
       return { amount: src?.type === "credit" ? -t.amountMinor : t.amountMinor, tone: "neutral" };
+    case "member_payment":
+      return { amount: t.amountMinor, tone: "income" };
     default:
       return { amount: -t.amountMinor, tone: "neutral" };
   }
@@ -56,7 +60,11 @@ export function TxnRow({ t, ledger, perspective, showDate = true }: { t: Txn; le
   const split = ledger.splits.some((s) => s.transactionId === t.id);
   const voided = t.state === "void";
   const sub = [
-    t.type === "transfer" || t.type === "card_payment" ? `${acc?.name ?? "?"} → ${to?.name ?? "?"}` : acc?.name,
+    t.type === "transfer" || t.type === "card_payment"
+      ? `${acc?.name ?? "?"} → ${to?.name ?? "?"}`
+      : t.type === "member_payment"
+        ? `${ledger.personById.get(t.personId ?? "")?.name ?? "Family"} → ${acc?.name ?? "?"}`
+        : acc?.name,
     t.arrangement === "instalment" ? `${t.instalmentCount}× instalment` : t.arrangement === "deferred" ? "Deferred" : null,
     showDate ? formatDay(t.date) : null,
   ]

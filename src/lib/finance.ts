@@ -36,6 +36,9 @@ export function effectOn(t: Txn, account: Account): number {
       return 0;
     case "adjustment":
       return isSrc ? t.amountMinor : 0;
+    case "member_payment":
+      // Someone else's money settled part of this card: outstanding goes down. Not spending or income.
+      return isSrc && credit ? -t.amountMinor : 0;
   }
 }
 

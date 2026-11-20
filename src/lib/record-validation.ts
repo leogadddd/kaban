@@ -52,7 +52,7 @@ const fields = {
   },
   transaction: {
     ...versioned,
-    type: oneOf("expense", "income", "transfer", "card_payment", "adjustment", "reimbursement", "refund"),
+    type: oneOf("expense", "income", "transfer", "card_payment", "adjustment", "reimbursement", "refund", "member_payment"),
     accountId: id,
     toAccountId: optional(id),
     amountMinor: (value) => integer(value, -Number.MAX_SAFE_INTEGER) && value !== 0,

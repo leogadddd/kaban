@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, ChevronRight, Clock, X, CloudOff, Eye, LogIn, QrCode, ScanLine, Settings, Share2, UserPlus, Users, Wallet } from "lucide-react";
+import { CalendarClock, ChevronRight, History, CloudOff, Eye, LogIn, QrCode, ScanLine, Settings, Share2, UserPlus, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FamilyIllustration, FamilyMark, InboxButton, MemberAvatar, pickFamily, useCurrentFamily } from "@/components/family-ui";
@@ -9,10 +9,11 @@ import { confirmDialog } from "@/components/dialog";
 import { noticeToast } from "@/components/undo-toast";
 import { BankLogo } from "@/components/bank-logo";
 import { GroupTitle, Tile, Tiles } from "@/components/swipe-hub";
-import { ButtonLink, Card, Chip, cx, Loading, Money, PageHeader, Progress, SectionTitle } from "@/components/ui";
+import { Button, ButtonLink, Card, Chip, cx, Field, inputCls, Loading, Money, PageHeader, Progress, SectionTitle, Sheet } from "@/components/ui";
+import { minorToInput, parseMinor } from "@/lib/money";
 import { bankFor } from "@/lib/banks";
 import { formatDay, relativeDayLabel, todayISO } from "@/lib/dates";
-import { isAdmin, isForming, memberName, refreshFamilies, removeQueuedTransaction, useFamilyQueue, type Family, type FamilyMember, type SharedAccount, type SnapshotTxn } from "@/lib/family";
+import { canEditEntry, editFamilyEntry, isAdmin, isForming, memberName, refreshFamilies, removeQueuedTransaction, useFamilyQueue, type QueuedTxn, type Family, type FamilyMember, type SharedAccount, type SnapshotTxn } from "@/lib/family";
 import { useOnline } from "@/lib/hooks";
 import { cloudConfigured } from "@/lib/supabase";
 import { useSyncState } from "@/lib/sync";
@@ -152,7 +153,7 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
           </Card>
         )}
 
-        <PendingFromMe family={family} />
+        <AddedByMe family={family} />
 
         {!family.shared.length ? (
           <Card className="text-center">
@@ -280,50 +281,131 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
   );
 }
 
-/** What this user added to others' shared accounts that the owner's phone hasn't brought in yet. */
-function PendingFromMe({ family }: { family: Family }) {
-  const queue = (useFamilyQueue() ?? []).filter((q) => q.familyId === family.id);
+/** What this user added to others' shared accounts: still on its way, in their ledger, or turned down. */
+function AddedByMe({ family }: { family: Family }) {
+  const all = useFamilyQueue();
+  const online = useOnline();
+  const queue = useMemo(() => (all ?? []).filter((q) => q.familyId === family.id).sort((x, y) => y.queuedAt - x.queuedAt).slice(0, 20), [all, family.id]);
   const owners = new Map(family.members.map((m) => [m.user_id, memberName(m)]));
-  const [busy, setBusy] = useState<string>();
+  const [open, setOpen] = useState<QueuedTxn>();
   if (!queue.length) return null;
+  const ownerOf = (q: QueuedTxn) => owners.get(q.ownerId) ?? "the owner";
+  const status = (q: QueuedTxn) => {
+    if (q.txn.state === "void") return q.status === "imported" ? "Removed" : "Removing…";
+    switch (q.status) {
+      case "queued":
+        return online ? "Sending…" : "Saved, sends when you're online";
+      case "sent":
+        return `Waiting for ${ownerOf(q)}'s phone`;
+      case "imported":
+        return q.op === "edit" ? "Updated" : "Added";
+      case "conflict":
+        return `${ownerOf(q)} changed this, so your edit wasn't applied`;
+      case "failed":
+        return q.error ?? "Couldn't be added";
+    }
+  };
   return (
     <section>
-      <GroupTitle icon={Clock}>Waiting to show up</GroupTitle>
+      <GroupTitle icon={History}>Added by you</GroupTitle>
       <Card className="divide-y divide-line p-0">
         {queue.map((q) => (
-          <div key={q.id} className="flex items-center gap-3 px-4 py-3">
+          <HapticButton key={q.id} type="button" onClick={() => setOpen(q)} wrapperClassName="grid" className={cx("flex w-full items-center gap-3 px-4 py-3 text-left active:bg-pale", q.txn.state === "void" && "opacity-50")}>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{q.txn.description}</p>
-              <p className={cx("truncate text-xs", q.status === "failed" ? "text-expense" : "text-ink-3")}>
-                {q.status === "failed"
-                  ? q.error ?? "Couldn't be added"
-                  : `${owners.get(q.ownerId) ?? "Owner"}'s ${q.accountName} · ${q.status === "queued" ? "sending…" : `appears once ${owners.get(q.ownerId) ?? "they"} syncs`}`}
+              <p className="truncate text-sm font-medium">{q.txn.type === "member_payment" ? `Paid ${q.accountName}` : q.txn.description}</p>
+              <p className={cx("truncate text-xs", q.status === "failed" || q.status === "conflict" ? "text-expense" : "text-ink-3")}>
+                {q.txn.type === "member_payment" ? formatDay(q.txn.date) : `${q.accountName} · ${formatDay(q.txn.date)}`} · {status(q)}
               </p>
             </div>
-            <Money minor={q.txn.type === "expense" ? -q.txn.amountMinor : q.txn.amountMinor} sign tone="auto" className="text-sm font-semibold" />
-            <HapticButton
-              type="button"
-              disabled={busy === q.id}
-              aria-label={`Remove ${q.txn.description}`}
-              onClick={async () => {
-                if (!(await confirmDialog({ title: "Remove this transaction?", body: `It won't be added to ${owners.get(q.ownerId) ?? "their"}'s ${q.accountName}.`, confirmLabel: "Remove", danger: true }))) return;
-                setBusy(q.id);
-                try {
-                  await removeQueuedTransaction(q.id);
-                } catch (e) {
-                  noticeToast((e as Error).message, "error");
-                } finally {
-                  setBusy(undefined);
-                }
-              }}
-              className="grid size-9 place-items-center rounded-full bg-pale text-ink-2 disabled:opacity-40"
-            >
-              <X className="size-4" />
-            </HapticButton>
-          </div>
+            <Money minor={q.txn.type === "expense" ? -q.txn.amountMinor : q.txn.amountMinor} sign tone={q.txn.type === "member_payment" ? undefined : "auto"} className="text-sm font-semibold" />
+            <ChevronRight className="size-4 shrink-0 text-ink-3" />
+          </HapticButton>
         ))}
       </Card>
+      <Sheet open={!!open} onClose={() => setOpen(undefined)} title={open?.txn.type === "member_payment" ? "Card payment" : "Your entry"}>
+        {open && <EntrySheet entry={open} owner={ownerOf(open)} onDone={() => setOpen(undefined)} />}
+      </Sheet>
     </section>
+  );
+}
+
+function EntrySheet({ entry, owner, onDone }: { entry: QueuedTxn; owner: string; onDone: () => void }) {
+  const editable = canEditEntry(entry);
+  const payment = entry.txn.type === "member_payment";
+  const [amount, setAmount] = useState(minorToInput(entry.txn.amountMinor));
+  const [description, setDescription] = useState(entry.txn.description);
+  const [date, setDate] = useState(entry.txn.date);
+  const [notes, setNotes] = useState(entry.txn.notes ?? "");
+  const [busy, setBusy] = useState(false);
+
+  async function run(fn: () => Promise<unknown>, done: string) {
+    setBusy(true);
+    try {
+      await fn();
+      noticeToast(done);
+      onDone();
+    } catch (e) {
+      noticeToast((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!editable)
+    return (
+      <div className="space-y-4 pb-2">
+        <p className="text-sm text-ink-2">
+          {entry.status === "conflict"
+            ? `${owner} changed this transaction on their phone, so your edit wasn't applied and theirs stays. Ask them if it needs fixing.`
+            : entry.status === "failed"
+              ? entry.error ?? "This couldn't be added."
+              : "This entry was removed."}
+        </p>
+        <Button variant="secondary" disabled={busy} wrapperClassName="grid" onClick={() => run(() => removeQueuedTransaction(entry.id), "Removed from your list")}>
+          Remove from this list
+        </Button>
+      </div>
+    );
+
+  return (
+    <form
+      className="space-y-4 pb-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const minor = parseMinor(amount);
+        if (!minor || minor <= 0) return noticeToast("Enter an amount greater than zero", "error");
+        void run(
+          () => editFamilyEntry(entry.id, { amountMinor: minor, date, notes: notes.trim() || undefined, ...(!payment && { description: description.trim() || entry.txn.description }) }),
+          entry.status === "queued" ? "Saved" : `Saved. ${owner}'s phone updates it on its next sync.`,
+        );
+      }}
+    >
+      <p className="text-sm text-ink-3">{payment ? `Paid to ${entry.accountName}.` : `On ${entry.accountName}.`} If {owner} has already changed it, their version stays.</p>
+      <Field label="Amount">{(id) => <input id={id} className={inputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
+      {!payment && <Field label="Description">{(id) => <input id={id} className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} />}</Field>}
+      <Field label="Date">{(id) => <input id={id} type="date" className={inputCls} value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} />}</Field>
+      <Field label="Notes">{(id) => <input id={id} className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" />}</Field>
+      <Button type="submit" disabled={busy} wrapperClassName="grid">Save changes</Button>
+      <Button
+        type="button"
+        variant="danger"
+        disabled={busy}
+        wrapperClassName="grid"
+        onClick={async () => {
+          const ok = await confirmDialog({
+            title: payment ? "Remove this payment?" : "Remove this transaction?",
+            body: payment
+              ? `It's taken off ${entry.accountName}, and your own matching expense is voided.`
+              : `It's taken off ${entry.accountName} once ${owner}'s phone syncs, unless they already changed it.`,
+            confirmLabel: "Remove",
+            danger: true,
+          });
+          if (ok) await run(() => removeQueuedTransaction(entry.id), "Removed");
+        }}
+      >
+        Remove
+      </Button>
+    </form>
   );
 }
 

@@ -29,6 +29,8 @@ export type TxnType =
   | "income"
   | "transfer"
   | "card_payment"
+  /** A family member paid this credit card from their own money (imported from their phone). */
+  | "member_payment"
   | "adjustment"
   | "reimbursement"
   | "refund";

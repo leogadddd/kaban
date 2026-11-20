@@ -1,4 +1,4 @@
-import {
+import { HandHeart,
   Car,
   Coffee,
   GraduationCap,
@@ -55,6 +55,7 @@ const TYPE_ICON: Record<TxnType, LucideIcon> = {
   income: Wallet,
   transfer: ArrowLeftRight,
   card_payment: CreditCard,
+  member_payment: HandHeart,
   adjustment: SlidersHorizontal,
   reimbursement: HandCoins,
   refund: Undo2,
@@ -70,6 +71,7 @@ export const TYPE_LABEL: Record<TxnType, string> = {
   income: "Income",
   transfer: "Transfer",
   card_payment: "Card payment",
+  member_payment: "Paid by family",
   adjustment: "Adjustment",
   reimbursement: "Reimbursement",
   refund: "Refund",
