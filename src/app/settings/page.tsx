@@ -11,6 +11,7 @@ import { Button, Card, cx, PageHeader, SectionTitle } from "@/components/ui";
 import { isActiveDatabase, useLedgerDatabase } from "@/lib/db";
 import { LogoMark } from "@/lib/logo";
 import { wipeAll } from "@/lib/repo";
+import { resetOnboarded } from "@/lib/first-run";
 import { deleteCloudData, friendlyAuthError, signOut, useSyncState } from "@/lib/sync";
 import { setThemePref, useThemePref, type ThemePref } from "@/lib/theme";
 
@@ -72,7 +73,7 @@ function AccountSection({ signedIn, email }: { signedIn: boolean; email?: string
   async function doSignOut() {
     if (!(await confirmSignOut()) || !isActiveDatabase(db)) return;
     await signOut();
-    router.replace("/welcome");
+    router.replace("/login");
   }
 
   async function doDeleteCloud() {
@@ -163,6 +164,7 @@ function EraseDevice() {
           });
           if (!ok || !db || !isActiveDatabase(db)) return;
           await wipeAll(db);
+          resetOnboarded();
           router.replace("/welcome");
         }}
       >

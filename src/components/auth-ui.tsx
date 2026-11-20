@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { cx, Field, inputCls } from "@/components/ui";
 import { LogoMark } from "@/lib/logo";
+import { isOnboarded } from "@/lib/first-run";
 
 /** Full-screen sign-in style page: back button, brand, heading, form, footer link. */
 export function AuthScreen({
@@ -14,7 +15,7 @@ export function AuthScreen({
   subtitle,
   children,
   footer,
-  back = "/welcome",
+  back,
   onBack,
 }: {
   title: string;
@@ -32,7 +33,7 @@ export function AuthScreen({
       <div className="lg:rounded-[2rem] lg:border lg:border-line lg:bg-surface lg:p-8 lg:shadow-soft">
         <HapticButton
           type="button"
-          onClick={() => (onBack ? onBack() : window.history.length > 1 ? router.back() : router.replace(back))}
+          onClick={() => (onBack ? onBack() : window.history.length > 1 ? router.back() : router.replace(back ?? (isOnboarded() ? "/home" : "/welcome")))}
           wrapperClassName="-ml-2 mt-2 lg:mt-0"
           className="grid size-11 place-items-center rounded-full active:bg-pale lg:hover:bg-pale"
           aria-label="Back"

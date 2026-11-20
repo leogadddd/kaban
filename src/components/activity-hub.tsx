@@ -33,7 +33,7 @@ export function ActivityHub() {
     },
     { href: "/instalments", tab: "Instalments", title: "Instalments", content: <InstalmentsPane ledger={ledger} /> },
   ];
-  return <SwipeHub title="Activity" panes={panes} ready={ledger.ready} />;
+  return <SwipeHub title="Activity" panes={panes} ready={ledger.ready} back="/home" />;
 }
 
 /* ---------- All ---------- */

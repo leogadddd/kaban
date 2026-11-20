@@ -3,6 +3,8 @@
 import { ChevronRight, CircleUserRound, List, LogIn, RefreshCw, Settings, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
+import { navDirection, setNavDirection } from "@/lib/nav-direction";
 import { cloudConfigured } from "@/lib/supabase";
 import { useSyncState } from "@/lib/sync";
 import { useProfile } from "@/lib/family";
@@ -10,23 +12,30 @@ import { PersonAvatar } from "./family-ui";
 import { HapticButton } from "./haptic-button";
 import { Sheet } from "./ui";
 
-// Marks Home's own history entry, so only returning to that entry (swipe or Back) reopens the sheet.
+// Marks the opening page's own history entry, so only returning to that entry (swipe or Back) reopens the sheet.
 const FLAG = "kabanProfileOpen";
 const restoreOnReturn = () => typeof window !== "undefined" && !!(window.history.state as Record<string, unknown> | null)?.[FLAG];
 
-/** Top-right avatar on Home: account status plus the less-used pages (Sync & Backup, Settings). */
-export function ProfileButton() {
+/** Top-right avatar on every phone header: account status plus the less-used pages (Activity, Sync & Backup, Settings). */
+export function ProfileButton({ wrapperClassName }: { wrapperClassName?: string } = {}) {
   const router = useRouter();
   // Coming back (swipe or Back) from a page opened here: the sheet is still open, matching the
-  // snapshot the phone shows during the back gesture. Any other arrival on Home starts closed.
+  // snapshot the phone shows during the back gesture. Any other arrival starts closed.
   const [open, setOpen] = useState(restoreOnReturn);
   // Clear the mark once shown, so a later Back to this entry after closing the sheet stays closed.
   useEffect(() => {
     if (!open && restoreOnReturn()) window.history.replaceState({ ...window.history.state, [FLAG]: false }, "");
   }, [open]);
 
+  // Set while navigating away, so the page transition fades the sheet out instead of cutting it.
+  const [leaving, setLeaving] = useState(false);
+
   function openPage(href: string) {
+    if (href === window.location.pathname) return setOpen(false);
     window.history.replaceState({ ...window.history.state, [FLAG]: true }, "");
+    // Name the sheet before the transition snapshots the old page; this page unmounts with it.
+    flushSync(() => setLeaving(true));
+    setNavDirection(navDirection(window.location.pathname, href));
     router.push(href);
   }
   const { email, userId } = useSyncState();
@@ -44,13 +53,14 @@ export function ProfileButton() {
       <HapticButton
         type="button"
         onClick={() => setOpen(true)}
+        wrapperClassName={wrapperClassName}
         aria-label="Profile and settings"
         className="grid size-10 place-items-center overflow-hidden rounded-full bg-pale font-semibold text-brand ring-1 ring-line"
       >
         {userId ? <PersonAvatar name={name || email} avatar={profile?.avatar} size={40} /> : <CircleUserRound className="size-5" />}
       </HapticButton>
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="You" appear={false}>
+      <Sheet open={open} onClose={() => setOpen(false)} title="You" appear={false} transitionName={leaving ? "profile-sheet" : undefined}>
         <div className="space-y-4 pb-2">
           <HapticButton
             type="button"

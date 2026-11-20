@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { requestPersistence, useLedgerDatabase } from "@/lib/db";
 import { startSync, useSyncState } from "@/lib/sync";
+import { entryPath, isOnboarded, markOnboarded } from "@/lib/first-run";
 import { DialogHost } from "./dialog";
 import { UndoToaster } from "./undo-toast";
 import { useMeta } from "@/lib/hooks";
@@ -80,10 +81,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { phase, userId } = useSyncState();
 
   useEffect(() => {
+    if (typeof mode === "string" || userId) markOnboarded();
+  }, [mode, userId]);
+
+  useEffect(() => {
     if (pathname === "/welcome" && database && userId) router.replace("/home");
+    // Welcome is a first-run screen only; a returning, signed-out device signs in instead.
+    else if (pathname === "/welcome" && mode === undefined && isOnboarded()) router.replace("/login");
     if (UNGATED.includes(pathname) || BARE.includes(pathname)) return;
     if (phase === "mfa") router.replace("/login/verify");
-    else if (mode === undefined) router.replace("/welcome");
+    else if (mode === undefined) router.replace(entryPath());
   }, [database, mode, pathname, phase, router, userId]);
 
   useEffect(() => installNavDirection(), []);

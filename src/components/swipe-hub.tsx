@@ -25,7 +25,7 @@ export type HubPane = {
  * Several routes shown as one swipeable screen under a bottom-nav tab (like Home's Money / Credit):
  * one header, a segmented control and a pager. Swiping or tapping rewrites the URL in place.
  */
-export function SwipeHub({ title, panes, ready }: { title: string; panes: HubPane[]; ready: boolean }) {
+export function SwipeHub({ title, panes, ready, back }: { title: string; panes: HubPane[]; ready: boolean; back?: string | true }) {
   const pathname = usePathname();
   const desktop = useIsDesktop();
   const indexFor = (path: string) => Math.max(0, panes.findIndex((p) => p.href === path));
@@ -50,6 +50,7 @@ export function SwipeHub({ title, panes, ready }: { title: string; panes: HubPan
     <>
       <PageHeader
         title={desktop ? pane.title : title}
+        back={back}
         action={
           <AnimatePresence mode="popLayout" initial={false}>
             {pane.action && (

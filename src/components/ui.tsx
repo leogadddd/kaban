@@ -9,6 +9,8 @@ import { createPortal } from "react-dom";
 import { formatMoney } from "@/lib/money";
 import { useMoney } from "@/lib/privacy";
 import { PrivacyToggle } from "./privacy-toggle";
+// profile-menu imports Sheet from here; the cycle is safe because neither side uses the other at module load.
+import { ProfileButton } from "./profile-menu";
 import { animatedBack } from "@/lib/nav-direction";
 
 const noopSubscribe = () => () => {};
@@ -78,6 +80,7 @@ export function PageHeader({
   subtitle,
   className,
   privacy = true,
+  profile = privacy,
 }: {
   title: string;
   back?: string | true;
@@ -86,6 +89,8 @@ export function PageHeader({
   className?: string;
   /** Show the hide-amounts toggle (on by default; off for form screens). */
   privacy?: boolean;
+  /** Show the profile avatar on phones (follows `privacy`: content screens yes, forms and utility screens no). */
+  profile?: boolean;
 }) {
   const router = useRouter();
   return (
@@ -106,8 +111,9 @@ export function PageHeader({
           {subtitle && <div className="text-sm text-ink-3">{subtitle}</div>}
         </div>
         {/* Desktop has one toggle in the sidebar; phones get it on screens that show amounts. */}
-        {privacy && <PrivacyToggle className="size-11" wrapperClassName="lg:hidden" />}
+        {privacy && <PrivacyToggle wrapperClassName="lg:hidden" />}
         {action}
+        {profile && <ProfileButton wrapperClassName="lg:hidden" />}
       </div>
     </header>
   );
@@ -191,6 +197,7 @@ export function Segmented<T extends string>({
           <HapticButton
             key={o.value}
             wrapperClassName="flex-1"
+            type="button"
             role="tab"
             aria-selected={active}
             onClick={() => onChange(o.value)}
@@ -246,6 +253,7 @@ export function Sheet({
   title,
   children,
   appear = true,
+  transitionName,
 }: {
   open: boolean;
   onClose: () => void;
@@ -253,6 +261,8 @@ export function Sheet({
   children: ReactNode;
   /** False: if it mounts already open, show it in place instead of sliding in (e.g. restoring it on back). */
   appear?: boolean;
+  /** View-transition name, so a page navigation can animate the sheet away instead of dropping it in one frame. */
+  transitionName?: string;
 }) {
   // Rendered into <body> so a sheet can open from inside another sheet (e.g. the date picker in "Record a debt")
   // without being trapped by the parent's transform.
@@ -282,7 +292,7 @@ export function Sheet({
   return createPortal(
     <AnimatePresence initial={appear}>
       {open && (
-        <div className="fixed inset-0 z-50 lg:grid lg:place-items-center lg:p-8" role="dialog" aria-modal="true" aria-label={title}>
+        <div className="fixed inset-0 z-50 lg:grid lg:place-items-center lg:p-8" style={transitionName ? { viewTransitionName: transitionName } : undefined} role="dialog" aria-modal="true" aria-label={title}>
           <motion.div className="absolute inset-0 bg-brand-deep/40 lg:bg-brand-deep/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           {desktop ? (
             // Desktop: centered dialog that scales in.

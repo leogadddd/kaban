@@ -39,9 +39,10 @@ export function PrivacyToggle({ className, wrapperClassName, withLabel = false }
       aria-label={on ? "Show amounts" : "Hide amounts"}
       title={on ? "Show amounts" : "Hide amounts"}
       className={cx(
-        "flex min-h-10 items-center justify-center gap-1.5 rounded-full border text-xs font-medium transition active:scale-95",
+        "flex shrink-0 items-center justify-center gap-1.5 rounded-full border text-xs font-medium transition active:scale-95",
         on ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2 hover:bg-pale",
-        withLabel ? "px-3" : "w-10",
+        // Icon-only is a circle: one size class sets both sides (a caller's size-* replaces the default).
+        withLabel ? "min-h-10 px-3" : !/(^|\s)size-/.test(className ?? "") && "size-10",
         className,
       )}
     >

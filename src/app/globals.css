@@ -288,6 +288,15 @@ button,
   animation: 240ms var(--ease-ios) 40ms both vt-tab-in;
 }
 
+/* A sheet the user navigated out of (the You menu): it fades and drops away above the incoming page. */
+::view-transition-group(profile-sheet) {
+  z-index: 20;
+}
+::view-transition-old(profile-sheet) {
+  animation: 300ms var(--ease-ios) both vt-sheet-away;
+}
+@keyframes vt-sheet-away { to { opacity: 0; transform: translateY(8%); } }
+
 /* The bottom bar tucks under a presented sheet and rises again after it's dismissed. */
 :root[data-nav="up"]::view-transition-group(bottom-nav),
 :root[data-vt-root="down"]::view-transition-group(bottom-nav) {
