@@ -1,10 +1,11 @@
 "use client";
 
 import { HapticButton, HapticLink } from "@/components/haptic-button";
-import { animate, motion, useMotionValue, type PanInfo } from "motion/react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { ArrowRight, CreditCard, HandCoins, Landmark, Plus, Wallet, WalletCards } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { SwipePager } from "@/components/swipe-pager";
 import { CardStack } from "@/components/account-card";
 import { SpendTrend } from "@/components/charts";
 import { CreditOverview } from "@/components/credit-overview";
@@ -30,51 +31,6 @@ export default function HomePage() {
   // Greet by the profile name (Profile › Edit); before one is set, the app's name.
   const name = useProfile()?.display_name?.trim();
 
-  // Pager position lives in one motion value (pixels) so drag and tab taps
-  // never fight over the transform. Previously `animate` + `dragConstraints
-  // {0,0}` sprang back to the Money pane after any drag on Credit, while
-  // `pane` state stayed "credit".
-  const pagerRef = useRef<HTMLDivElement>(null);
-  const [pageWidth, setPageWidth] = useState(0);
-  const x = useMotionValue(0);
-
-  useLayoutEffect(() => {
-    const el = pagerRef.current;
-    if (!el) return;
-    const measure = () => setPageWidth(el.clientWidth);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [desktop, ledger.ready]);
-
-  const snapTo = useCallback(
-    (target: Pane, instant = false) => {
-      const to = target === "money" ? 0 : -pageWidth;
-      if (instant) x.set(to);
-      else animate(x, to, { type: "spring", stiffness: 300, damping: 34 });
-    },
-    [pageWidth, x],
-  );
-
-  // Keep position in sync with the tab state (tap on segmented control, resize).
-  const lastWidth = useRef(0);
-  useEffect(() => {
-    const resized = lastWidth.current !== pageWidth;
-    lastWidth.current = pageWidth;
-    snapTo(pane, resized);
-  }, [pane, pageWidth, snapTo]);
-
-  const onDragEnd = (_: unknown, info: PanInfo) => {
-    let next = pane;
-    if (Math.abs(info.offset.x) >= Math.abs(info.offset.y)) {
-      if (pane === "money" && (info.offset.x < -80 || info.velocity.x < -500)) next = "credit";
-      if (pane === "credit" && (info.offset.x > 80 || info.velocity.x > 500)) next = "money";
-    }
-    // Always settle explicitly: if the pane didn't change the effect won't re-run.
-    if (next === pane) snapTo(pane);
-    else setPane(next);
-  };
 
   return (
     <div className="overflow-x-clip">
@@ -140,25 +96,10 @@ export default function HomePage() {
           </section>
         </div>
       ) : (
-        <div ref={pagerRef} className="overflow-x-clip">
-        <motion.div
-          className="flex w-[200%] touch-pan-y"
-          style={{ x }}
-          drag="x"
-          dragConstraints={{ left: -pageWidth, right: 0 }}
-          dragElastic={0.12}
-          dragMomentum={false}
-          dragDirectionLock
-          onDragEnd={onDragEnd}
-        >
-          <section className="w-1/2 px-4" aria-hidden={pane !== "money"} inert={pane !== "money"}>
-            <MoneyPane ledger={ledger} onCredit={() => setPane("credit")} />
-          </section>
-          <section className="w-1/2 px-4" aria-hidden={pane !== "credit"} inert={pane !== "credit"}>
-            <div className="intro-stagger"><div><CreditOverview ledger={ledger} /></div></div>
-          </section>
-        </motion.div>
-        </div>
+        <SwipePager index={pane === "money" ? 0 : 1} onIndexChange={(index) => setPane(index === 0 ? "money" : "credit")}>
+          <MoneyPane ledger={ledger} onCredit={() => setPane("credit")} />
+          <div className="intro-stagger"><div><CreditOverview ledger={ledger} /></div></div>
+        </SwipePager>
       )}
     </div>
   );
