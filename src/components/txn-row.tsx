@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { createElement } from "react";
+import { createElement, useEffect, useRef, useState } from "react";
 import { Split } from "lucide-react";
 import { iconFor, TYPE_LABEL } from "@/lib/categories";
 import { formatDay, relativeDayLabel } from "@/lib/dates";
@@ -57,7 +57,7 @@ export function TxnRow({ t, ledger, perspective, showDate = true }: { t: Txn; le
   const to = t.toAccountId ? ledger.accountById.get(t.toAccountId) : undefined;
   const { amount, tone } = displayAmount(t, ledger.accountById, perspective);
   const { fmt } = useMoney();
-  const split = ledger.splits.some((s) => s.transactionId === t.id);
+  const split = ledger.splitTxnIds.has(t.id);
   const voided = t.state === "void";
   const sub = [
     t.type === "transfer" || t.type === "card_payment"
@@ -90,9 +90,25 @@ export function TxnRow({ t, ledger, perspective, showDate = true }: { t: Txn; le
   );
 }
 
+/** Rows rendered up front; more are added as the end of the list scrolls into view. */
+const PAGE = 60;
+
 export function GroupedTxns({ txns, ledger, perspective }: { txns: Txn[]; ledger: Ledger; perspective?: string }) {
+  // A long ledger rendered in one go is tens of thousands of nodes: slow to lay out, and a view transition
+  // has to snapshot the whole page. Render a page of rows and grow it before the user reaches the end.
+  const [limit, setLimit] = useState(PAGE);
+  const more = useRef<HTMLDivElement>(null);
+  const hasMore = txns.length > limit;
+  useEffect(() => {
+    const el = more.current;
+    if (!el || !hasMore) return;
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setLimit((l) => l + PAGE), { rootMargin: "1200px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, limit]);
+
   const groups: { day: string; items: Txn[] }[] = [];
-  for (const t of txns) {
+  for (const t of hasMore ? txns.slice(0, limit) : txns) {
     const last = groups[groups.length - 1];
     if (last && last.day === t.date) last.items.push(t);
     else groups.push({ day: t.date, items: [t] });
@@ -109,6 +125,7 @@ export function GroupedTxns({ txns, ledger, perspective }: { txns: Txn[]; ledger
           </div>
         </section>
       ))}
+      {hasMore && <div ref={more} aria-hidden className="h-px" />}
     </div>
   );
 }

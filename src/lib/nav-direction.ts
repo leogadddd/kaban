@@ -38,14 +38,23 @@ export function setNavDirection(dir: NavDirection | null) {
   const root = document.documentElement;
   if (dir) root.dataset.nav = dir;
   else delete root.dataset.nav;
+  // Clear afterwards so an untagged navigation (e.g. router.replace) falls back to a plain fade. The clock
+  // restarts when the new page commits (notePath), so a navigation that waits on a slow or dead network
+  // still animates in its direction; the long backstop only covers a tap that never navigates.
+  scheduleClear(dir ? 5000 : 0);
+}
+
+function scheduleClear(ms: number) {
   clearTimeout(clearTimer);
-  // Clear afterwards so an untagged navigation (e.g. router.replace) falls back to a plain fade.
-  clearTimer = setTimeout(() => delete root.dataset.nav, 900);
+  if (ms) clearTimer = setTimeout(() => delete document.documentElement.dataset.nav, ms);
 }
 
 /** Track the current path; call from the app shell whenever it changes. */
 export function notePath(path: string) {
+  const moved = lastPath !== "" && path !== lastPath;
   lastPath = path;
+  // The page just committed: its transition is starting now, so give it the usual window to finish.
+  if (moved && document.documentElement.dataset.nav) scheduleClear(900);
 }
 
 /** Install listeners once: link taps (capture phase, before Next.js handles them) and history pops. */

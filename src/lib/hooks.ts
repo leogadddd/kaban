@@ -15,6 +15,8 @@ export interface Ledger {
   instalments: InstalmentEntry[];
   people: Person[];
   splits: SplitAllocation[];
+  /** Transactions that have split allocations (a row check that stays O(1) on long lists). */
+  splitTxnIds: Set<string>;
   debts: Debt[];
   balances: ReturnType<typeof accountBalances>;
   totals: ReturnType<typeof totals>;
@@ -48,6 +50,7 @@ function buildLedger(data?: { accounts: Account[]; txns: Txn[]; instalments: Ins
     instalments: data?.instalments ?? [],
     people: data?.people ?? [],
     splits: data?.splits ?? [],
+    splitTxnIds: new Set((data?.splits ?? []).map((s) => s.transactionId)),
     debts: data?.debts ?? [],
     balances,
     totals: totals(balances),

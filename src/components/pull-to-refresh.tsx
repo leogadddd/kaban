@@ -123,12 +123,25 @@ export function PullToRefresh({ enabled, children }: { enabled: boolean; childre
       });
     };
 
+    // A non-passive touchmove makes every scroll wait on the main thread, so only hold it while the page
+    // is at the top (the one place a pull can start). Scrolled down, touches go straight to the compositor.
+    let blocking = false;
+    const syncBlocking = () => {
+      const atTop = window.scrollY <= 0;
+      if (atTop === blocking) return;
+      blocking = atTop;
+      if (atTop) document.addEventListener("touchmove", onMove, { passive: false });
+      else if (!pulling) document.removeEventListener("touchmove", onMove);
+    };
+    syncBlocking();
+    window.addEventListener("scroll", syncBlocking, { passive: true });
+
     document.addEventListener("touchstart", onStart, { passive: true });
-    document.addEventListener("touchmove", onMove, { passive: false });
     document.addEventListener("touchend", onEnd);
     document.addEventListener("touchcancel", onEnd);
     return () => {
       delete document.documentElement.dataset.pulling;
+      window.removeEventListener("scroll", syncBlocking);
       document.removeEventListener("touchstart", onStart);
       document.removeEventListener("touchmove", onMove);
       document.removeEventListener("touchend", onEnd);

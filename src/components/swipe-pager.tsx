@@ -15,6 +15,9 @@ export function SwipePager({ index, onIndexChange, children }: { index: number; 
   // Fill down to the bottom of the screen, so a swipe on the empty space below a short pane still works.
   const [minHeight, setMinHeight] = useState(0);
   const x = useMotionValue(0);
+  // The pane we last came to rest on. It stays full height until the slide away finishes, so it doesn't
+  // vanish mid-swipe; every other pane is clipped to the screen, keeping the strip as tall as one pane.
+  const [settled, setSettled] = useState(index);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -36,8 +39,10 @@ export function SwipePager({ index, onIndexChange, children }: { index: number; 
   const snapTo = useCallback(
     (i: number, instant = false) => {
       const to = -i * width;
-      if (instant) x.set(to);
-      else animate(x, to, { type: "spring", stiffness: 300, damping: 34 });
+      if (instant) {
+        x.set(to);
+        setSettled(i);
+      } else void animate(x, to, { type: "spring", stiffness: 300, damping: 34 }).then(() => setSettled(i));
     },
     [width, x],
   );
@@ -63,7 +68,7 @@ export function SwipePager({ index, onIndexChange, children }: { index: number; 
   return (
     <div ref={ref} className="overflow-hidden">
       <motion.div
-        className="flex items-stretch touch-pan-y"
+        className="flex items-start touch-pan-y"
         style={{ x, width: `${count * 100}%`, minHeight }}
         drag="x"
         dragConstraints={{ left: -(count - 1) * width, right: 0 }}
@@ -73,7 +78,13 @@ export function SwipePager({ index, onIndexChange, children }: { index: number; 
         onDragEnd={onDragEnd}
       >
         {panes.map((pane, i) => (
-          <section key={i} className="px-4" style={{ width: `${100 / count}%` }} aria-hidden={i !== index} inert={i !== index}>
+          <section
+            key={i}
+            className="px-4"
+            style={{ width: `${100 / count}%`, ...(i !== index && i !== settled && { height: minHeight || "100dvh", overflow: "clip" }) }}
+            aria-hidden={i !== index}
+            inert={i !== index}
+          >
             {pane}
           </section>
         ))}

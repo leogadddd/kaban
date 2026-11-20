@@ -1,5 +1,5 @@
 /* Kaban service worker: offline app shell. Data lives in IndexedDB, so the shell is all we cache. */
-const VERSION = "kaban-v7";
+const VERSION = "kaban-v8";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 
@@ -44,6 +44,25 @@ const ROUTES = [
   "/banks/bdo.png", "/banks/bpi.png", "/banks/chinabank.png", "/banks/gcash.png", "/banks/gotyme.png", "/banks/landbank.png", "/banks/maribank.png", "/banks/metrobank.png", "/banks/pnb.png", "/banks/rcbc.png", "/banks/securitybank.png", "/banks/tonik.png", "/banks/atome.png", "/banks/shopee.png", "/banks/lazada.png",
 ];
 
+/**
+ * Cache key for an RSC payload. Every route is prerendered, so the payload depends only on the path and on
+ * which segment a prefetch asks for, not on the `_rsc` cache-buster or the router state the request carries
+ * (both differ per navigation, and the response Varies on them, so matching the raw request never hits).
+ */
+function rscKey(pathname, req) {
+  const seg = req?.headers.get("Next-Router-Segment-Prefetch");
+  return `${pathname}?__rsc${seg ? `&seg=${encodeURIComponent(seg)}` : ""}`;
+}
+
+/** Network, but give up after `ms` so a dead or flaky connection falls through to the cache. */
+function fetchWithin(req, ms) {
+  if (!self.navigator.onLine) return Promise.reject(new Error("offline"));
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms);
+    fetch(req).then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+}
+
 /** Fetch each route and also cache every /_next/static asset its HTML references. */
 async function precache() {
   const shell = await caches.open(SHELL);
@@ -56,6 +75,10 @@ async function precache() {
         if (!res.ok) return;
         await shell.put(route, res.clone());
         if (!(res.headers.get("content-type") || "").includes("text/html")) return;
+        // The page's client-navigation payload too, so tapping between screens offline stays a soft navigation.
+        fetch(route, { headers: { RSC: "1" }, cache: "no-store" })
+          .then((rsc) => rsc.ok && (rsc.headers.get("content-type") || "").includes("text/x-component") && assets.put(rscKey(route), rsc))
+          .catch(() => {});
         const html = await res.text();
         for (const m of html.matchAll(/\/_next\/static\/[^"'\s)\\]+/g)) seen.add(m[0]);
       } catch {
@@ -113,16 +136,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // RSC payloads for client navigation: network first, fall back to cache, else fail so
-  // Next.js falls back to a full navigation (which the shell cache serves).
+  // RSC payloads for client navigation: network first (briefly), then the cached payload for that path.
+  // Only with nothing cached does it fail, and Next.js then falls back to a full navigation from the shell,
+  // which reloads the app and loses the page animation.
   if (req.headers.get("RSC") === "1" || url.searchParams.has("_rsc")) {
+    const key = rscKey(url.pathname, req);
     event.respondWith(
-      fetch(req)
+      fetchWithin(req, 1500)
         .then((res) => {
-          if (res.ok) caches.open(ASSETS).then((c) => c.put(req, res.clone()));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(ASSETS).then((c) => c.put(key, copy));
+          }
           return res;
         })
-        .catch(async () => (await caches.match(req)) || Response.error()),
+        .catch(async () => (await caches.match(key, { ignoreVary: true })) || Response.error()),
     );
     return;
   }
