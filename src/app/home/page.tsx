@@ -16,6 +16,8 @@ import { BigMoney, ButtonLink, Card, EmptyState, Loading, Money, SectionTitle, S
 import { dailySpend } from "@/lib/finance";
 import { useIsDesktop, useLedger } from "@/lib/hooks";
 import { LogoMark } from "@/lib/logo";
+import { useMoney } from "@/lib/privacy";
+import { KabanChest } from "@/components/kaban-chest";
 
 type Pane = "money" | "credit";
 
@@ -168,6 +170,8 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
   const cards = activeAccounts.map((a) => balances.get(a.id)!);
   const trend = dailySpend(txns, 30);
   const monthSpend = trend.reduce((s, d) => s + d.amount, 0);
+  const spendable = activeAccounts.filter((a) => a.type !== "credit").length;
+  const { hidden } = useMoney();
 
   if (!activeAccounts.length)
     return (
@@ -185,11 +189,17 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
 
   return (
     <div className="intro-stagger space-y-5">
-      <div className="pb-4 pt-5">
-        <p className="text-sm text-ink-3">Available funds · cash & debit</p>
-        <motion.div key={totals.availableFunds} initial={{ opacity: 0.4, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
-          <BigMoney minor={totals.availableFunds} className="block text-[3.5rem] leading-none tracking-tighter" centsClass="text-[2rem]" />
-        </motion.div>
+      <div className="flex items-center gap-3 pb-4 pt-5">
+        <div className="@container min-w-0 flex-1">
+          <p className="text-sm text-ink-3">Available funds · cash & debit</p>
+          <motion.div key={totals.availableFunds} initial={{ opacity: 0.4, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
+            <BigMoney minor={totals.availableFunds} className="block text-[clamp(2.25rem,17cqw,3.5rem)] leading-none tracking-tighter" centsClass="text-[0.57em]" />
+          </motion.div>
+          <p className="mt-2.5 text-xs text-ink-3">
+            Across {spendable} {spendable === 1 ? "account" : "accounts"}
+          </p>
+        </div>
+        <KabanChest amount={totals.availableFunds} hidden={hidden} className="size-26 lg:size-32" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
