@@ -332,7 +332,7 @@ export function Sheet({
             // Desktop: centered dialog that scales in.
             <motion.div
               className="relative w-full max-w-md overflow-y-auto rounded-[2rem] bg-bg px-6 pt-5 pb-6 shadow-float"
-              style={{ maxHeight: "calc(100dvh - 4rem)" }}
+              style={{ maxHeight: "min(85dvh, 760px)" }}
               initial={{ opacity: 0, scale: 0.96, y: 14 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.97, y: 8 }}
@@ -370,8 +370,8 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
   return (
     <motion.div
       ref={panel}
-      className="kb-sheet absolute inset-x-0 bottom-0 mx-auto flex w-full flex-col overflow-hidden rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
-      style={{ height: expanded ? "var(--sheet-available-height)" : "auto", maxHeight: "var(--sheet-available-height)" }}
+      className="kb-sheet absolute inset-x-0 bottom-0 mx-auto flex max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
+      style={{ height: expanded ? "var(--sheet-available-height)" : "auto", maxHeight: expanded ? "var(--sheet-available-height)" : undefined }}
       initial={{ y: "100%" }}
       animate={{ y: 0 }}
       exit={{ y: "100%" }}
