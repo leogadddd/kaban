@@ -1,7 +1,7 @@
 "use client";
 
 import { animate, motion, useMotionValue, type PanInfo } from "motion/react";
-import { Children, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Children, useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * Horizontal pager: one pane per child, swipe left/right or set `index` from tabs.
@@ -47,9 +47,16 @@ export function SwipePager({ index, onIndexChange, children }: { index: number; 
     [width, x],
   );
 
-  // First paint and resizes jump straight to the pane; tab taps animate.
+  // Activity restores the selected tab but recreates effects on back navigation.
+  // Restore its position before paint, even when the saved width has not changed.
   const lastWidth = useRef(0);
-  useEffect(() => {
+  useLayoutEffect(() => {
+    return () => {
+      lastWidth.current = 0;
+      x.stop();
+    };
+  }, [x]);
+  useLayoutEffect(() => {
     const resized = lastWidth.current !== width;
     lastWidth.current = width;
     snapTo(index, resized);

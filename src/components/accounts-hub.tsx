@@ -78,12 +78,12 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
       </Tiles>
 
       <div className="space-y-5 lg:hidden">
-        {GROUPS.map(({ type, label, icon }) => {
+        {GROUPS.map(({ type, label, icon: Icon }) => {
           const items = list.filter((a) => a.type === type);
           if (!items.length) return null;
           return (
             <section key={type}>
-              <GroupTitle icon={icon}>{label}</GroupTitle>
+              <GroupTitle icon={Icon}>{label}</GroupTitle>
               <Card className="divide-y divide-line p-0">
                 {items.map((a) => {
                   const b = ledger.balances.get(a.id)!;
@@ -92,7 +92,7 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
                     <Row
                       key={a.id}
                       href={`/accounts/view?id=${a.id}`}
-                      lead={bank ? <BankLogo bank={bank} size={36} /> : <span className="size-9 shrink-0 rounded-xl" style={{ background: a.color }} aria-hidden="true" />}
+                      lead={bank ? <BankLogo bank={bank} size={36} /> : <span className="grid size-9 shrink-0 place-items-center rounded-xl text-white" style={{ background: a.color }} aria-hidden="true"><Icon className="size-5" /></span>}
                       title={<>{a.name} {a.archived && <span className="ml-1 rounded-full bg-pale px-2 py-0.5 text-[0.65rem] text-ink-3">Archived</span>}</>}
                       sub={
                         a.type === "credit" ? (
