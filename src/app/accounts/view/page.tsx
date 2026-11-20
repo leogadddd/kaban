@@ -11,14 +11,14 @@ import { confirmDialog } from "@/components/dialog";
 import { undoToast } from "@/components/undo-toast";
 import { GroupedTxns } from "@/components/txn-row";
 import { useHideVoided } from "@/lib/display-prefs";
-import { Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, SectionTitle } from "@/components/ui";
+import { Button, ButtonLink, Card, EmptyState, Money, PageHeader, SectionTitle } from "@/components/ui";
 import { formatDayLong } from "@/lib/dates";
 import { useLedger } from "@/lib/hooks";
 import { setAccountArchived } from "@/lib/repo";
 
 export default function Page() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={null}>
       <AccountView />
     </Suspense>
   );
@@ -28,7 +28,7 @@ function AccountView() {
   const id = useSearchParams().get("id") ?? "";
   const ledger = useLedger();
   const [hideVoided] = useHideVoided();
-  if (!ledger.ready) return <Loading />;
+  if (!ledger.ready) return null;
   const acc = ledger.accountById.get(id);
   if (!acc) return <EmptyState title="Account not found" action={<Link href="/accounts" className="text-brand">Back to accounts</Link>} />;
   const b = ledger.balances.get(id)!;

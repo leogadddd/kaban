@@ -214,7 +214,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
-      <LaunchSplash gated={gated} failed={failed} waitForLedger={pathname === "/home"} />
+      <LaunchSplash gated={gated} failed={failed} waitForLedger={pathname === "/home" || pathname === "/accounts/view"} />
       <PrivacySync />
       {!gated && <Reminders />}
       {!gated && !UNGATED.includes(pathname) && <AgreementGate />}
@@ -245,7 +245,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-/** On Home, keep the launch splash up through the first local ledger read. */
+/** Keep the launch splash up through the first local ledger read on screens that need it. */
 function LaunchSplash({ gated, failed, waitForLedger }: { gated: boolean; failed: boolean; waitForLedger: boolean }) {
   const { ready } = useLedger();
   const waiting = gated || (waitForLedger && !ready);
