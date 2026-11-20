@@ -4,7 +4,8 @@ import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { ArrowRight, CreditCard, HandCoins, Landmark, Plus, Wallet, WalletCards } from "lucide-react";
-import { useState } from "react";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { SwipePager } from "@/components/swipe-pager";
 import { CardStack } from "@/components/account-card";
 import { SpendTrend } from "@/components/charts";
@@ -25,12 +26,24 @@ import { KabanChest } from "@/components/kaban-chest";
 type Pane = "money" | "credit";
 
 export default function HomePage() {
+  return <Suspense fallback={<Loading />}><HomeContent /></Suspense>;
+}
+
+function HomeContent() {
   const ledger = useLedger();
-  const [pane, setPane] = useState<Pane>("money");
+  const params = useSearchParams();
+  const pane: Pane = params.get("pane") === "credit" ? "credit" : "money";
+
+  function setPane(next: Pane) {
+    const url = new URL(window.location.href);
+    if (next === "credit") url.searchParams.set("pane", "credit");
+    else url.searchParams.delete("pane");
+    // Replace this history entry so returning from a form also restores the pane after a remount.
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
   const desktop = useIsDesktop();
   // Greet by the profile name (Profile › Edit); before one is set, the app's name.
   const name = useProfile()?.display_name?.trim();
-
 
   return (
     <div className="overflow-x-clip">
