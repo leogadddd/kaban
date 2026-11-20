@@ -323,8 +323,8 @@ export async function setAccountShares(accountId: string, shares: ShareSetting[]
   const target = ledger(db);
   await target.transaction("rw", target.meta, async () => {
     const all = { ...((await getMeta<ShareSettings>(SHARES, target)) ?? {}) };
-    if (shares.length) all[accountId] = shares;
-    else delete all[accountId];
+    // Keep an explicit empty choice so withdrawals survive a missing publication cache.
+    all[accountId] = shares;
     await setMeta(SHARES, all, target);
   });
   const { scheduleSync } = await import("./sync");
@@ -388,10 +388,26 @@ function fingerprint(value: unknown) {
   return `${text.length}:${(h >>> 0).toString(36)}`;
 }
 
-async function publishShares(db: KabanDB, c: SupabaseClient, state: FamilyState) {
+async function publishShares(db: KabanDB, c: SupabaseClient, state: FamilyState, myId: string) {
   const desired = (await getMeta<ShareSettings>(SHARES, db)) ?? {};
   const published = { ...((await getMeta<Record<string, string>>(PUBLISHED, db)) ?? {}) };
   const familyIds = new Set(state.families.map((f) => f.id));
+  // Recover publications this device may not have recorded (e.g. after restoring a ledger).
+  // Only reconcile accounts with a local sharing choice or an existing publication record.
+  for (const family of state.families) {
+    for (const share of family.shared) {
+      if (share.owner_id !== myId) continue;
+      const key = `${family.id}:${share.account_id}`;
+      if (Object.hasOwn(desired, share.account_id) && !Object.hasOwn(published, key)) published[key] = "";
+    }
+  }
+  // Withdraw first so an unrelated publishing failure cannot hold up an unshare.
+  for (const key of Object.keys(published)) {
+    const [familyId, accountId] = [key.slice(0, 36), key.slice(37)];
+    if (desired[accountId]?.some((share) => share.familyId === familyId)) continue;
+    if (familyIds.has(familyId)) await rpc<void>("unpublish_shared_account", { p_family: familyId, p_account: accountId }, c);
+    delete published[key];
+  }
   const wanted = new Set<string>();
   const dropped: { accountId: string; familyId: string }[] = [];
   const authors = (await getMeta<Record<string, string>>(AUTHORS, db)) ?? {};
@@ -858,5 +874,8 @@ export async function syncFamilyData(db: KabanDB, c: SupabaseClient, myId: strin
     for (const f of state!.families) for (const m of f.members) if (m.user_id !== myId && m.display_name?.trim()) seen.set(m.user_id, m.display_name.trim());
     await ensureFamilyPeople(db, [...seen].map(([userId, name]) => ({ userId, name })));
   });
-  await step("publish", () => publishShares(db, c, state!));
+  await step("publish", () => publishShares(db, c, state!, myId));
+  // Read back the result in this run so family screens reflect sharing edits immediately.
+  // Also runs after a partial publish failure, since earlier withdrawals may have succeeded.
+  await step("refresh shares", () => refreshFamilies(db, c));
 }

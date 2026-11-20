@@ -15,7 +15,9 @@ import { BANKS, bankById, bankFor } from "@/lib/banks";
 import { ACCOUNT_COLORS, saveAccount } from "@/lib/repo";
 import type { AccountType } from "@/lib/types";
 import { ShareWithFamily } from "@/components/family-ui";
-import { setAccountShares, useShareSettings, type ShareSetting } from "@/lib/family";
+import { setAccountShares, useFamilies, useShareSettings, type ShareSetting } from "@/lib/family";
+
+import { useSyncState } from "@/lib/sync";
 
 export default function Page() {
   return (
@@ -47,6 +49,13 @@ function AccountForm() {
   const [error, setError] = useState<string>();
   const [loaded, setLoaded] = useState(!editId);
   const shareSettings = useShareSettings();
+  const families = useFamilies();
+  const { userId } = useSyncState();
+  const remoteShares: ShareSetting[] = (families?.families ?? []).flatMap((family) =>
+    family.shared
+      .filter((share) => share.owner_id === userId && share.account_id === editId)
+      .map((share) => ({ familyId: family.id, visibility: share.visibility, allowAdd: share.allow_add === true })),
+  );
   const [shares, setShares] = useState<ShareSetting[]>();
 
   useEffect(() => {
@@ -249,7 +258,7 @@ function AccountForm() {
           </div>
         </div>
 
-        {editId && <ShareWithFamily value={shares ?? shareSettings?.[editId] ?? []} onChange={setShares} />}
+        {editId && <ShareWithFamily value={shares ?? shareSettings?.[editId] ?? remoteShares} onChange={setShares} />}
 
         {error && <p className="rounded-2xl bg-expense/10 p-3 text-sm text-expense" role="alert">{error}</p>}
         {/* Actions stay pinned to the bottom (like Add) so Skip is visible without scrolling. */}
