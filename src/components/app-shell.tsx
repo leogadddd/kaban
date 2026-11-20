@@ -24,7 +24,7 @@ import { entryPath, isOnboarded, markOnboarded } from "@/lib/first-run";
 import { AgreementGate } from "./agreement-gate";
 import { DialogHost } from "./dialog";
 import { UndoToaster } from "./undo-toast";
-import { useMeta } from "@/lib/hooks";
+import { useLedger, useMeta } from "@/lib/hooks";
 import { installNavDirection, notePath } from "@/lib/nav-direction";
 import { LogoMark } from "@/lib/logo";
 import { PrivacySync, PrivacyToggle } from "./privacy-toggle";
@@ -189,19 +189,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showSidebar = !UNGATED.includes(pathname) && !gated;
   const failed = phase === "error" && !database;
 
-  // Fade the launch splash (layout.tsx) out once there is a page to show, but keep it up for at least
-  // SPLASH_MIN_MS after launch so it reads as a deliberate splash rather than a flash.
-  useEffect(() => {
-    if (gated && !failed) return;
-    const root = document.documentElement;
-    const t = setTimeout(() => root.setAttribute("data-ready", ""), Math.max(0, SPLASH_MIN_MS - performance.now()));
-    return () => clearTimeout(t);
-  }, [gated, failed]);
-
   if (BARE.includes(pathname)) return <>{children}</>;
 
   return (
     <div className={cx("min-h-dvh", showSidebar && "lg:pl-64")}>
+      <LaunchSplash gated={gated} failed={failed} waitForLedger={pathname === "/home"} />
       <PrivacySync />
       {!gated && <Reminders />}
       {!gated && !UNGATED.includes(pathname) && <AgreementGate />}
@@ -230,6 +222,21 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     </div>
   );
+}
+
+/** On Home, keep the launch splash up through the first local ledger read. */
+function LaunchSplash({ gated, failed, waitForLedger }: { gated: boolean; failed: boolean; waitForLedger: boolean }) {
+  const { ready } = useLedger();
+  const waiting = gated || (waitForLedger && !ready);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!root.hasAttribute("data-splash") || root.hasAttribute("data-ready") || (waiting && !failed)) return;
+    const t = setTimeout(() => root.setAttribute("data-ready", ""), Math.max(0, SPLASH_MIN_MS - performance.now()));
+    return () => clearTimeout(t);
+  }, [waiting, failed]);
+
+  return null;
 }
 
 function BottomNav({ pathname }: { pathname: string }) {

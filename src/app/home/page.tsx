@@ -15,7 +15,7 @@ import { ProfileButton } from "@/components/profile-menu";
 import { NotificationsButton } from "@/components/notifications-ui";
 import { TxnRow } from "@/components/txn-row";
 import { useHideVoided } from "@/lib/display-prefs";
-import { BigMoney, ButtonLink, Card, EmptyState, Loading, Money, SectionTitle, Segmented } from "@/components/ui";
+import { BigMoney, ButtonLink, Card, EmptyState, Money, SectionTitle, Segmented } from "@/components/ui";
 import { dailySpend } from "@/lib/finance";
 import { useIsDesktop, useLedger } from "@/lib/hooks";
 import { LogoMark } from "@/lib/logo";
@@ -26,21 +26,7 @@ import { KabanChest } from "@/components/kaban-chest";
 type Pane = "money" | "credit";
 
 export default function HomePage() {
-  return <Suspense fallback={<Loading />}><HomeContent /></Suspense>;
-}
-
-function HomeContent() {
   const ledger = useLedger();
-  const params = useSearchParams();
-  const pane: Pane = params.get("pane") === "credit" ? "credit" : "money";
-
-  function setPane(next: Pane) {
-    const url = new URL(window.location.href);
-    if (next === "credit") url.searchParams.set("pane", "credit");
-    else url.searchParams.delete("pane");
-    // Replace this history entry so returning from a form also restores the pane after a remount.
-    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-  }
   const desktop = useIsDesktop();
   // Greet by the profile name (Profile › Edit); before one is set, the app's name.
   const name = useProfile()?.display_name?.trim();
@@ -77,22 +63,12 @@ function HomeContent() {
         </div>
       </div>
 
-      <div className="px-4 pt-4 pb-3 lg:hidden">
-        <Segmented<Pane>
-          value={pane}
-          onChange={setPane}
-          options={[
-            { value: "money", label: "Money" },
-            { value: "credit", label: "Credit" },
-          ]}
-        />
-      </div>
-
-      {!ledger.ready ? (
-        <Loading />
-      ) : desktop && !ledger.activeAccounts.length ? (
+      {!desktop && (
+        <Suspense fallback={null}><MobileHome ledger={ledger} /></Suspense>
+      )}
+      {desktop && ledger.ready && (!ledger.activeAccounts.length ? (
         <DesktopSetup />
-      ) : desktop ? (
+      ) : (
         <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-start gap-6 px-4">
           <section aria-label="Money">
             <MoneyPane ledger={ledger} onCredit={() => document.getElementById("credit-col")?.scrollIntoView({ behavior: "smooth" })} />
@@ -108,13 +84,42 @@ function HomeContent() {
             )}
           </section>
         </div>
-      ) : (
+      ))}
+    </div>
+  );
+}
+
+function MobileHome({ ledger }: { ledger: ReturnType<typeof useLedger> }) {
+  const params = useSearchParams();
+  const pane: Pane = params.get("pane") === "credit" ? "credit" : "money";
+
+  function setPane(next: Pane) {
+    const url = new URL(window.location.href);
+    if (next === "credit") url.searchParams.set("pane", "credit");
+    else url.searchParams.delete("pane");
+    // Replace this history entry so returning from a form also restores the pane after a remount.
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  return (
+    <>
+      <div className="px-4 pt-4 pb-3">
+        <Segmented<Pane>
+          value={pane}
+          onChange={setPane}
+          options={[
+            { value: "money", label: "Money" },
+            { value: "credit", label: "Credit" },
+          ]}
+        />
+      </div>
+      {ledger.ready && (
         <SwipePager index={pane === "money" ? 0 : 1} onIndexChange={(index) => setPane(index === 0 ? "money" : "credit")}>
           <MoneyPane ledger={ledger} onCredit={() => setPane("credit")} />
-          <div className="intro-stagger"><div><CreditOverview ledger={ledger} /></div></div>
+          <div className="intro-stagger"><CreditOverview ledger={ledger} /></div>
         </SwipePager>
       )}
-    </div>
+    </>
   );
 }
 
