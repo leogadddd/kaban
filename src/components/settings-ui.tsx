@@ -118,6 +118,7 @@ export const SETTINGS_INDEX: SettingsEntry[] = [
   { label: "Sync & backup", page: "Sync & backup", href: "/sync", keywords: "export import backup restore cloud storage sync now" },
   { label: "Two-factor sign-in", page: "Security", href: "/settings/security", keywords: "2fa mfa authenticator code totp", signedIn: true },
   { label: "Change password", page: "Security", href: "/settings/security/password", keywords: "password security", signedIn: true },
+  { label: "Quick add", page: "Quick add", href: "/settings/quick-add", keywords: "shortcuts siri action button token api widget iphone", signedIn: true },
   { label: "Profile", page: "Account", href: "/profile", keywords: "name photo birthday email avatar", signedIn: true },
   { label: "Sign out", page: "Settings", href: "/settings#danger", keywords: "log out logout", signedIn: true },
   { label: "Delete cloud data", page: "Settings", href: "/settings#danger", keywords: "remove erase reset cloud", signedIn: true },

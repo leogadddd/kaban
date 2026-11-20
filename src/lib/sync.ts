@@ -7,6 +7,7 @@ import { useSyncExternalStore } from "react";
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { allTables, databaseFor, getDatabase, ledgerTables, migrateLedger, showDatabase, type KabanDB } from "./db";
 import { syncFamilyData } from "./family";
+import { syncQuickAdd } from "./quick-add";
 import { exportBackup, getMeta, rebuildInstalments, setMeta } from "./repo";
 import { isEntity, validSyncedRecord } from "./record-validation";
 import { cloudConfigured, supabase, syncClient } from "./supabase";
@@ -252,6 +253,8 @@ export async function runSync() {
     if (account !== current) return;
     // Profile, families and shared-account snapshots. Never throws, never touches ledger tables.
     await syncFamilyData(db, client, current.session.user.id);
+    // Entries sent from Shortcuts, waiting for approval. Never throws, never writes ledger tables.
+    await syncQuickAdd(db, client);
     if (account !== current) return;
     const latest = await fetchQuota(client);
     if (latest.generation !== quota.generation) {

@@ -9,14 +9,15 @@ import { CardStack } from "@/components/account-card";
 import { SpendTrend } from "@/components/charts";
 import { CreditOverview } from "@/components/credit-overview";
 import { PrivacyToggle } from "@/components/privacy-toggle";
-import { SyncPill } from "@/components/sync-pill";
 import { ProfileButton } from "@/components/profile-menu";
+import { NotificationsButton } from "@/components/notifications-ui";
 import { TxnRow } from "@/components/txn-row";
 import { BigMoney, ButtonLink, Card, EmptyState, Loading, Money, SectionTitle, Segmented } from "@/components/ui";
 import { dailySpend } from "@/lib/finance";
 import { useIsDesktop, useLedger } from "@/lib/hooks";
 import { LogoMark } from "@/lib/logo";
 import { useMoney } from "@/lib/privacy";
+import { useProfile } from "@/lib/family";
 import { KabanChest } from "@/components/kaban-chest";
 
 type Pane = "money" | "credit";
@@ -25,6 +26,8 @@ export default function HomePage() {
   const ledger = useLedger();
   const [pane, setPane] = useState<Pane>("money");
   const desktop = useIsDesktop();
+  // Greet by the profile name (Profile › Edit); before one is set, the app's name.
+  const name = useProfile()?.display_name?.trim();
 
   // Pager position lives in one motion value (pixels) so drag and tab taps
   // never fight over the transform. Previously `animate` + `dragConstraints
@@ -73,18 +76,18 @@ export default function HomePage() {
   };
 
   return (
-    <div className="overflow-x-hidden">
+    <div className="overflow-x-clip">
       <header className="pt-safe flex items-center justify-between px-4 pb-2 lg:hidden">
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
           <LogoMark size={36} />
-          <div>
+          <div className="min-w-0">
             <p className="text-xs text-ink-3">{greeting()}</p>
-            <p className="font-semibold tracking-tight">Kaban</p>
+            <p className="truncate font-semibold tracking-tight">{name || "Kaban"}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <PrivacyToggle />
-          <SyncPill />
+          <NotificationsButton />
           <ProfileButton />
         </div>
       </header>
@@ -94,13 +97,14 @@ export default function HomePage() {
           <p className="text-sm text-ink-3">{greeting()}</p>
           <h1 className="text-[2rem] leading-tight font-semibold tracking-tight">Overview</h1>
         </div>
-        {ledger.activeAccounts.length > 0 && (
-          <div className="flex items-center gap-2">
-          <HapticLink href="/accounts/new" className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-4 text-sm font-medium hover:bg-pale">
-            <Plus className="size-4" /> Add account
-          </HapticLink>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <NotificationsButton />
+          {ledger.activeAccounts.length > 0 && (
+            <HapticLink href="/accounts/new" className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-4 text-sm font-medium hover:bg-pale">
+              <Plus className="size-4" /> Add account
+            </HapticLink>
+          )}
+        </div>
       </div>
 
       <div className="px-4 pt-4 pb-3 lg:hidden">
@@ -135,7 +139,7 @@ export default function HomePage() {
           </section>
         </div>
       ) : (
-        <div ref={pagerRef} className="overflow-hidden">
+        <div ref={pagerRef} className="overflow-x-clip">
         <motion.div
           className="flex w-[200%] touch-pan-y"
           style={{ x }}
@@ -188,9 +192,9 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
     );
 
   return (
-    <div className="intro-stagger space-y-5">
-      {/* The chest stands on the hairline that closes the hero off from the cards below. */}
-      <div className="!mb-7 flex items-end gap-3 border-b border-line pt-5">
+    <div className="intro-stagger">
+      {/* Hero on the page background; the chest stands on the edge of the tinted panel below. */}
+      <div className="flex items-end gap-3 pt-5">
         <div className="@container min-w-0 flex-1 pb-5">
           <p className="text-sm text-ink-3">Available funds · cash & debit</p>
           <motion.div key={totals.availableFunds} initial={{ opacity: 0.4, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
@@ -200,9 +204,13 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
             Across {spendable} {spendable === 1 ? "account" : "accounts"}
           </p>
         </div>
-        <KabanChest amount={totals.availableFunds} hidden={hidden} className="-mb-[13px] size-26 lg:-mb-[16px] lg:size-32" />
+        <KabanChest amount={totals.availableFunds} hidden={hidden} className="relative z-10 -mb-[13px] size-26 lg:-mb-[16px] lg:size-32" />
       </div>
 
+      {/* Everything below the hero sits on a tinted panel. Phones: full bleed with a rounded top; its ::after
+          carries the tint under the floating tab bar (exactly the shell's pb-nav, so the page doesn't grow).
+          Desktop: a rounded card in the column. */}
+      <div className="relative -mx-4 space-y-5 rounded-t-[2rem] bg-pale px-4 pt-6 pb-6 after:absolute after:inset-x-0 after:top-full after:h-[calc(6.5rem+var(--safe-bottom))] after:bg-pale after:content-[''] lg:mx-0 lg:rounded-[2rem] lg:p-5 lg:after:hidden">
       <div className="grid grid-cols-2 gap-3">
         <HapticButton onClick={onCredit} className="rounded-3xl bg-night p-4 text-left text-white shadow-float dark:ring-1 dark:ring-white/6 active:scale-[0.98]">
           <p className="text-xs text-white/60">Credit outstanding</p>
@@ -245,6 +253,7 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
           )}
         </Card>
       </section>
+      </div>
     </div>
   );
 }

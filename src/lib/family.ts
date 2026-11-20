@@ -269,7 +269,10 @@ export async function refreshFamilies(db?: KabanDB, c: SupabaseClient = client()
     max_families: data.max_families ?? 1,
     fetchedAt: Date.now(),
   };
+  const prev = await getMeta<FamilyState>(FAMILIES, target);
   await setMeta(FAMILIES, state, target);
+  // Joins, accepted requests and new join requests show up in Notifications. Never blocks the refresh.
+  await import("./inbox").then((m) => m.noteFamilyChanges(target, prev, state)).catch((e) => console.warn("inbox: family changes skipped", e));
   return state;
 }
 
@@ -792,6 +795,7 @@ async function importContributions(db: KabanDB, c: SupabaseClient) {
   const done: string[] = [];
   const rejected: string[] = [];
   const authors: Record<string, string> = {};
+  const added: { id: string; author: string; description: string; amountMinor: number; accountId: string }[] = [];
   for (const row of rows) {
     if (row.data?.id !== row.id || row.data.accountId !== row.account_id) {
       done.push(row.id); // Malformed: keep it on the server, stop retrying.
@@ -805,6 +809,8 @@ async function importContributions(db: KabanDB, c: SupabaseClient) {
       continue;
     }
     if (result !== "invalid") authors[row.id] = row.author_id;
+    if (result === "ok" && row.kind !== "edit")
+      added.push({ id: row.id, author: author.name, description: row.data.description, amountMinor: row.data.amountMinor, accountId: row.account_id });
     done.push(row.id);
   }
   if (Object.keys(authors).length) {
@@ -813,6 +819,7 @@ async function importContributions(db: KabanDB, c: SupabaseClient) {
       await setMeta(AUTHORS, { ...all, ...authors }, db);
     });
   }
+  if (added.length) await import("./inbox").then((m) => m.noteFamilyEntries(db, added)).catch((e) => console.warn("inbox: family entries skipped", e));
   if (done.length) await rpc<void>("ack_family_contributions", { p_ids: done }, c);
   if (rejected.length) await rpc<void>("reject_family_contributions", { p_ids: rejected }, c);
 }

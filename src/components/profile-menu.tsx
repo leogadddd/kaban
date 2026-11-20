@@ -10,7 +10,17 @@ import { useSyncState } from "@/lib/sync";
 import { useProfile } from "@/lib/family";
 import { PersonAvatar } from "./family-ui";
 import { HapticButton } from "./haptic-button";
-import { Sheet } from "./ui";
+import { useSyncStatus, type SyncTone } from "./sync-pill";
+import { cx, Sheet } from "./ui";
+
+/** Ring colour around the profile picture, standing in for the sync pill. */
+const RING: Record<SyncTone, string> = {
+  local: "border-line",
+  ok: "border-brand-2/70",
+  busy: "border-line",
+  warn: "border-gold",
+  bad: "border-expense/80",
+};
 
 // Marks the opening page's own history entry with its path, so only returning to that entry (swipe or Back)
 // reopens the sheet. The path matters: the next page renders (and may show its own avatar) before the
@@ -46,6 +56,7 @@ export function ProfileButton({ wrapperClassName }: { wrapperClassName?: string 
   const { email, userId } = useSyncState();
   const profile = useProfile();
   const name = profile?.display_name?.trim();
+  const sync = useSyncStatus();
 
   const rows = [
     { href: "/activity", label: "Activity", icon: List },
@@ -59,10 +70,15 @@ export function ProfileButton({ wrapperClassName }: { wrapperClassName?: string 
         type="button"
         onClick={() => setOpen(true)}
         wrapperClassName={wrapperClassName}
-        aria-label="Profile and settings"
-        className="grid size-10 place-items-center overflow-hidden rounded-full bg-pale font-semibold text-brand ring-1 ring-line"
+        aria-label={`Profile and settings. Sync: ${sync.label}`}
+        title={sync.label}
+        className="relative grid size-11 place-items-center rounded-full"
       >
-        {userId ? <PersonAvatar name={name || email} avatar={profile?.avatar} size={40} /> : <CircleUserRound className="size-5" />}
+        <span aria-hidden className={cx("absolute inset-0 rounded-full border-2 transition-colors", RING[sync.tone])} />
+        {sync.spinning && <span aria-hidden className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-brand-2 border-r-brand-2" />}
+        <span className="grid size-[2.15rem] place-items-center overflow-hidden rounded-full bg-pale font-semibold text-brand">
+          {userId ? <PersonAvatar name={name || email} avatar={profile?.avatar} size={34} /> : <CircleUserRound className="size-5" />}
+        </span>
       </HapticButton>
 
       <Sheet open={open} onClose={() => setOpen(false)} title="You" appear={false} transitionName={leaving ? "profile-sheet" : undefined}>
@@ -101,6 +117,7 @@ export function ProfileButton({ wrapperClassName }: { wrapperClassName?: string 
                   <Icon className="size-4.5" />
                 </span>
                 <span className="flex-1">{label}</span>
+                {href === "/sync" && <span className="text-sm font-normal text-ink-3">{sync.label}{sync.showPending ? ` · ${sync.pending}` : ""}</span>}
                 <ChevronRight className="size-4 text-ink-3" />
               </HapticButton>
             ))}

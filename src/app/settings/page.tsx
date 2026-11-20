@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, ChevronRight, Cloud, Info, LogOut, Search, ShieldCheck, SlidersHorizontal, Smartphone, Trash2, X } from "lucide-react";
+import { Bell, ChevronRight, Cloud, Info, LogOut, Search, ShieldCheck, SlidersHorizontal, Smartphone, Trash2, X, Zap } from "lucide-react";
 import { alertDialog, confirmDialog, confirmSignOut } from "@/components/dialog";
 import { PersonAvatar } from "@/components/family-ui";
 import { HapticLink } from "@/components/haptic-button";
@@ -79,6 +79,7 @@ export default function SettingsPage() {
               <SettingsGroup title="Account">
                 <SettingsLink href="/settings/security" icon={ShieldCheck} label="Security" detail="Two-factor sign-in, password" />
                 <SettingsLink href="/sync" icon={Cloud} label="Sync & backup" detail="Cloud storage, export, import" />
+                <SettingsLink href="/settings/quick-add" icon={Zap} label="Quick add" detail="Add from iPhone Shortcuts" />
               </SettingsGroup>
             )}
 
