@@ -371,9 +371,9 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
     <motion.div
       ref={panel}
       className="kb-sheet absolute inset-x-0 bottom-0 mx-auto flex max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
-      style={{ height: expanded ? "var(--sheet-available-height)" : "auto", maxHeight: expanded ? "var(--sheet-available-height)" : undefined }}
-      initial={{ y: "100%" }}
-      animate={{ y: 0 }}
+      style={{ maxHeight: expanded ? "var(--sheet-available-height)" : "calc(88dvh - var(--kb, 0px))" }}
+      initial={{ y: "100%", height: "auto" }}
+      animate={{ y: 0, height: expanded ? "var(--sheet-available-height)" : "auto" }}
       exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 32, stiffness: 340 }}
       drag="y"
