@@ -245,7 +245,14 @@ function ShortcutGuide({ hasToken }: { hasToken?: boolean }) {
             <span className="font-medium text-ink-2">Optional fields</span> you can add to the JSON: <span className="num">type</span> (expense or income), <span className="num">category</span>,{" "}
             <span className="num">account</span> (an account&apos;s name), <span className="num">date</span> (YYYY-MM-DD). You can change any of them when you approve.
           </p>
-          <p><span className="font-medium text-ink-2">“This token isn&apos;t valid”:</span> check there&apos;s exactly one space after Bearer, or make a new token.</p>
+          <p>
+            <span className="font-medium text-ink-2">“Kaban didn&apos;t find a token”:</span> the Authorization header is missing or empty. Its value should be Bearer, a
+            space, then your token.
+          </p>
+          <p>
+            <span className="font-medium text-ink-2">“Kaban doesn&apos;t recognise this token”:</span> it was revoked, copied only in part, or made on a different copy of
+            Kaban (for example a test site instead of the live one). Make a new token here and paste it again.
+          </p>
         </div>
       </details>
     </div>

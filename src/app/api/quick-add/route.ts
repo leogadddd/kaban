@@ -8,7 +8,8 @@ const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT
 
 const MESSAGES: Record<string, [number, string]> = {
   ok: [200, "Sent to Kaban. Approve it the next time you open the app."],
-  unauthorized: [401, "This quick add token isn't valid. Make a new one in Kaban → Settings → Quick add."],
+  missing: [401, "Kaban didn't find a token. In the shortcut, set the Authorization header to Bearer, a space, then your token from Kaban → Settings → Quick add."],
+  unauthorized: [401, "Kaban doesn't recognise this token. It may have been revoked or mistyped. Make a new one in Kaban → Settings → Quick add."],
   invalid: [400, "Kaban couldn't read that entry. Check the amount and try again."],
   rate: [429, "Too many quick adds in the last hour. Try again later."],
   limit: [429, "You have 100 quick adds waiting. Open Kaban and approve or reject them first."],
@@ -21,20 +22,41 @@ function reply(status: string) {
 
 const text = (v: unknown) => (typeof v === "string" ? v.trim() || undefined : undefined);
 
+/**
+ * Finds the token wherever Shortcuts put it, forgiving what's easy to get wrong when setting one up: a
+ * trailing newline from a Text action, extra or missing spaces, "Bearer" typed twice, upper case, or the
+ * token sent as a `token` field in the JSON body instead of a header.
+ */
+const TOKEN = /kbn_[0-9a-f]{64}/i;
+function findToken(header: string | null, body: Record<string, unknown>) {
+  const fromHeader = TOKEN.exec((header ?? "").replace(/\s+/g, ""))?.[0];
+  const fromBody = typeof body.token === "string" ? TOKEN.exec(body.token.replace(/\s+/g, ""))?.[0] : undefined;
+  return (fromHeader ?? fromBody)?.toLowerCase();
+}
+
+/** JSON as documented; a Form body too, since that's the other Request Body choice in Shortcuts. */
+function parseBody(raw: string, type: string | null): Record<string, unknown> {
+  if (/application\/x-www-form-urlencoded|multipart\/form-data/i.test(type ?? "") && !/^\s*\{/.test(raw)) {
+    if (/multipart/i.test(type ?? "")) throw new Error("multipart");
+    return Object.fromEntries(new URLSearchParams(raw));
+  }
+  const body = JSON.parse(raw);
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("not an object");
+  return body;
+}
+
 export async function POST(request: Request) {
   if (!url || !key) return reply("unavailable");
-  const token = /^Bearer\s+(\S+)$/i.exec(request.headers.get("authorization") ?? "")?.[1];
-  if (!token) return reply("unauthorized");
-
   let body: Record<string, unknown>;
   try {
     const raw = await request.text();
     if (raw.length > 4096) return reply("invalid");
-    body = JSON.parse(raw);
-    if (!body || typeof body !== "object" || Array.isArray(body)) return reply("invalid");
+    body = parseBody(raw, request.headers.get("content-type"));
   } catch {
     return reply("invalid");
   }
+  const token = findToken(request.headers.get("authorization"), body);
+  if (!token) return reply("missing");
 
   // Amount in pesos, as Shortcuts sends it: a number or text like "1,250.50".
   const amount = body.amount;
