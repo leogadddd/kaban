@@ -453,3 +453,13 @@ button,
 :root[data-kb] body {
   padding-bottom: var(--kb);
 }
+
+/* QR scanner sweep */
+@keyframes scan-sweep {
+  0%, 100% { transform: translateY(0); opacity: 0.35; }
+  50% { transform: translateY(calc(min(72vw, 20rem) - 3rem)); opacity: 1; }
+}
+.scan-line { animation: scan-sweep 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .scan-line { animation: none; }
+}

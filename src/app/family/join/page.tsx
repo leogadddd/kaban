@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle2, Clock, LogIn, UserPlus } from "lucide-react";
+import { CheckCircle2, Clock, LogIn, ScanLine, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { FamilyMark } from "@/components/family-ui";
+import { QrScanner } from "@/components/qr-scanner";
 import { noticeToast } from "@/components/undo-toast";
 import { Button, ButtonLink, Card, Field, inputCls, Loading, PageHeader } from "@/components/ui";
 import { parseInviteCode, previewInvite, requestJoin, type InvitePreview } from "@/lib/family";
@@ -25,6 +26,8 @@ function Join() {
   const { userId } = useSyncState();
   const code = parseInviteCode(params.get("code") ?? "");
   const [typed, setTyped] = useState("");
+  // "Join with a code" from the Family tab opens the camera straight away.
+  const [scanning, setScanning] = useState(() => params.get("scan") === "1");
 
   if (!userId)
     return (
@@ -52,15 +55,28 @@ function Join() {
             if (c) router.replace(`/family/join?code=${c}`);
           }}
         >
-          <p className="px-1 text-sm text-ink-3">Scan the family&apos;s QR code with your phone camera, or type the 10-letter code from their screen.</p>
+          <Button type="button" onClick={() => setScanning(true)} wrapperClassName="grid" className="min-h-14">
+            <ScanLine className="size-5" /> Scan QR code
+          </Button>
+          <div className="flex items-center gap-3 px-1 text-xs text-ink-3">
+            <span className="h-px flex-1 bg-line" /> or type the 10-letter code <span className="h-px flex-1 bg-line" />
+          </div>
           <Field label="Invite code">
             {(id) => (
               <input id={id} className={`${inputCls} font-mono tracking-[0.2em] uppercase`} value={typed} onChange={(e) => setTyped(e.target.value)}
-                placeholder="ABCDE 23456" autoCapitalize="characters" autoComplete="off" spellCheck={false} autoFocus />
+                placeholder="ABCDE 23456" autoCapitalize="characters" autoComplete="off" spellCheck={false} />
             )}
           </Field>
-          <Button type="submit" disabled={parseInviteCode(typed).length < 10} wrapperClassName="grid">Continue</Button>
+          <Button type="submit" variant="secondary" disabled={parseInviteCode(typed).length < 10} wrapperClassName="grid">Continue</Button>
         </form>
+        <QrScanner
+          open={scanning}
+          onClose={() => setScanning(false)}
+          onCode={(c) => {
+            setScanning(false);
+            router.replace(`/family/join?code=${c}`);
+          }}
+        />
       </>
     );
 

@@ -94,7 +94,8 @@ function NoFamily({ offline }: { offline: boolean }) {
         )}
         <div className="mt-6 grid w-full max-w-xs gap-2">
           <ButtonLink href="/family/new" wrapperClassName="grid"><Users className="size-4" /> Create a family</ButtonLink>
-          <ButtonLink href="/family/join" variant="secondary" wrapperClassName="grid"><ScanLine className="size-4" /> Join with a code</ButtonLink>
+          <ButtonLink href="/family/join?scan=1" variant="secondary" wrapperClassName="grid"><ScanLine className="size-4" /> Scan to join</ButtonLink>
+          <ButtonLink href="/family/join" variant="ghost" wrapperClassName="grid" className="min-h-10 text-sm">Enter a code instead</ButtonLink>
         </div>
       </div>
     </>
