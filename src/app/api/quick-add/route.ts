@@ -9,6 +9,7 @@ const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT
 const MESSAGES: Record<string, [number, string]> = {
   ok: [200, "Sent to Kaban. Approve it the next time you open the app."],
   missing: [401, "Kaban didn't find a token. In the shortcut, set the Authorization header to Bearer, a space, then your token from Kaban → Settings → Quick add."],
+  malformed: [401, "The token in your shortcut is incomplete or isn't a Kaban token. It starts with kbn_ and is 68 characters long. Copy it again with the copy button in Kaban."],
   unauthorized: [401, "Kaban doesn't recognise this token. It may have been revoked or mistyped. Make a new one in Kaban → Settings → Quick add."],
   invalid: [400, "Kaban couldn't read that entry. Check the amount and try again."],
   rate: [429, "Too many quick adds in the last hour. Try again later."],
@@ -56,7 +57,21 @@ export async function POST(request: Request) {
     return reply("invalid");
   }
   const token = findToken(request.headers.get("authorization"), body);
-  if (!token) return reply("missing");
+  if (!token) {
+    // Something was sent, just not a whole token: a placeholder, or a token cut short when copying.
+    const sent = (request.headers.get("authorization") ?? "").replace(/^\s*(bearer\s*)+/i, "").trim() || (typeof body.token === "string" ? body.token.trim() : "");
+    // Shape only, never the value: enough to tell an empty variable from a placeholder or a cut-short token.
+    const auth = request.headers.get("authorization");
+    console.warn("quick add: no usable token " + JSON.stringify({
+      header: auth === null ? "absent" : `${auth.length} chars`,
+      bearer: auth ? /^\s*bearer/i.test(auth) : false,
+      afterBearer: `${sent.length} chars`,
+      kbnPrefix: /kbn_/i.test(sent),
+      bodyToken: typeof body.token === "string",
+      contentType: request.headers.get("content-type") ?? "none",
+    }));
+    return reply(sent ? "malformed" : "missing");
+  }
 
   // Amount in pesos, as Shortcuts sends it: a number or text like "1,250.50".
   const amount = body.amount;

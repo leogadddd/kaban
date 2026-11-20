@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, Copy, KeyRound, Plus, Trash2, Zap } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { alertDialog, confirmDialog } from "@/components/dialog";
 import { SettingsGroup, SettingsRow } from "@/components/settings-ui";
 import { Button, Card, Field, inputCls, PageHeader, Sheet } from "@/components/ui";
@@ -142,25 +142,36 @@ function CreateSheet({ open, onClose, onCreated }: { open: boolean; onClose: () 
 }
 
 function CopyRow({ label, value, secret }: { label: string; value: string; secret?: boolean }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"yes" | "failed">();
+  const textRef = useRef<HTMLSpanElement>(null);
   return (
     <div className="space-y-1">
       <p className="px-1 text-xs font-medium text-ink-3">{label}</p>
       <div className="flex items-center gap-2 rounded-2xl border border-line bg-field p-2 pl-3">
-        <span className={`num min-w-0 flex-1 text-sm break-all select-all ${secret ? "text-ink" : "text-ink-2"}`}>{value}</span>
+        <span ref={textRef} translate="no" className={`num min-w-0 flex-1 text-sm break-all select-all ${secret ? "text-ink" : "text-ink-2"}`}>{value}</span>
         <button
           type="button"
           aria-label={`Copy ${label.toLowerCase()}`}
           onClick={async () => {
-            await navigator.clipboard?.writeText(value).catch(() => {});
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
+            try {
+              if (!navigator.clipboard) throw new Error("no clipboard");
+              await navigator.clipboard.writeText(value);
+              setCopied("yes");
+            } catch {
+              // Couldn't copy: select the text so a long-press → Copy takes all of it.
+              const el = textRef.current;
+              if (el) window.getSelection()?.selectAllChildren(el);
+              setCopied("failed");
+            }
+            setTimeout(() => setCopied(undefined), 2500);
           }}
           className="grid size-10 shrink-0 place-items-center rounded-xl bg-pale text-brand"
         >
-          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+          {copied === "yes" ? <Check className="size-4" /> : <Copy className="size-4" />}
         </button>
       </div>
+      {copied === "yes" && <p className="px-1 text-xs text-brand">Copied. Paste it as is, without changing any characters.</p>}
+      {copied === "failed" && <p className="px-1 text-xs text-expense">Couldn&apos;t copy automatically. It&apos;s selected: long-press it and tap Copy.</p>}
     </div>
   );
 }
@@ -248,6 +259,10 @@ function ShortcutGuide({ hasToken }: { hasToken?: boolean }) {
           <p>
             <span className="font-medium text-ink-2">“Kaban didn&apos;t find a token”:</span> the Authorization header is missing or empty. Its value should be Bearer, a
             space, then your token.
+          </p>
+          <p>
+            <span className="font-medium text-ink-2">“The token in your shortcut is incomplete”:</span> the Text holds a placeholder or only part of the token.
+            Paste the whole token: kbn_ followed by 64 letters and numbers.
           </p>
           <p>
             <span className="font-medium text-ink-2">“Kaban doesn&apos;t recognise this token”:</span> it was revoked, copied only in part, or made on a different copy of
