@@ -1,10 +1,10 @@
 "use client";
 
 import { HapticButton, HapticLink, type HapticButtonProps } from "@/components/haptic-button";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
-import { useEffect, useId, useRef, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { formatMoney } from "@/lib/money";
 import { useMoney } from "@/lib/privacy";
@@ -315,34 +315,74 @@ export function Sheet({
               {children}
             </motion.div>
           ) : (
-            // Phone: bottom sheet, drag down to dismiss.
-            <motion.div
-              className="kb-sheet absolute inset-x-0 bottom-0 mx-auto max-h-[88dvh] max-w-md overflow-y-auto rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 32, stiffness: 340 }}
-              drag="y"
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.6 }}
-              onDragEnd={(_, i) => (i.offset.y > 110 || i.velocity.y > 600) && onClose()}
-            >
-              <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-line" />
-              {title && (
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">{title}</h2>
-                  <HapticButton onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale" aria-label="Close">
-                    <X className="size-5" />
-                  </HapticButton>
-                </div>
-              )}
+            <MobileSheet title={title} onClose={onClose}>
               {children}
-            </motion.div>
+            </MobileSheet>
           )}
         </div>
       )}
     </AnimatePresence>,
     document.body,
+  );
+}
+
+/** The handle owns resizing gestures, leaving form content free to scroll. */
+function MobileSheet({ title, onClose, children }: { title?: string; onClose: () => void; children: ReactNode }) {
+  const [expanded, setExpanded] = useState(false);
+  const controls = useDragControls();
+  const panel = useRef<HTMLDivElement>(null);
+  const dragged = useRef(false);
+
+  return (
+    <motion.div
+      ref={panel}
+      className="kb-sheet absolute inset-x-0 bottom-0 mx-auto flex max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-bg px-4 pt-2 pb-[calc(1.25rem+var(--safe-bottom))] shadow-float"
+      style={{ height: expanded ? "var(--sheet-available-height)" : "auto", maxHeight: expanded ? "var(--sheet-available-height)" : undefined }}
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 32, stiffness: 340 }}
+      drag="y"
+      dragListener={false}
+      dragControls={controls}
+      dragConstraints={{ top: 0, bottom: 0 }}
+      dragElastic={{ top: 0.08, bottom: 0.6 }}
+      onDragStart={() => { dragged.current = true; }}
+      onDragEnd={(_, info) => {
+        if (info.offset.y < -40) {
+          setExpanded(true);
+        } else if (expanded && info.offset.y > 60) {
+          setExpanded(false);
+        } else if (!expanded && info.offset.y > Math.max(140, (panel.current?.clientHeight ?? 0) * 0.3)) {
+          onClose();
+        }
+      }}
+    >
+      <button
+        type="button"
+        className="-mx-4 flex h-9 shrink-0 touch-none items-center justify-center cursor-grab active:cursor-grabbing"
+        aria-label={expanded ? "Collapse drawer" : "Expand drawer"}
+        aria-expanded={expanded}
+        onPointerDown={(event) => {
+          dragged.current = false;
+          controls.start(event);
+        }}
+        onClick={(event) => {
+          if (event.detail === 0 || !dragged.current) setExpanded((value) => !value);
+        }}
+      >
+        <span className="h-1.5 w-10 rounded-full bg-line" />
+      </button>
+      {title && (
+        <div className="mb-3 flex shrink-0 items-center justify-between">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <HapticButton onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale" aria-label="Close">
+            <X className="size-5" />
+          </HapticButton>
+        </div>
+      )}
+      <div className="min-h-0 overflow-y-auto overscroll-contain">{children}</div>
+    </motion.div>
   );
 }
 
