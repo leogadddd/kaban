@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { RotateCcw } from "lucide-react";
 import { FormError } from "@/components/auth-ui";
 import { Mascot } from "@/components/mascot";
@@ -11,6 +11,9 @@ import { LogoMark } from "@/lib/logo";
 import { friendlyAuthError, recoverAccount, signOut, useSyncState } from "@/lib/sync";
 
 const DAY = 86_400_000;
+// The clock, read only in the browser: the page is prerendered. Minute precision keeps the snapshot stable.
+const noop = () => () => {};
+const minuteNow = () => Math.floor(Date.now() / 60_000);
 
 /** A signed-in account inside its 30-day deletion grace period: recover it, or leave it to be erased. */
 export default function AccountDeletedPage() {
@@ -18,7 +21,7 @@ export default function AccountDeletedPage() {
   const { phase, email, deletion } = useSyncState();
   const [busy, setBusy] = useState<"recover" | "leave">();
   const [error, setError] = useState<string>();
-  const [now] = useState(Date.now);
+  const now = useSyncExternalStore(noop, minuteNow, () => 0) * 60_000;
 
   // Not (or no longer) scheduled for deletion: nothing to do here.
   useEffect(() => {
