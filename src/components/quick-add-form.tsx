@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { Zap } from "lucide-react";
-import { Button, Field, inputCls, Money, Segmented } from "@/components/ui";
+import { BankLogo } from "@/components/bank-logo";
+import { DateField } from "@/components/date-field";
+import { HapticButton } from "@/components/haptic-button";
+import { Button, cx, Field, inputCls, Money, Segmented } from "@/components/ui";
+import { bankFor } from "@/lib/banks";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/categories";
 import { toISO } from "@/lib/dates";
 import { minorToInput, parseMinor } from "@/lib/money";
@@ -103,36 +107,65 @@ export function QuickEntryForm({ entry, accounts, txns, onDone }: { entry: Quick
         <Field label="Amount">
           {(id) => <input id={id} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${inputCls} num`} />}
         </Field>
-        <Field label="Date">
-          {(id) => <input id={id} type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />}
-        </Field>
+        <Field label="Date">{(id) => <DateField id={id} value={date} onChange={setDate} title="Date" compact />}</Field>
       </div>
 
       <Field label="Description">
         {(id) => <input id={id} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={80} placeholder={category || "What was it for?"} className={inputCls} />}
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Account">
-          {(id) => (
-            <select id={id} value={accountId} onChange={(e) => setAccountId(e.target.value)} className={inputCls}>
-              {!options.length && <option value="">No accounts</option>}
-              {options.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          )}
-        </Field>
-        <Field label="Category">
-          {(id) => (
-            <select id={id} value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
-              <option value="">None</option>
-              {categories.map((c) => (
-                <option key={c.name} value={c.name}>{c.name}</option>
-              ))}
-            </select>
-          )}
-        </Field>
+      {/* Same pickers as the Add screen: native selects render squashed on iOS. */}
+      <div>
+        <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">Account</p>
+        {options.length ? (
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" role="radiogroup" aria-label="Account">
+            {options.map((a) => {
+              const active = a.id === accountId;
+              const bank = a.type === "cash" ? undefined : bankFor(a);
+              return (
+                <HapticButton
+                  key={a.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setAccountId(a.id)}
+                  wrapperClassName="shrink-0"
+                  className={cx(
+                    "flex min-h-12 items-center gap-2 rounded-2xl border px-3 text-sm font-medium whitespace-nowrap transition",
+                    active ? "border-transparent text-white shadow-float" : "border-line bg-surface text-ink",
+                  )}
+                  style={active ? { background: a.color } : undefined}
+                >
+                  {bank ? <BankLogo bank={bank} size={22} /> : <span className="size-2.5 rounded-full ring-1 ring-white/40" style={{ background: a.color }} />}
+                  {a.name}
+                </HapticButton>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="rounded-2xl bg-pale p-3 text-sm text-ink-2">Add an account first, then approve this entry.</p>
+        )}
+      </div>
+
+      <div>
+        <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">Category <span className="font-normal text-ink-3">(optional)</span></p>
+        <div className="grid grid-cols-4 gap-2">
+          {categories.map(({ name, icon: Icon }) => (
+            <HapticButton
+              key={name}
+              type="button"
+              onClick={() => setCategory((c) => (c === name ? "" : name))}
+              aria-pressed={category === name}
+              className={cx(
+                "flex min-h-[4.25rem] w-full flex-col items-center justify-center gap-1 rounded-2xl border p-1.5 text-[0.68rem] leading-tight font-medium transition",
+                category === name ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2",
+              )}
+            >
+              <Icon className="size-5" />
+              <span className="line-clamp-2 text-center">{name}</span>
+            </HapticButton>
+          ))}
+        </div>
       </div>
 
       {error && <p role="alert" className="px-1 text-sm text-expense">{error}</p>}

@@ -3,7 +3,7 @@
 import { CalendarClock, ChevronRight, History, CloudOff, Eye, LogIn, QrCode, ScanLine, Settings, Share2, UserPlus, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FamilyIllustration, FamilyMark, InboxButton, MemberAvatar, pickFamily, useCurrentFamily } from "@/components/family-ui";
+import { FamilyIllustration, FamilyMark, MemberAvatar, pickFamily, useCurrentFamily } from "@/components/family-ui";
 import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { confirmDialog } from "@/components/dialog";
 import { noticeToast } from "@/components/undo-toast";
@@ -51,7 +51,6 @@ function Header({ family }: { family?: Family }) {
       action={
         <div className="flex items-center gap-2">
           <NotificationsButton />
-          <InboxButton />
           {family && (
             <HapticLink href={`/family/settings?id=${family.id}`} aria-label="Family settings" className="grid size-11 place-items-center rounded-full border border-line bg-surface">
               <Settings className="size-5" />

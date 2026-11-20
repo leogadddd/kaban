@@ -4,6 +4,7 @@ import { Bell, CalendarClock, ChevronRight, HandCoins, UserCheck, UserPlus, User
 import { useEffect, useState } from "react";
 import { confirmDialog } from "@/components/dialog";
 import { HapticButton, HapticLink } from "@/components/haptic-button";
+import { FamilyRequests, useFamilyRequests } from "@/components/family-ui";
 import { QuickEntryForm } from "@/components/quick-add-form";
 import { cx, EmptyState, Money, SectionTitle, Sheet } from "@/components/ui";
 import { useLedgerDatabase } from "@/lib/db";
@@ -72,8 +73,15 @@ export function NotificationsList({ onNavigate }: { onNavigate?: () => void }) {
     };
   }, [db]);
 
-  const items = inbox ?? [];
-  const empty = !pending.length && !items.length;
+  const requests = useFamilyRequests();
+  // A join request still waiting is answered in its own section above; don't list it twice.
+  const waiting = new Set(requests.incoming.map((r) => `join-request:${r.id}`));
+  // One that's no longer waiting was answered (here or on another device): keep it as history, without the
+  // old "approve in Members" hint and link that older notifications carry.
+  const items = (inbox ?? [])
+    .filter((i) => !waiting.has(i.id))
+    .map((i) => (i.kind === "join-request" ? { ...i, body: "Answered", href: undefined } : i));
+  const empty = !pending.length && !items.length && !requests.incoming.length && !requests.mine.length;
 
   return (
     <div className="space-y-6">
@@ -105,6 +113,8 @@ export function NotificationsList({ onNavigate }: { onNavigate?: () => void }) {
           </section>
         )}
 
+        <FamilyRequests />
+
         {items.length > 0 && (
           <section>
             <SectionTitle>Recent</SectionTitle>
@@ -116,7 +126,7 @@ export function NotificationsList({ onNavigate }: { onNavigate?: () => void }) {
           </section>
         )}
 
-        {empty && <EmptyState icon={<Bell className="size-6" />} title="You're all caught up" body="Quick adds to approve, family news and payment due dates show up here." />}
+        {empty && <EmptyState icon={<Bell className="size-6" />} title="You're all caught up" body="Quick adds to approve, family join requests and news, and payment due dates show up here." />}
 
       <Sheet open={!!reviewing} onClose={() => setReviewing(undefined)} title="Approve quick add">
         {reviewing && <QuickEntryForm key={reviewing.id} entry={reviewing} accounts={activeAccounts} txns={txns} onDone={() => setReviewing(undefined)} />}

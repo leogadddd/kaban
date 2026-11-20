@@ -40,7 +40,7 @@ function Invite() {
   const code = invite ? `${invite.code.slice(0, 5)} ${invite.code.slice(5)}` : "";
 
   async function newCode(ask: boolean) {
-    if (ask && !(await confirmDialog({ title: "Make a new code?", body: "The current QR code and link stop working. Requests already sent stay in your inbox.", confirmLabel: "New code" }))) return;
+    if (ask && !(await confirmDialog({ title: "Make a new code?", body: "The current QR code and link stop working. Requests already sent stay in Notifications.", confirmLabel: "New code" }))) return;
     setBusy(true);
     try {
       await rotateInvite(family!.id);

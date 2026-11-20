@@ -95,7 +95,7 @@ export async function noteFamilyChanges(db: KabanDB, prev: FamilyState | undefin
     const asked = new Set(old.requests.map((r) => r.id));
     for (const r of f.requests) {
       if (asked.has(r.id)) continue;
-      items.push({ id: `join-request:${r.id}`, kind: "join-request", title: `${name(r.display_name, "Someone")} wants to join ${f.name}`, body: "Approve or decline in Members.", href: "/family/members", at: now });
+      items.push({ id: `join-request:${r.id}`, kind: "join-request", title: `${name(r.display_name, "Someone")} wants to join ${f.name}`, body: "Approve or decline it in Notifications.", at: now });
     }
   }
   await addInboxItems(db, items);

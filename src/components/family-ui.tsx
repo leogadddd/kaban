@@ -1,11 +1,10 @@
 "use client";
 
 import qrcode from "qrcode-generator";
-import { Check, Inbox, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   cancelJoinRequest,
-  inboxCount,
   isAdmin,
   memberName,
   respondJoinRequest,
@@ -16,7 +15,7 @@ import {
 } from "@/lib/family";
 import { LogoMark } from "@/lib/logo";
 import { HapticButton } from "./haptic-button";
-import { Button, Field, inputCls, Segmented, Sheet, cx } from "./ui";
+import { Button, Field, inputCls, SectionTitle, Segmented, cx } from "./ui";
 import { noticeToast } from "./undo-toast";
 
 export const FAMILY_ICONS = ["🏠", "🏡", "👨‍👩‍👧", "👪", "❤️", "🌿", "⭐", "🐾", "🍚", "🏝️", "🚗", "🎓"];
@@ -121,38 +120,19 @@ export function FamilyIllustration({ className }: { className?: string }) {
   );
 }
 
-/** Top-right inbox: join requests to answer (badge) and this user's own requests. */
-export function InboxButton() {
+/** Join requests waiting for this user (as an admin) and the ones they sent, for the Notifications list. */
+export function useFamilyRequests() {
   const state = useFamilies();
-  const [open, setOpen] = useState(false);
-  const count = inboxCount(state);
-  return (
-    <>
-      <HapticButton
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={count ? `Requests, ${count} need action` : "Requests"}
-        className="relative grid size-11 place-items-center rounded-full border border-line bg-surface"
-      >
-        <Inbox className="size-5" />
-        {count > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-expense px-1 text-[0.68rem] font-semibold text-white ring-2 ring-bg">
-            {count > 9 ? "9+" : count}
-          </span>
-        )}
-      </HapticButton>
-      <Sheet open={open} onClose={() => setOpen(false)} title="Requests">
-        <InboxList />
-      </Sheet>
-    </>
-  );
+  return {
+    incoming: state?.families.filter(isAdmin).flatMap((f) => f.requests.map((r) => ({ ...r, family: f }))) ?? [],
+    mine: state?.my_requests ?? [],
+  };
 }
 
-function InboxList() {
-  const state = useFamilies();
+/** Approve or decline join requests, and follow or cancel your own. Renders nothing when there are none. */
+export function FamilyRequests() {
+  const { incoming, mine } = useFamilyRequests();
   const [busy, setBusy] = useState<string>();
-  const incoming = state?.families.filter(isAdmin).flatMap((f) => f.requests.map((r) => ({ ...r, family: f }))) ?? [];
-  const mine = state?.my_requests ?? [];
 
   async function run(id: string, fn: () => Promise<unknown>, done: string) {
     setBusy(id);
@@ -166,15 +146,14 @@ function InboxList() {
     }
   }
 
-  if (!incoming.length && !mine.length)
-    return <p className="px-1 pb-4 text-sm text-ink-3">Nothing here. When someone scans your family&apos;s code, their request shows up here for an admin to approve.</p>;
+  if (!incoming.length && !mine.length) return null;
 
   return (
-    <div className="space-y-5 pb-2">
+    <>
       {incoming.length > 0 && (
         <section>
-          <h3 className="mb-2 px-1 text-sm font-semibold text-ink-2">Waiting for you</h3>
-          <ul className="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-surface">
+          <SectionTitle>Join requests</SectionTitle>
+          <ul className="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-surface shadow-soft">
             {incoming.map((r) => (
               <li key={r.id} className="flex items-center gap-3 p-3">
                 <PersonAvatar name={r.display_name} avatar={r.avatar} size={40} />
@@ -207,8 +186,8 @@ function InboxList() {
       )}
       {mine.length > 0 && (
         <section>
-          <h3 className="mb-2 px-1 text-sm font-semibold text-ink-2">Your requests</h3>
-          <ul className="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-surface">
+          <SectionTitle>Your join requests</SectionTitle>
+          <ul className="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-surface shadow-soft">
             {mine.map((r) => (
               <li key={r.id} className="flex items-center gap-3 p-3">
                 <FamilyMark icon={r.family_icon} color={r.family_color} size={40} />
@@ -233,7 +212,7 @@ function InboxList() {
           </ul>
         </section>
       )}
-    </div>
+    </>
   );
 }
 

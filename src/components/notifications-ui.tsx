@@ -6,16 +6,19 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { useIsDesktop, useMeta } from "@/lib/hooks";
+import { inboxCount, useFamilies } from "@/lib/family";
 import { useInbox } from "@/lib/inbox";
 import { PENDING, type QuickEntry } from "@/lib/quick-add";
 import { ClearNotifications, NotificationsList } from "./notifications-panel";
 import { cx } from "./ui";
 
-/** Quick adds waiting for approval plus unread notifications, from this device's copy. */
+/** Quick adds and join requests waiting for this user, plus unread notifications, from this device's copy. */
 export function useNotificationCount() {
   const pending = useMeta<QuickEntry[]>(PENDING)?.length ?? 0;
-  const unread = useInbox()?.filter((i) => !i.read).length ?? 0;
-  return pending + unread;
+  const requests = inboxCount(useFamilies());
+  // Join-request notifications are already counted as waiting requests.
+  const unread = useInbox()?.filter((i) => !i.read && i.kind !== "join-request").length ?? 0;
+  return pending + requests + unread;
 }
 
 export function CountBadge({ count, className }: { count: number; className?: string }) {
