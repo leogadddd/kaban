@@ -85,7 +85,7 @@ function AllPane({ ledger }: { ledger: Ledger }) {
     <>
       <Tiles className="mb-4 lg:hidden">
         <Tile label="Spent"><Money minor={spent} /></Tile>
-        <Tile label="Earned" dark><Money minor={earned} /></Tile>
+        <Tile label="Earned"><Money minor={earned} /></Tile>
       </Tiles>
       <div className="space-y-4 pb-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-x-6 lg:gap-y-4 lg:space-y-0">
         <div className="flex gap-2 lg:col-start-1 lg:row-start-1">
@@ -96,12 +96,12 @@ function AllPane({ ledger }: { ledger: Ledger }) {
           <HapticButton
             wrapperClassName="shrink-0 lg:hidden"
             onClick={() => setFiltersOpen((v) => !v)}
-            className={cx("relative grid size-12 place-items-center rounded-2xl border", filtersOpen || activeFilters ? "border-brand bg-brand text-on-brand" : "border-line bg-surface")}
+            className={cx("relative grid size-12 place-items-center rounded-2xl border", filtersOpen || activeFilters ? "border-brand bg-brand/10 text-brand" : "border-line bg-surface")}
             aria-label="Filters"
             aria-expanded={filtersOpen}
           >
             <SlidersHorizontal className="size-5" />
-            {activeFilters > 0 && <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-gold text-[0.65rem] text-white">{activeFilters}</span>}
+            {activeFilters > 0 && <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-brand text-[0.65rem] text-on-brand ring-2 ring-surface">{activeFilters}</span>}
           </HapticButton>
         </div>
 
@@ -173,7 +173,7 @@ function PaymentsPane({ ledger }: { ledger: Ledger }) {
     <div className="space-y-4 pb-4">
       <Tiles>
         <Tile label="Paid to cards"><Money minor={sum(card)} /></Tile>
-        <Tile label="Received from people" dark><Money minor={sum(received)} /></Tile>
+        <Tile label="Received from people"><Money minor={sum(received)} /></Tile>
       </Tiles>
       <div className="flex gap-1.5">
         <Chip active={kind === "card"} onClick={() => setKind("card")}><CreditCard className="size-4" /> Card payments</Chip>
@@ -211,7 +211,7 @@ function InstalmentsPane({ ledger }: { ledger: Ledger }) {
     <div className="space-y-4 pb-4">
       <Tiles className="lg:hidden">
         <Tile label="Still to be billed"><Money minor={totalRemaining} /></Tile>
-        <Tile label="Active plans" dark><span className="num">{activePlans}</span></Tile>
+        <Tile label="Active plans"><span className="num">{activePlans}</span></Tile>
       </Tiles>
       {plans.length ? (
         <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">

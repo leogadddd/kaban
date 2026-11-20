@@ -26,11 +26,11 @@ export function undoToast(title: string, undo: () => Promise<unknown>) {
   }} />, { duration: Infinity });
 }
 
-/** Short confirmation or error line in the same dark card style. */
+/** Short confirmation or error line. */
 export function noticeToast(title: string, tone: "ok" | "error" = "ok") {
   toast.custom(() => (
-    <div role={tone === "error" ? "alert" : "status"} className="flex w-[min(calc(100vw-2rem),24rem)] items-center gap-3 rounded-2xl bg-night px-4 py-3 text-white shadow-soft dark:border dark:border-line">
-      <span aria-hidden className={tone === "error" ? "size-2 shrink-0 rounded-full bg-expense" : "size-2 shrink-0 rounded-full bg-mint"} />
+    <div role={tone === "error" ? "alert" : "status"} className="flex w-[min(calc(100vw-2rem),24rem)] items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 text-ink shadow-soft">
+      <span aria-hidden className={tone === "error" ? "size-2 shrink-0 rounded-full bg-expense" : "size-2 shrink-0 rounded-full bg-income"} />
       <p className="min-w-0 flex-1 text-sm font-medium">{title}</p>
     </div>
   ), { duration: tone === "error" ? 5000 : 2800 });
@@ -52,7 +52,7 @@ function UndoCard({ id, title, onUndo }: { id: string | number; title: string; o
   }, [id]);
   const secs = Math.ceil(left / 1000);
   return (
-    <div className="flex w-[min(calc(100vw-2rem),24rem)] items-center gap-3 rounded-2xl bg-night py-2.5 pr-2 pl-3 text-white shadow-soft dark:border dark:border-line">
+    <div className="flex w-[min(calc(100vw-2rem),24rem)] items-center gap-3 rounded-2xl border border-line bg-surface py-2.5 pr-2 pl-3 text-ink shadow-soft">
       <span className="relative grid size-7 shrink-0 place-items-center" aria-hidden>
         <svg viewBox="0 0 22 22" className="absolute inset-0 -rotate-90">
           <circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" strokeOpacity={0.2} strokeWidth={2} />
@@ -68,7 +68,7 @@ function UndoCard({ id, title, onUndo }: { id: string | number; title: string; o
       <HapticButton
         type="button"
         onClick={onUndo}
-        className="flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-mint active:bg-white/10"
+        className="flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-brand active:bg-pale"
       >
         <RotateCcw className="size-4" /> Undo
       </HapticButton>

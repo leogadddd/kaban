@@ -4,7 +4,7 @@ import { HapticButton } from "@/components/haptic-button";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, CreditCard, Landmark, Wallet } from "lucide-react";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { AccountBalance } from "@/lib/finance";
 import { bankFor } from "@/lib/banks";
 import { formatMoney } from "@/lib/money";
@@ -18,18 +18,12 @@ const TYPE_META = {
   credit: { label: "Credit card", icon: CreditCard },
 };
 
-function textOn(hex: string) {
-  const n = parseInt(hex.slice(1), 16);
-  const l = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return l > 0.62 ? "#17241D" : "#FFFFFF";
-}
-
 export function AccountCard({ b, className }: { b: AccountBalance; className?: string }) {
   const a = b.account;
   const meta = TYPE_META[a.type];
   const Icon = meta.icon;
   const bank = a.type === "cash" ? undefined : bankFor(a);
-  const fg = textOn(a.color);
+  const style: CSSProperties & { "--account-color": string } = { "--account-color": a.color };
   const credit = a.type === "credit";
   const util = b.utilisation ?? 0;
   const { fmt, hidden } = useMoney();
@@ -37,24 +31,23 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
   const dot = s.lastIndexOf(".");
   return (
     <div
-      className={cx("card-grain relative flex h-48 flex-col justify-between overflow-hidden rounded-[var(--radius-card)] p-5 shadow-float dark:ring-1 dark:ring-white/8 dark:ring-inset", className)}
-      style={{ background: `linear-gradient(140deg, ${a.color}, color-mix(in oklab, ${a.color} 70%, black))`, color: fg }}
+      className={cx("account-card-tinted flex h-48 flex-col justify-between overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface p-5 shadow-soft", className)}
+      style={style}
     >
-      <div className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full opacity-20" style={{ background: fg }} />
-      <div className="relative flex items-start justify-between">
+      <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium opacity-75">{bank?.kind === "paylater" ? "Pay later" : meta.label}{a.issuer ? ` · ${a.issuer}` : ""}</p>
+          <p className="text-sm font-medium">{bank?.kind === "paylater" ? "Pay later" : meta.label}{a.issuer ? ` · ${a.issuer}` : ""}</p>
           <p className="text-lg font-semibold tracking-tight">{a.name}</p>
         </div>
         {bank ? (
           <BankLogo bank={bank} size={40} className="shadow-sm" />
         ) : (
-          <span className="grid size-10 place-items-center rounded-2xl" style={{ background: `color-mix(in oklab, ${fg} 16%, transparent)` }}>
+          <span className="grid size-10 place-items-center rounded-2xl" style={{ background: "color-mix(in srgb, var(--account-color) 28%, var(--color-surface))" }}>
             <Icon className="size-5" />
           </span>
         )}
       </div>
-      <div className="relative">
+      <div>
         <p className="text-xs font-medium tracking-wide uppercase opacity-70">{credit ? "Outstanding" : "Balance"}</p>
         <p className="num amount text-[2.1rem] leading-none font-semibold" aria-label={hidden ? "Balance hidden" : s}>
           {hidden ? (
@@ -70,8 +63,8 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
         </p>
         {credit ? (
           <div className="mt-3 flex items-center gap-3 text-xs">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: `color-mix(in oklab, ${fg} 22%, transparent)` }}>
-              <div className="h-full rounded-full" style={{ width: `${Math.min(100, util)}%`, background: fg }} />
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink/20">
+              <div className="h-full rounded-full bg-ink" style={{ width: `${Math.min(100, util)}%` }} />
             </div>
             <span className="num amount opacity-80">{fmt(b.available ?? 0, { compact: true })} left</span>
             {a.last4 && <span className="num opacity-80">•••• {a.last4}</span>}

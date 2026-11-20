@@ -64,15 +64,15 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
         </div>
       )}
 
-      <Card className="overflow-hidden bg-night p-5 text-white dark:border-white/6">
+      <Card className="overflow-hidden p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="flex items-center gap-2 text-sm text-white/60">
+            <p className="flex items-center gap-2 text-sm text-ink-2">
               {bankFor(acc) && <BankLogo bank={bankFor(acc)!} size={22} />}
               {acc.name}
               {acc.last4 ? ` · •••• ${acc.last4}` : ""}
             </p>
-            <p className="mt-1 text-xs tracking-wide text-white/50 uppercase">Outstanding</p>
+            <p className="mt-1 text-xs tracking-wide text-ink-3 uppercase">Outstanding</p>
             <BigMoney minor={b.balance} className="block text-[2.4rem] leading-none" centsClass="text-2xl" />
           </div>
           <div className="rounded-full bg-surface p-1">
@@ -80,12 +80,12 @@ export function CreditOverview({ ledger, accountId, showSelector = true }: { led
           </div>
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-2xl bg-white/8 p-3">
-            <p className="text-xs text-white/55">Available</p>
+          <div className="rounded-2xl bg-pale p-3">
+            <p className="text-xs text-ink-3">Available</p>
             <Money minor={b.available ?? 0} className="font-semibold" />
           </div>
-          <div className="rounded-2xl bg-white/8 p-3">
-            <p className="text-xs text-white/55">Limit</p>
+          <div className="rounded-2xl bg-pale p-3">
+            <p className="text-xs text-ink-3">Limit</p>
             <Money minor={acc.creditLimitMinor ?? 0} className="font-semibold" />
           </div>
         </div>

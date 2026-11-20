@@ -239,12 +239,12 @@ function BottomNav({ pathname }: { pathname: string }) {
       {/* Dark mode: fade the page out behind the bar so it doesn't sit on same-toned cards. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-6 bottom-0 -z-10 hidden bg-gradient-to-t from-bg via-bg/85 to-transparent dark:block" />
       {/* Five equal slots so every highlight is the same size and centred in its slot. */}
-      <div className="grid grid-cols-5 items-center rounded-[1.75rem] border border-white/8 bg-night/95 p-1.5 text-white shadow-float dark:border-white/10 dark:bg-[#262d29]/95 dark:shadow-[0_18px_40px_-12px_rgb(0_0_0/0.9)]">
+      <div className="grid grid-cols-5 items-center rounded-[1.75rem] border border-line bg-surface p-1.5 shadow-float">
         {NAV.map(({ href, label, icon: Icon, match }) => {
           if (href === "/add")
             return (
               <div key={href} className="grid place-items-center">
-                <HapticLink href={href} aria-label="Add transaction" className="grid size-14 place-items-center rounded-[1.35rem] bg-brand-2 text-on-brand shadow-[0_6px_16px_-6px_rgb(45_147_108/0.7)] active:scale-95">
+                <HapticLink href={href} aria-label="Add transaction" className="grid size-14 place-items-center rounded-[1.35rem] bg-brand text-on-brand shadow-soft active:scale-95">
                   <Icon className="size-7" strokeWidth={2.4} />
                 </HapticLink>
               </div>
@@ -258,22 +258,23 @@ function BottomNav({ pathname }: { pathname: string }) {
 
 function NavItem({ href, label, icon: Icon, active }: { href: string; label: string; icon: typeof Users; active: boolean }) {
   const cls = "relative mx-auto flex h-14 w-full max-w-[4.5rem] flex-col items-center justify-center gap-0.5 rounded-[1.25rem] text-[0.68rem] font-medium";
+  const tone = active ? "text-brand" : "text-ink-2";
   const inner = (
     <>
       {active && (
         <motion.span
           layoutId="nav-pill"
-          className="absolute inset-0 rounded-[1.25rem] bg-white/10 ring-1 ring-white/6 ring-inset"
+          className="absolute inset-0 rounded-[1.25rem] bg-brand/10"
           transition={{ type: "spring", bounce: 0.25, duration: 0.45 }}
         />
       )}
-      <Icon className={cx("relative size-5", active ? "text-mint" : "text-white/60")} />
-      <span className={cx("relative whitespace-nowrap", active ? "text-white" : "text-white/60")}>{label}</span>
+      <Icon className="relative size-5" />
+      <span className="relative whitespace-nowrap">{label}</span>
     </>
   );
   return (
     <div className="px-0.5">
-      <HapticLink href={href} aria-current={active ? "page" : undefined} wrapperClassName="grid" className={cls}>{inner}</HapticLink>
+      <HapticLink href={href} aria-current={active ? "page" : undefined} wrapperClassName="grid" className={cx(cls, tone)}>{inner}</HapticLink>
     </div>
   );
 }
@@ -282,12 +283,12 @@ function NavItem({ href, label, icon: Icon, active }: { href: string; label: str
 function Sidebar({ pathname }: { pathname: string }) {
   const items = [...NAV.filter((n) => n.href !== "/add"), ...MORE];
   return (
-    <aside data-nav-peer style={{ viewTransitionName: "sidebar" }} className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface/70 px-4 py-6 lg:flex" aria-label="Primary">
+    <aside data-nav-peer style={{ viewTransitionName: "sidebar" }} className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface px-4 py-6 lg:flex" aria-label="Primary">
       <Link href="/home" className="mb-6 flex items-center gap-2.5 px-2">
         <LogoMark size={34} />
         <span className="text-lg font-semibold tracking-tight">Kaban</span>
       </Link>
-      <Link href="/add" className="mb-5 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand-2 font-medium text-on-brand shadow-float active:scale-[0.98]">
+      <Link href="/add" className="mb-5 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand font-medium text-on-brand shadow-float active:scale-[0.98]">
         <Plus className="size-5" strokeWidth={2.4} /> Add transaction
       </Link>
       <nav className="flex-1 space-y-0.5 overflow-y-auto">
@@ -301,7 +302,7 @@ function Sidebar({ pathname }: { pathname: string }) {
                 aria-current={active ? "page" : undefined}
                 className={cx("relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors", active ? "text-brand" : "text-ink-2 hover:bg-pale")}
               >
-                {active && <motion.span layoutId="side-pill" className="absolute inset-0 rounded-xl bg-pale" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />}
+                {active && <motion.span layoutId="side-pill" className="absolute inset-0 rounded-xl bg-brand/10" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />}
                 <Icon className="relative size-[1.1rem]" />
                 <span className="relative">{label}</span>
               </Link>

@@ -24,7 +24,7 @@ export function useNotificationCount() {
 export function CountBadge({ count, className }: { count: number; className?: string }) {
   if (!count) return null;
   return (
-    <span className={cx("num grid h-5 min-w-5 place-items-center rounded-full bg-expense px-1.5 text-[0.68rem] leading-none font-semibold text-white", className)}>
+    <span className={cx("num grid h-5 min-w-5 place-items-center rounded-full bg-expense px-1.5 text-[0.68rem] leading-none font-semibold text-on-expense", className)}>
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -87,7 +87,7 @@ function NotificationsDrawer({ open, onClose }: { open: boolean; onClose: () => 
             <header className="flex items-center gap-2 px-5 pt-6 pb-4">
               <h2 className="flex-1 text-xl font-semibold tracking-tight">Notifications</h2>
               <ClearNotifications />
-              <HapticButton type="button" onClick={onClose} aria-label="Close" className="grid size-10 place-items-center rounded-full bg-pale hover:bg-mint">
+              <HapticButton type="button" onClick={onClose} aria-label="Close" className="grid size-10 place-items-center rounded-full bg-pale hover:bg-brand/10">
                 <X className="size-5" />
               </HapticButton>
             </header>

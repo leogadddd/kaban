@@ -131,12 +131,11 @@ export function QuickEntryForm({ entry, accounts, txns, onDone }: { entry: Quick
                   onClick={() => setAccountId(a.id)}
                   wrapperClassName="shrink-0"
                   className={cx(
-                    "flex min-h-12 items-center gap-2 rounded-2xl border px-3 text-sm font-medium whitespace-nowrap transition",
-                    active ? "border-transparent text-white shadow-float" : "border-line bg-surface text-ink",
+                    "flex min-h-12 items-center gap-2 rounded-2xl border px-3 text-sm font-medium whitespace-nowrap text-ink transition",
+                    active ? "border-brand bg-brand/10" : "border-line bg-surface",
                   )}
-                  style={active ? { background: a.color } : undefined}
                 >
-                  {bank ? <BankLogo bank={bank} size={22} /> : <span className="size-2.5 rounded-full ring-1 ring-white/40" style={{ background: a.color }} />}
+                  {bank ? <BankLogo bank={bank} size={22} /> : <span className="size-2.5 rounded-full" style={{ background: a.color }} />}
                   {a.name}
                 </HapticButton>
               );
@@ -158,7 +157,7 @@ export function QuickEntryForm({ entry, accounts, txns, onDone }: { entry: Quick
               aria-pressed={category === name}
               className={cx(
                 "flex min-h-[4.25rem] w-full flex-col items-center justify-center gap-1 rounded-2xl border p-1.5 text-[0.68rem] leading-tight font-medium transition",
-                category === name ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2",
+                category === name ? "border-brand bg-brand/10 text-brand" : "border-line bg-surface text-ink-2",
               )}
             >
               <Icon className="size-5" />

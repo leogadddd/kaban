@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, ChevronLeft, LogIn, ShieldAlert, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { HapticButton } from "@/components/haptic-button";
 import { Button, cx } from "@/components/ui";
 import { CLOUD_BENEFITS } from "@/components/cloud-benefits";
@@ -87,13 +87,13 @@ function Intro({ onContinue }: { onContinue: () => void }) {
           ].map((k, i) => (
             <motion.div
               key={k.label}
-              className="card-grain absolute inset-x-4 h-28 rounded-[1.6rem] p-4 text-white shadow-float"
-              style={{ background: k.c, top: k.y }}
+              className="account-card-tinted absolute inset-x-4 h-28 rounded-[1.6rem] border border-line bg-surface p-4 shadow-soft"
+              style={{ "--account-color": k.c, top: k.y } as CSSProperties}
               initial={{ opacity: 0, y: 40, rotate: 0 }}
               animate={{ opacity: 1, y: 0, rotate: k.r }}
               transition={{ delay: 0.1 + i * 0.12, type: "spring", stiffness: 180, damping: 18 }}
             >
-              <p className="text-xs text-white/70">{k.label}</p>
+              <p className="text-xs text-ink-2">{k.label}</p>
               <p className="num mt-1 text-2xl font-semibold">{k.v}</p>
             </motion.div>
           ))}

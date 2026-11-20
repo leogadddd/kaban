@@ -511,7 +511,7 @@ function Editor() {
                   aria-pressed={category === name}
                   className={cx(
                     "flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-2xl border p-1.5 text-[0.68rem] leading-tight font-medium transition",
-                    category === name ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2",
+                    category === name ? "border-brand bg-brand/10 text-brand" : "border-line bg-surface text-ink-2",
                   )}
                 >
                   <Icon className="size-5" />
@@ -681,6 +681,7 @@ function AccountPicker({ label, accounts, value, onChange, ledger, shared }: { l
           const b = balanceOf(ledger, shared, a.id);
           const owner = shared?.get(a.id)?.ownerName;
           const active = a.id === value;
+          const bank = a.type === "cash" ? undefined : bankFor(a);
           return (
             <HapticButton
               key={a.id}
@@ -689,21 +690,16 @@ function AccountPicker({ label, accounts, value, onChange, ledger, shared }: { l
               aria-checked={active}
               onClick={() => onChange(a.id)}
               wrapperClassName="min-w-36 shrink-0"
-              className={cx("rounded-2xl border p-3 text-left transition", active ? "border-transparent text-white shadow-float" : "border-line bg-surface")}
-              style={active ? { background: a.color } : undefined}
+              className={cx("rounded-2xl border p-3 text-left transition", active ? "border-brand bg-brand/10" : "border-line bg-surface")}
             >
               <span className="flex items-center gap-1.5 text-sm font-medium">
-                {(() => {
-                  const bank = a.type === "cash" ? undefined : bankFor(a);
-                  if (bank) return <BankLogo bank={bank} size={20} />;
-                  return !active && <span className="size-2.5 rounded-full" style={{ background: a.color }} />;
-                })()}
+                {bank ? <BankLogo bank={bank} size={20} /> : <span className="size-2.5 rounded-full" style={{ background: a.color }} />}
                 {a.name}
               </span>
-              <span className={cx("num amount block text-xs", active ? "text-white/75" : "text-ink-3")}>
+              <span className="num amount block text-xs text-ink-3">
                 {a.type === "credit" ? `${fmt(b?.available ?? 0, { compact: true })} available` : fmt(b?.balance ?? 0)}
               </span>
-              {owner && <span className={cx("block truncate text-[0.68rem]", active ? "text-white/75" : "text-ink-3")}>{owner}&apos;s · shared</span>}
+              {owner && <span className="block truncate text-[0.68rem] text-ink-3">{owner}&apos;s · shared</span>}
             </HapticButton>
           );
         })}
@@ -758,7 +754,7 @@ function AccountList({ accounts, ledger, onPick, shared }: { accounts: Account[]
             {bank ? (
               <BankLogo bank={bank} size={44} />
             ) : (
-              <span className="size-11 shrink-0 rounded-2xl" style={{ background: `linear-gradient(140deg, ${a.color}, color-mix(in oklab, ${a.color} 70%, black))` }} />
+              <span className="size-11 shrink-0 rounded-2xl" style={{ background: `color-mix(in srgb, ${a.color} 28%, var(--color-surface))` }} />
             )}
             <span className="min-w-0 flex-1">
               <span className="block truncate font-medium">{a.name}</span>

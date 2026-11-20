@@ -141,13 +141,13 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
         </Card>
 
         {forming && (
-          <Card className="bg-night text-white dark:border-white/6">
+          <Card>
             <p className="font-semibold">Invite someone to get started</p>
-            <p className="mt-1 text-sm text-white/70">
+            <p className="mt-1 text-sm text-ink-2">
               {admin ? "Your family is ready once a second person joins. Show them your QR code or send the link." : "Waiting for the first members to join."}
             </p>
             {admin && (
-              <ButtonLink href={`/family/invite?id=${family.id}`} variant="secondary" wrapperClassName="mt-4 grid" className="bg-white text-brand-deep">
+              <ButtonLink href={`/family/invite?id=${family.id}`} wrapperClassName="mt-4 grid">
                 <QrCode className="size-4" /> Show invite code
               </ButtonLink>
             )}
@@ -166,7 +166,7 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
         ) : (
           <>
             <Tiles>
-              <Tile label="Shared money" dark><Money minor={data.cash} /></Tile>
+              <Tile label="Shared money"><Money minor={data.cash} /></Tile>
               <Tile label="Card balances"><Money minor={data.credit} /></Tile>
               <Tile label="Spent this month"><Money minor={data.monthSpend} /></Tile>
               <Tile label="Shared accounts">{family.shared.length}</Tile>

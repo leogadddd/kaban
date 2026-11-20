@@ -150,7 +150,6 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
 
   return (
     <div className="intro-stagger">
-      {/* Hero on the page background; the chest stands on the edge of the tinted panel below. */}
       <div className="flex items-end gap-3 pt-5">
         <div className="@container min-w-0 flex-1 pb-5">
           <p className="text-sm text-ink-3">Available funds · cash & debit</p>
@@ -161,55 +160,52 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
             Across {spendable} {spendable === 1 ? "account" : "accounts"}
           </p>
         </div>
-        <KabanChest amount={totals.availableFunds} hidden={hidden} className="relative z-10 -mb-[13px] size-26 lg:-mb-[16px] lg:size-32" />
+        <KabanChest amount={totals.availableFunds} hidden={hidden} className="size-26 lg:size-32" />
       </div>
 
-      {/* Everything below the hero sits on a tinted panel. Phones: full bleed with a rounded top; its ::after
-          carries the tint under the floating tab bar (exactly the shell's pb-nav, so the page doesn't grow).
-          Desktop: a rounded card in the column. */}
-      <div className="relative -mx-4 space-y-5 rounded-t-[2rem] bg-pale px-4 pt-6 pb-6 after:absolute after:inset-x-0 after:top-full after:h-[calc(6.5rem+var(--safe-bottom))] after:bg-pale after:content-[''] lg:mx-0 lg:rounded-[2rem] lg:p-5 lg:after:hidden">
-      <div className="grid grid-cols-2 gap-3">
-        <HapticButton onClick={onCredit} className="rounded-3xl bg-night p-4 text-left text-white shadow-float dark:ring-1 dark:ring-white/6 active:scale-[0.98]">
-          <p className="text-xs text-white/60">Credit outstanding</p>
-          <Money minor={totals.creditOutstanding} className="mt-1 block text-xl font-semibold" />
-          <p className="mt-2 flex items-center gap-1 text-xs text-mint">
-            Credit view <ArrowRight className="size-3" />
-          </p>
-        </HapticButton>
-        <Link href="/owed" className="rounded-3xl bg-brand-2 p-4 text-on-brand shadow-float active:scale-[0.98]">
-          <p className="flex items-center gap-1 text-xs text-on-brand/75">
-            <HandCoins className="size-3.5" /> Owed to me
-          </p>
-          <Money minor={receivable} className="mt-1 block text-xl font-semibold" />
-          <p className="mt-2 text-xs text-on-brand/75">Net position <Money minor={totals.netPosition} /></p>
-        </Link>
-      </div>
-
-      <CardStack items={cards} />
-
-      <Card>
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-sm font-semibold">Spending · last 30 days</p>
-            <p className="text-xs text-ink-3">Expenses only — card payments & transfers excluded</p>
-          </div>
-          <Money minor={monthSpend} className="font-semibold" />
-        </div>
-        <SpendTrend data={trend} />
-      </Card>
-
-      <section>
-        <SectionTitle action={<Link href="/activity" className="text-sm font-medium text-brand">See all</Link>}>Recent activity</SectionTitle>
-        <Card className="p-1.5">
-          {recent.length ? (
-            recent.slice(0, 6).map((t) => <TxnRow key={t.id} t={t} ledger={ledger} />)
-          ) : (
-            <p className="p-4 text-sm text-ink-3">
-              Nothing yet. Tap <b>+</b> to add your first transaction.
+      <div className="space-y-5 pt-3 pb-6">
+        <div className="grid grid-cols-2 gap-3">
+          <HapticButton onClick={onCredit} wrapperClassName="grid" className="rounded-3xl border border-line bg-surface p-4 text-left shadow-soft hover:bg-pale active:scale-[0.98]">
+            <p className="text-xs text-ink-3">Credit outstanding</p>
+            <Money minor={totals.creditOutstanding} className="mt-1 block text-xl font-semibold" />
+            <p className="mt-2 flex items-center gap-1 text-xs font-medium text-brand">
+              Credit view <ArrowRight className="size-3" />
             </p>
-          )}
+          </HapticButton>
+          <Link href="/owed" className="rounded-3xl border border-line bg-surface p-4 shadow-soft hover:bg-pale active:scale-[0.98]">
+            <p className="flex items-center gap-1 text-xs text-ink-3">
+              <HandCoins className="size-3.5 text-brand" /> Owed to me
+            </p>
+            <Money minor={receivable} className="mt-1 block text-xl font-semibold" />
+            <p className="mt-2 text-xs text-ink-3">Net position <Money minor={totals.netPosition} /></p>
+          </Link>
+        </div>
+
+        <CardStack items={cards} />
+
+        <Card>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-sm font-semibold">Spending · last 30 days</p>
+              <p className="text-xs text-ink-3">Expenses only — card payments & transfers excluded</p>
+            </div>
+            <Money minor={monthSpend} className="font-semibold" />
+          </div>
+          <SpendTrend data={trend} />
         </Card>
-      </section>
+
+        <section>
+          <SectionTitle action={<Link href="/activity" className="text-sm font-medium text-brand">See all</Link>}>Recent activity</SectionTitle>
+          <Card className="p-1.5">
+            {recent.length ? (
+              recent.slice(0, 6).map((t) => <TxnRow key={t.id} t={t} ledger={ledger} />)
+            ) : (
+              <p className="p-4 text-sm text-ink-3">
+                Nothing yet. Tap <b>+</b> to add your first transaction.
+              </p>
+            )}
+          </Card>
+        </section>
       </div>
     </div>
   );

@@ -35,8 +35,8 @@ export default function GeneralSettingsPage() {
 
 const THEMES: { value: ThemePref; label: string; icon: typeof Sun; preview: string }[] = [
   { value: "light", label: "Light", icon: Sun, preview: "bg-[#F7FAF7] [--pv-card:#FFFFFF] [--pv-accent:#176B4D]" },
-  { value: "dark", label: "Dark", icon: Moon, preview: "bg-[#141816] [--pv-card:#242A26] [--pv-accent:#4CD38F]" },
-  { value: "system", label: "System", icon: SunMoon, preview: "bg-[linear-gradient(90deg,#F7FAF7_50%,#141816_50%)] [--pv-card:linear-gradient(90deg,#FFFFFF_50%,#242A26_50%)] [--pv-accent:linear-gradient(90deg,#176B4D_50%,#4CD38F_50%)]" },
+  { value: "dark", label: "Dark", icon: Moon, preview: "bg-[#141816] [--pv-card:#202622] [--pv-accent:#4CD38F]" },
+  { value: "system", label: "System", icon: SunMoon, preview: "bg-[linear-gradient(90deg,#F7FAF7_50%,#141816_50%)] [--pv-card:linear-gradient(90deg,#FFFFFF_50%,#202622_50%)] [--pv-accent:linear-gradient(90deg,#176B4D_50%,#4CD38F_50%)]" },
 ];
 
 /** Light / Dark / System. Device-only: stored locally, applied before first paint by the layout script. */

@@ -74,7 +74,7 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
       <DesktopAccounts ledger={ledger} list={list} />
       <Tiles className="lg:hidden">
         <Tile label="Available funds"><Money minor={ledger.totals.availableFunds} /></Tile>
-        <Tile label="Credit outstanding" dark><Money minor={ledger.totals.creditOutstanding} /></Tile>
+        <Tile label="Credit outstanding"><Money minor={ledger.totals.creditOutstanding} /></Tile>
       </Tiles>
 
       <div className="space-y-5 lg:hidden">
@@ -92,7 +92,7 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
                     <Row
                       key={a.id}
                       href={`/accounts/view?id=${a.id}`}
-                      lead={bank ? <BankLogo bank={bank} size={36} /> : <span className="grid size-9 shrink-0 place-items-center rounded-xl text-white" style={{ background: a.color }} aria-hidden="true"><Icon className="size-5" /></span>}
+                      lead={bank ? <BankLogo bank={bank} size={36} /> : <span className="grid size-9 shrink-0 place-items-center rounded-xl text-ink" style={{ background: `color-mix(in srgb, ${a.color} 28%, var(--color-surface))` }} aria-hidden="true"><Icon className="size-5" /></span>}
                       title={<>{a.name} {a.archived && <span className="ml-1 rounded-full bg-pale px-2 py-0.5 text-[0.65rem] text-ink-3">Archived</span>}</>}
                       sub={
                         a.type === "credit" ? (
@@ -141,17 +141,17 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
 function DesktopAccounts({ ledger, list }: { ledger: Ledger; list: Ledger["accounts"] }) {
   const owed = ledger.debtStatus.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
   const tiles = [
-    { label: "Available funds", value: ledger.totals.availableFunds, cls: "bg-pale" },
-    { label: "Credit outstanding", value: ledger.totals.creditOutstanding, cls: "bg-night text-white dark:border-white/6", sub: "text-white/60" },
-    { label: "Net position", value: ledger.totals.netPosition, cls: "bg-surface" },
-    { label: "Owed to you", value: owed, cls: "bg-brand-2 text-on-brand", sub: "text-on-brand/75" },
+    { label: "Available funds", value: ledger.totals.availableFunds },
+    { label: "Credit outstanding", value: ledger.totals.creditOutstanding },
+    { label: "Net position", value: ledger.totals.netPosition },
+    { label: "Owed to you", value: owed },
   ];
   return (
     <div className="hidden space-y-8 lg:block">
       <div className="grid grid-cols-4 gap-4">
         {tiles.map((t) => (
-          <Card key={t.label} className={t.cls}>
-            <p className={t.sub ?? "text-sm text-ink-3"}>{t.label}</p>
+          <Card key={t.label}>
+            <p className="text-sm text-ink-3">{t.label}</p>
             <Money minor={t.value} className="mt-1 block text-2xl font-semibold" />
           </Card>
         ))}
@@ -184,7 +184,7 @@ function PeoplePane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
     <div className="space-y-5 pb-4">
       <Tiles className="lg:hidden">
         <Tile label="People"><span className="num">{people.length}</span></Tile>
-        <Tile label={owing ? `Owed by ${owing} ${owing === 1 ? "person" : "people"}` : "Owed to you"} dark><Money minor={owedTotal} /></Tile>
+        <Tile label={owing ? `Owed by ${owing} ${owing === 1 ? "person" : "people"}` : "Owed to you"}><Money minor={owedTotal} /></Tile>
       </Tiles>
 
       {people.length ? (
@@ -274,7 +274,7 @@ function OwedPane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
     <div className="space-y-5 pb-4">
       <Tiles className="lg:hidden">
         <Tile label="Owed to you"><Money minor={totalOutstanding} /></Tile>
-        <Tile label="Repaid so far" dark><Money minor={totalRepaid} /></Tile>
+        <Tile label="Repaid so far"><Money minor={totalRepaid} /></Tile>
       </Tiles>
 
       <section>

@@ -243,7 +243,7 @@ function ScannerView({ onClose, onCode }: { onClose: () => void; onCode: (code: 
       <div className="absolute inset-x-0 bottom-0 space-y-3 px-6 pb-[max(var(--safe-bottom),1.5rem)] text-center">
         <AnimatePresence mode="wait">
           {hint ? (
-            <motion.p key="hint" role="status" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mx-auto w-fit rounded-full bg-expense/90 px-4 py-2 text-sm font-medium">
+            <motion.p key="hint" role="status" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mx-auto w-fit rounded-full bg-expense px-4 py-2 text-sm font-medium text-on-expense">
               {hint}
             </motion.p>
           ) : blocked ? (

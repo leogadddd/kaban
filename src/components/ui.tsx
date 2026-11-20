@@ -172,7 +172,7 @@ function buttonClass(variant: ButtonVariant, className?: string) {
     variant === "secondary" && "bg-pale text-brand",
     variant === "ghost" && "text-brand active:bg-pale",
     variant === "danger" && "bg-expense/10 text-expense",
-    variant === "destructive" && "bg-expense text-white shadow-soft",
+    variant === "destructive" && "bg-expense text-on-expense shadow-soft",
     className,
   );
 }
@@ -248,7 +248,7 @@ export function Segmented<T extends string>({
             className={cx(
               "relative rounded-xl font-medium whitespace-nowrap transition-colors",
               size === "sm" ? "min-h-9 px-2 text-sm" : "min-h-11 px-3",
-              active ? "text-ink" : "text-ink-2",
+              active ? "text-brand" : "text-ink-2",
             )}
           >
             {active && (
@@ -271,7 +271,7 @@ export function Chip({ active, children, onClick, className }: { active?: boolea
       aria-pressed={active}
       className={cx(
         "inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition",
-        active ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink-2",
+        active ? "border-brand bg-brand/10 text-brand" : "border-line bg-surface text-ink-2",
         className,
       )}
     >
@@ -352,7 +352,7 @@ export function Sheet({
               {title && (
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold">{title}</h2>
-                  <HapticButton onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale hover:bg-mint" aria-label="Close">
+                  <HapticButton onClick={onClose} className="grid size-10 place-items-center rounded-full bg-pale hover:bg-brand/10" aria-label="Close">
                     <X className="size-5" />
                   </HapticButton>
                 </div>

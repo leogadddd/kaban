@@ -87,10 +87,10 @@ export function Tiles({ children, className }: { children: ReactNode; className?
   return <div className={cx("grid grid-cols-2 gap-3", className)}>{children}</div>;
 }
 
-export function Tile({ label, children, dark }: { label: string; children: ReactNode; dark?: boolean }) {
+export function Tile({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <Card className={dark ? "bg-night text-white dark:border-white/6" : "bg-pale"}>
-      <p className={cx("text-xs", dark ? "text-white/60" : "text-ink-3")}>{label}</p>
+    <Card>
+      <p className="text-xs text-ink-3">{label}</p>
       <div className="text-xl font-semibold">{children}</div>
     </Card>
   );
