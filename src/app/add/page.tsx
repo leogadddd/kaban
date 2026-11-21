@@ -23,7 +23,7 @@ import { animatedBack } from "@/lib/nav-direction";
 import { formatMoney, minorToInput, parseMinor, splitEvenly } from "@/lib/money";
 import { savePerson, saveTransaction, setTransactionVoid } from "@/lib/repo";
 import { runSync, useSyncState } from "@/lib/sync";
-import { addFamilyTransaction, FAMILY_TXN_TYPES, payFamilyCard, sharedTargets, useFamilies, type SharedTarget } from "@/lib/family";
+import { addFamilyTransaction, FAMILY_TXN_TYPES, payFamilyCard, sharedTargets, useFamilies, useFamilyPersonAvatars, type SharedTarget } from "@/lib/family";
 import { ME, type Account, type Arrangement, type Txn, type TxnType } from "@/lib/types";
 
 export default function Page() {
@@ -158,6 +158,7 @@ function Editor() {
   // Accounts other family members shared with this user (expense, income and refund only; not when editing).
   const { userId } = useSyncState();
   const familyState = useFamilies();
+  const avatars = useFamilyPersonAvatars(familyState, ledger.familyPersonLinks);
   // Splits create local debts, so this flow needs an account from this ledger.
   const targets = useMemo(() => (editId || splitPerson ? [] : sharedTargets(familyState, userId)), [editId, splitPerson, familyState, userId]);
   const sharedMap = useMemo(() => new Map(targets.map((t) => [t.key, t])), [targets]);
@@ -548,11 +549,15 @@ function Editor() {
                   <div className="space-y-3 pt-4">
                     <div className="flex flex-wrap gap-2">
                       <Chip active={participants.includes(ME)} onClick={() => toggleParticipant(ME)}>Me</Chip>
-                      {ledger.people.filter((p) => !p.archived || p.id === splitPerson?.id).map((p) => (
-                        <Chip key={p.id} active={participants.includes(p.id)} onClick={() => toggleParticipant(p.id)}>
-                          {p.name}
-                        </Chip>
-                      ))}
+                      {ledger.people.filter((p) => !p.archived || p.id === splitPerson?.id).map((p) => {
+                        const avatar = avatars.get(p.id);
+                        return (
+                          <Chip key={p.id} active={participants.includes(p.id)} onClick={() => toggleParticipant(p.id)}>
+                            {avatar && <Avatar name={p.name} color={p.color} avatar={avatar} size={20} />}
+                            {p.name}
+                          </Chip>
+                        );
+                      })}
                     </div>
                     <div className="flex gap-2">
                       <input className={cx(inputCls, "min-h-11")} placeholder="Add a person" value={newPerson} onChange={(e) => setNewPerson(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPerson())} />
@@ -575,7 +580,7 @@ function Editor() {
                         const person = a.personId === ME ? { name: "Me", color: "#176B4D" } : ledger.personById.get(a.personId);
                         return (
                           <li key={a.personId} className="flex items-center gap-3 py-2">
-                            <Avatar name={person?.name ?? "?"} color={person?.color ?? "#999"} size={32} />
+                            <Avatar name={person?.name ?? "?"} color={person?.color ?? "#999"} avatar={avatars.get(a.personId)} size={32} />
                             <span className="min-w-0 flex-1 text-sm font-medium">
                               {person?.name}
                               {a.personId !== ME && (

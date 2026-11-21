@@ -11,6 +11,7 @@ import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { GroupTitle, Row, SwipeHub, Tile, Tiles, type HubPane } from "@/components/swipe-hub";
 import { Avatar, Button, ButtonLink, Card, Chip, EmptyState, Field, inputCls, Money, Progress, Sheet } from "@/components/ui";
 import { bankFor } from "@/lib/banks";
+import { useFamilies, useFamilyPersonAvatars } from "@/lib/family";
 import { useLedger } from "@/lib/hooks";
 import { savePerson } from "@/lib/repo";
 import type { AccountType } from "@/lib/types";
@@ -20,6 +21,7 @@ type Ledger = ReturnType<typeof useLedger>;
 /** Accounts, People and Owed to me: one swipeable screen under the Accounts tab. */
 export function AccountsHub() {
   const ledger = useLedger();
+  const avatars = useFamilyPersonAvatars(useFamilies(), ledger.familyPersonLinks);
   const [addingPerson, setAddingPerson] = useState(false);
   const [addingDebt, setAddingDebt] = useState(false);
   const btn = "grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-soft";
@@ -37,14 +39,14 @@ export function AccountsHub() {
       tab: "People",
       title: "People",
       action: <HapticButton onClick={() => setAddingPerson(true)} className={btn} aria-label="Add person"><UserPlus className="size-5" /></HapticButton>,
-      content: <PeoplePane ledger={ledger} onAdd={() => setAddingPerson(true)} />,
+      content: <PeoplePane ledger={ledger} avatars={avatars} onAdd={() => setAddingPerson(true)} />,
     },
     {
       href: "/owed",
       tab: "Owed to me",
       title: "Who Owes Me",
       action: <HapticButton onClick={() => setAddingDebt(true)} className={btn} aria-label="Record a debt"><Plus className="size-5" /></HapticButton>,
-      content: <OwedPane ledger={ledger} onAdd={() => setAddingDebt(true)} />,
+      content: <OwedPane ledger={ledger} avatars={avatars} onAdd={() => setAddingDebt(true)} />,
     },
   ];
 
@@ -52,7 +54,7 @@ export function AccountsHub() {
     <>
       <SwipeHub title="Accounts" panes={panes} ready={ledger.ready} />
       <AddPersonSheet open={addingPerson} onClose={() => setAddingPerson(false)} />
-      <DebtSheet open={addingDebt} onClose={() => setAddingDebt(false)} ledger={ledger} />
+      <DebtSheet open={addingDebt} onClose={() => setAddingDebt(false)} ledger={ledger} avatars={avatars} />
     </>
   );
 }
@@ -176,7 +178,7 @@ function DesktopAccounts({ ledger, list }: { ledger: Ledger; list: Ledger["accou
 
 /* ---------- People ---------- */
 
-function PeoplePane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
+function PeoplePane({ ledger, avatars, onAdd }: { ledger: Ledger; avatars: ReadonlyMap<string, string>; onAdd: () => void }) {
   const people = ledger.people.filter((p) => !p.archived);
   const owedTotal = ledger.debtStatus.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
   const owing = people.filter((p) => ledger.debtStatus.some((d) => d.debt.personId === p.id && d.outstanding > 0)).length;
@@ -201,7 +203,7 @@ function PeoplePane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
                 <Row
                   key={p.id}
                   href={`/owed/person?id=${p.id}`}
-                  lead={<Avatar name={p.name} color={p.color} size={36} />}
+                  lead={<Avatar name={p.name} color={p.color} avatar={avatars.get(p.id)} size={36} />}
                   title={
                     ledger.familyPersonIds.has(p.id) ? (
                       <span className="flex items-center gap-2"><span className="truncate">{p.name}</span><FamilyBadge /></span>
@@ -261,7 +263,7 @@ function AddPersonSheet({ open, onClose }: { open: boolean; onClose: () => void 
 
 /* ---------- Owed to me ---------- */
 
-function OwedPane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
+function OwedPane({ ledger, avatars, onAdd }: { ledger: Ledger; avatars: ReadonlyMap<string, string>; onAdd: () => void }) {
   const [filter, setFilter] = useState<"open" | "settled">("open");
   const rows = ledger.people
     .map((p) => {
@@ -295,7 +297,7 @@ function OwedPane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
                 <Row
                   key={r.person.id}
                   href={`/owed/person?id=${r.person.id}`}
-                  lead={<Avatar name={r.person.name} color={r.person.color} size={36} />}
+                  lead={<Avatar name={r.person.name} color={r.person.color} avatar={avatars.get(r.person.id)} size={36} />}
                   title={r.person.name}
                   sub={
                     <div className="mt-1 flex items-center gap-2">

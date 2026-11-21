@@ -16,6 +16,7 @@ export interface Ledger {
   instalments: InstalmentEntry[];
   people: Person[];
   familyPersonIds: Set<string>;
+  familyPersonLinks: Record<string, string>;
   splits: SplitAllocation[];
   /** Transactions that have split allocations (a row check that stays O(1) on long lists). */
   splitTxnIds: Set<string>;
@@ -41,6 +42,8 @@ async function loadLedger(db: KabanDB) {
   return buildLedger({ accounts, txns, instalments, people, splits, debts, familyLinks });
 }
 
+const EMPTY_FAMILY_LINKS: Record<string, string> = {};
+
 function buildLedger(data?: { accounts: Account[]; txns: Txn[]; instalments: InstalmentEntry[]; people: Person[]; splits: SplitAllocation[]; debts: Debt[]; familyLinks?: Record<string, string> }): Ledger {
   const accounts = data?.accounts ?? [];
   const txns = data?.txns ?? [];
@@ -53,6 +56,7 @@ function buildLedger(data?: { accounts: Account[]; txns: Txn[]; instalments: Ins
     instalments: data?.instalments ?? [],
     people: data?.people ?? [],
     familyPersonIds: new Set(data?.people.filter((p) => isFamilyPerson(p.id, data.familyLinks)).map((p) => p.id)),
+    familyPersonLinks: data?.familyLinks ?? EMPTY_FAMILY_LINKS,
     splits: data?.splits ?? [],
     splitTxnIds: new Set((data?.splits ?? []).map((s) => s.transactionId)),
     debts: data?.debts ?? [],
