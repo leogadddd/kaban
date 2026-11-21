@@ -111,6 +111,7 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
   const data = useMemo(() => summarise(family.shared), [family.shared]);
   const forming = isForming(family);
   const admin = isAdmin(family);
+  const [viewing, setViewing] = useState<SharedAccount | null>(null);
 
   return (
     <>
@@ -212,7 +213,7 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
             {data.dues.length > 0 && (
               <section>
                 <GroupTitle icon={CalendarClock}>Upcoming card dues</GroupTitle>
-                <Card className="divide-y divide-line p-0">
+                <Card className="divide-y divide-line overflow-hidden p-0!">
                   {data.dues.map((s) => (
                     <div key={`${s.owner_id}:${s.account_id}`} className="flex items-center gap-3 p-4">
                       <AccountMark s={s} />
@@ -229,29 +230,39 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
 
             <section>
               <GroupTitle icon={Wallet}>Shared accounts</GroupTitle>
-              <Card className="divide-y divide-line p-0">
-                {family.shared.map((s) => (
-                  <div key={`${s.owner_id}:${s.account_id}`} className="flex items-center gap-3 p-4">
-                    <AccountMark s={s} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{s.snapshot.account.name}</p>
-                      <p className="flex items-center gap-1 truncate text-xs text-ink-3">
-                        {who(members.get(s.owner_id), s.owner_id, myId)} · {s.visibility === "balance" ? <><Eye className="size-3" /> Balance only</> : "Balance & activity"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <Money minor={s.snapshot.balanceMinor} className={cx("font-semibold", s.snapshot.account.type === "credit" && "text-expense")} />
-                      <p className="text-[0.7rem] text-ink-3">{s.snapshot.account.type === "credit" ? "owed" : "balance"}</p>
-                    </div>
-                  </div>
-                ))}
+              <Card className="divide-y divide-line overflow-hidden p-0!">
+                {family.shared.map((s) => {
+                  const mine = s.owner_id === myId;
+                  const row = (
+                    <>
+                      <AccountMark s={s} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{s.snapshot.account.name}</p>
+                        <p className="flex items-center gap-1 truncate text-xs text-ink-3">
+                          {who(members.get(s.owner_id), s.owner_id, myId)} · {s.visibility === "balance" ? <><Eye className="size-3" /> Balance only</> : "Balance & activity"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <Money minor={s.snapshot.balanceMinor} className={cx("font-semibold", s.snapshot.account.type === "credit" && "text-expense")} />
+                        <p className="text-[0.7rem] text-ink-3">{s.snapshot.account.type === "credit" ? "owed" : "balance"}</p>
+                      </div>
+                      <ChevronRight className="size-4 shrink-0 text-ink-3" />
+                    </>
+                  );
+                  const cls = "flex w-full items-center gap-3 px-4 py-3 text-left active:bg-pale";
+                  return mine ? (
+                    <HapticLink key={`${s.owner_id}:${s.account_id}`} href={`/accounts/view?id=${s.account_id}`} wrapperClassName="block" className={cls}>{row}</HapticLink>
+                  ) : (
+                    <button key={`${s.owner_id}:${s.account_id}`} type="button" onClick={() => setViewing(s)} className={cls}>{row}</button>
+                  );
+                })}
               </Card>
             </section>
 
             {data.recent.length > 0 && (
               <section>
                 <SectionTitle>Recent activity</SectionTitle>
-                <Card className="divide-y divide-line p-0">
+                <Card className="divide-y divide-line overflow-hidden p-0!">
                   {data.recent.map(({ t, s }) => (
                     <div key={`${s.owner_id}:${t.id}:${s.account_id}`} className="flex items-center gap-3 px-4 py-3">
                       <MemberAvatar member={members.get(t.by ?? s.owner_id)} size={32} />
@@ -278,6 +289,8 @@ function Dashboard({ family, families, myId }: { family: Family; families: Famil
           <ChevronRight className="size-4 text-ink-3" />
         </Link>
       </div>
+
+      <SharedAccountSheet s={viewing} owner={viewing ? who(members.get(viewing.owner_id), viewing.owner_id, myId) : ""} members={members} myId={myId} onClose={() => setViewing(null)} />
     </>
   );
 }
@@ -309,7 +322,7 @@ function AddedByMe({ family }: { family: Family }) {
   return (
     <section>
       <GroupTitle icon={History}>Added by you</GroupTitle>
-      <Card className="divide-y divide-line p-0">
+      <Card className="divide-y divide-line overflow-hidden p-0!">
         {queue.map((q) => (
           <HapticButton key={q.id} type="button" onClick={() => setOpen(q)} wrapperClassName="grid" className={cx("flex w-full items-center gap-3 px-4 py-3 text-left active:bg-pale", q.txn.state === "void" && "opacity-50")}>
             <div className="min-w-0 flex-1">
@@ -407,6 +420,85 @@ function EntrySheet({ entry, owner, onDone }: { entry: QueuedTxn; owner: string;
         Remove
       </Button>
     </form>
+  );
+}
+
+/** Read-only look at someone else's shared account. Only its owner can edit it, from their own Accounts. */
+function SharedAccountSheet({ s, owner, members, myId, onClose }: { s: SharedAccount | null; owner: string; members: Map<string, FamilyMember>; myId: string; onClose: () => void }) {
+  // Keep the last account while the sheet slides away.
+  const [last, setLast] = useState(s);
+  if (s && s !== last) setLast(s);
+  const a = s ?? last;
+  const credit = a?.snapshot.account.type === "credit";
+  const txns = a?.visibility === "activity" ? (a.snapshot.txns ?? []).slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 15) : [];
+
+  return (
+    <Sheet open={!!s} onClose={onClose} title={a?.snapshot.account.name}>
+      {a && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <AccountMark s={a} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm text-ink-3">Shared by {owner}</p>
+              <p className="flex items-center gap-1 text-xs text-ink-3">
+                <Eye className="size-3" /> View only · {a.visibility === "balance" ? "Balance only" : "Balance & activity"}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-2xl bg-pale p-3">
+              <p className="text-xs text-ink-3">{credit ? "Owed" : "Balance"}</p>
+              <Money minor={a.snapshot.balanceMinor} className={cx("text-lg font-semibold", credit && "text-expense")} />
+            </div>
+            <div className="rounded-2xl bg-pale p-3">
+              <p className="text-xs text-ink-3">Spent this month</p>
+              <Money minor={a.snapshot.monthSpendMinor} className="text-lg font-semibold" />
+            </div>
+            {a.snapshot.availableMinor != null && (
+              <div className="rounded-2xl bg-pale p-3">
+                <p className="text-xs text-ink-3">Available</p>
+                <Money minor={a.snapshot.availableMinor} className="font-semibold" />
+              </div>
+            )}
+            {a.snapshot.dueDate && (
+              <div className="rounded-2xl bg-pale p-3">
+                <p className="text-xs text-ink-3">Due</p>
+                <p className="font-semibold">{relativeDayLabel(a.snapshot.dueDate)}</p>
+              </div>
+            )}
+          </div>
+
+          {a.visibility === "activity" ? (
+            txns.length > 0 ? (
+              <div>
+                <p className="mb-1 text-sm font-semibold">Recent activity</p>
+                <div className="divide-y divide-line">
+                  {txns.map((t) => (
+                    <div key={t.id} className="flex items-center gap-3 py-2.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{t.description || t.category || "Transaction"}</p>
+                        <p className="truncate text-xs text-ink-3">
+                          {formatDay(t.date)}
+                          {t.by && t.by !== a.owner_id && <> · added by {who(members.get(t.by), t.by, myId)}</>}
+                        </p>
+                      </div>
+                      <Money minor={credit ? -t.effect : t.effect} sign tone="auto" className="text-sm font-semibold" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-sm text-ink-3">No activity yet.</p>
+            )
+          ) : (
+            <p className="text-center text-sm text-ink-3">{owner} shares the balance only.</p>
+          )}
+
+          <p className="text-center text-xs text-ink-3">Only {owner} can edit this account.</p>
+        </div>
+      )}
+    </Sheet>
   );
 }
 
