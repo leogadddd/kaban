@@ -1,39 +1,44 @@
 "use client";
 
 import { useMemo, useState, type ComponentProps } from "react";
-import { CategoryBars, FlowChart, UtilisationRing } from "@/components/charts";
-import { DateField } from "@/components/date-field";
+import { CategoryChart, FlowReport, UtilisationRing } from "@/components/charts";
 import { GroupedTxns } from "@/components/txn-row";
-import { Card, EmptyState, inputCls, Loading, Money, PageHeader, SectionTitle, Segmented, Sheet } from "@/components/ui";
+import { Card, EmptyState, Loading, Money, PageHeader, SectionTitle, Segmented, Sheet } from "@/components/ui";
 import { analyticsRanges, analyticsReport, formatAnalyticsRange, type AnalyticsPeriod, type DateRange } from "@/lib/analytics";
 import { monthKey, todayISO } from "@/lib/dates";
 import { accountBalances } from "@/lib/finance";
 import { useLedger, type Ledger } from "@/lib/hooks";
 import { useMoney } from "@/lib/privacy";
-
-const PERIODS: { value: AnalyticsPeriod; label: string }[] = [
-  { value: "this-month", label: "This month" },
-  { value: "last-month", label: "Last month" },
-  { value: "3-months", label: "Last 3 full months" },
-  { value: "6-months", label: "Last 6 full months" },
-  { value: "12-months", label: "Last 12 full months" },
-  { value: "custom", label: "Custom dates" },
-];
+import { AnalyticsFilters } from "./filters";
 
 type Selection = { category: string } | { range: DateRange };
 type Report = ReturnType<typeof analyticsReport>;
 
-function SummaryCard({ label, amount, before, tone }: {
-  label: string;
-  amount: number;
-  before: number;
-  tone?: ComponentProps<typeof Money>["tone"];
-}) {
+function Summary({ rows }: { rows: { label: string; amount: number; before: number; tone?: ComponentProps<typeof Money>["tone"] }[] }) {
   return (
-    <Card className="min-w-0 p-3 lg:p-4">
-      <p className="text-xs text-ink-3">{label}</p>
-      <p className="mt-0.5 break-words text-lg font-semibold lg:text-2xl"><Money minor={amount} tone={tone} compact /></p>
-      <p className="mt-1 text-xs text-ink-3"><Money minor={amount - before} sign compact /> change</p>
+    <Card className="min-w-0 px-4 py-2.5">
+      <table className="w-full table-fixed text-sm">
+        <thead className="text-xs text-ink-3">
+          <tr>
+            <th scope="col" className="w-1/4"><span className="sr-only">Metric</span></th>
+            <th scope="col" className="w-[40%] text-right font-normal">Amount</th>
+            <th scope="col" className="text-right font-normal">Change</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.map(({ label, amount, before, tone }) => (
+            <tr key={label}>
+              <th scope="row" className="py-2.5 text-left font-medium text-ink-2">{label}</th>
+              <td className="wrap-anywhere pl-2 text-right font-semibold">
+                <Money minor={amount} tone={tone} />
+              </td>
+              <td className="wrap-anywhere pl-2 text-right text-xs text-ink-3">
+                {amount === before ? <span aria-label="No change">—</span> : <Money minor={amount - before} sign />}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </Card>
   );
 }
@@ -59,7 +64,7 @@ function TransactionDetails({ selection, report, ledger, current, previous }: {
         <Segmented
           value={view}
           onChange={setView}
-          options={[{ value: "selected", label: "Selected period" }, { value: "previous", label: "Previous period" }]}
+          options={[{ value: "selected", label: "Selected" }, { value: "previous", label: "Previous" }]}
         />
       )}
       <p className="text-sm text-ink-3">{formatAnalyticsRange(range)}</p>
@@ -96,56 +101,37 @@ export default function AnalyticsPage() {
     <>
       <PageHeader title="Analytics" />
       {!ledger.ready ? <Loading /> : (
-        <div className="space-y-5 px-4 pb-4">
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 lg:max-w-xl lg:gap-3">
-              <select className={`${inputCls} truncate px-3`} aria-label="Date range" value={period} onChange={(e) => setPeriod(e.target.value as AnalyticsPeriod)}>
-                {PERIODS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-              </select>
-              <select className={`${inputCls} truncate px-3`} aria-label="Account" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                <option value="">All accounts</option>
-                {ledger.accounts.map((account) => (
-                  <option key={account.id} value={account.id}>{account.name}{account.archived ? " (archived)" : ""}</option>
-                ))}
-              </select>
-            </div>
-            {period === "custom" && (
-              <div className="grid grid-cols-2 gap-2 lg:max-w-xl lg:gap-3">
-                <div className="min-w-0 space-y-1">
-                  <label htmlFor="analytics-from" className="px-1 text-xs text-ink-3">From</label>
-                  <DateField id="analytics-from" title="From date" compact value={from} max={to} onChange={(date) => setCustom({ from: date, to })} />
-                </div>
-                <div className="min-w-0 space-y-1">
-                  <label htmlFor="analytics-to" className="px-1 text-xs text-ink-3">To</label>
-                  <DateField id="analytics-to" title="To date" compact value={to} min={from} max={today} onChange={(date) => setCustom({ from, to: date })} />
-                </div>
-              </div>
-            )}
-            <p className="text-sm text-ink-3">
-              <span className="font-medium text-ink">{formatAnalyticsRange(current)}</span>{" · vs "}
-              {formatAnalyticsRange(previous)}
+        <div className="space-y-4 px-4 pb-4">
+          <div className="space-y-2">
+            <AnalyticsFilters
+              period={period}
+              custom={{ from, to }}
+              today={today}
+              accounts={ledger.accounts}
+              accountId={accountId}
+              onPeriod={(next, range) => { setPeriod(next); if (range) setCustom(range); }}
+              onAccount={setAccountId}
+            />
+            <p className="px-1 text-xs text-ink-3">
+              <span className="font-medium text-ink-2">{formatAnalyticsRange(current, today)}</span>{" · vs "}
+              {formatAnalyticsRange(previous, today)}
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 lg:gap-4">
-            <SummaryCard label="Income" amount={totals.income} before={priorTotals.income} tone="income" />
-            <SummaryCard label="Spent" amount={totals.expense} before={priorTotals.expense} />
-            <SummaryCard label="Net" amount={totals.income - totals.expense} before={priorTotals.income - priorTotals.expense} tone="auto" />
-          </div>
+          <Summary rows={[
+            { label: "Income", amount: totals.income, before: priorTotals.income, tone: "income" },
+            { label: "Spent", amount: totals.expense, before: priorTotals.expense },
+            { label: "Net", amount: totals.income - totals.expense, before: priorTotals.income - priorTotals.expense, tone: "auto" },
+          ]} />
 
-          <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-            <Card className="min-w-0">
-              <SectionTitle>Income vs. spending</SectionTitle>
-              {report.activity.length
-                ? <FlowChart data={report.buckets} onSelect={(range) => setSelection({ range })} />
-                : <EmptyState title="No income or spending in this period" />}
-            </Card>
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+            <FlowReport data={report.buckets} hasActivity={report.activity.length > 0} onSelect={(range) => setSelection({ range })} />
 
             <Card className="min-w-0">
               <SectionTitle>Spending by category</SectionTitle>
               {report.categories.length
-                ? <CategoryBars data={report.categories} onSelect={(category) => setSelection({ category })} />
-                : <EmptyState title="No spending in either period" />}
+                ? <CategoryChart data={report.categories} onSelect={(category) => setSelection({ category })} />
+                : <EmptyState title="No spending" />}
             </Card>
 
             {credit.length > 0 && (
@@ -169,7 +155,7 @@ export default function AnalyticsPage() {
               </Card>
             )}
           </div>
-          <p className="px-1 text-xs text-ink-3">Spending uses the full amount of each recorded expense, including split purchases. Transfers, card payments, refunds, reimbursements and instalment schedules are excluded.</p>
+          <p className="px-1 text-xs text-ink-3">Split expenses include the full purchase amount.</p>
 
           <Sheet
             open={selection !== null}

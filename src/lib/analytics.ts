@@ -103,6 +103,8 @@ const rangeFormat = new Intl.DateTimeFormat("en-PH", { month: "short", day: "num
 const monthAxisFormat = new Intl.DateTimeFormat("en-PH", { month: "short", year: "2-digit" });
 const dayAxisFormat = new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric" });
 
-export function formatAnalyticsRange({ from, to }: DateRange) {
-  return rangeFormat.formatRange(fromISO(from), fromISO(to));
+export function formatAnalyticsRange({ from, to }: DateRange, referenceDate?: string) {
+  const year = referenceDate?.slice(0, 4);
+  const format = year && from.startsWith(year + "-") && to.startsWith(year + "-") ? dayAxisFormat : rangeFormat;
+  return format.formatRange(fromISO(from), fromISO(to));
 }
