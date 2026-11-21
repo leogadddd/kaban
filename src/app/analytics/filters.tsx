@@ -1,11 +1,11 @@
 "use client";
 
-import { CalendarDays, Check, ChevronDown, CreditCard, Landmark, Wallet, WalletCards, type LucideIcon } from "lucide-react";
+import { Archive, CalendarDays, Check, ChevronDown, CreditCard, Landmark, Wallet, WalletCards, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { BankLogo } from "@/components/bank-logo";
 import { DateField } from "@/components/date-field";
 import { HapticButton } from "@/components/haptic-button";
-import { Button, cx, Money, Progress, Sheet } from "@/components/ui";
+import { Button, Chip, cx, Money, Progress, Sheet } from "@/components/ui";
 import type { AnalyticsPeriod, DateRange } from "@/lib/analytics";
 import { bankFor } from "@/lib/banks";
 import { useShowArchived } from "@/lib/display-prefs";
@@ -107,11 +107,11 @@ const TYPE_ICON = Object.fromEntries(GROUPS.map(({ type, icon }) => [type, icon]
 /** Bank logo when we know the bank, otherwise the account-type icon on the account's colour. */
 export function AccountMark({ account, size = 36 }: { account: Account; size?: number }) {
   const bank = account.type === "cash" ? undefined : bankFor(account);
-  if (bank) return <BankLogo bank={bank} size={size} />;
+  if (bank) return <BankLogo bank={bank} size={size} className={account.archived ? "opacity-50" : undefined} />;
   const Icon = TYPE_ICON[account.type];
   return (
     <span
-      className="grid shrink-0 place-items-center rounded-xl text-ink"
+      className={cx("grid shrink-0 place-items-center rounded-xl text-ink", account.archived && "opacity-50")}
       style={{ width: size, height: size, background: `color-mix(in srgb, ${account.color} 28%, var(--color-surface))` }}
       aria-hidden="true"
     >
@@ -130,7 +130,7 @@ function AccountOption({ account, balance, selected, onClick }: { account: Accou
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={cx("flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left hover:bg-pale", selected && "bg-pale", account.archived && !selected && "opacity-70")}
+      className={cx("flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left hover:bg-pale", account.archived && "text-ink-2", selected ? "bg-pale" : account.archived && "bg-pale/50")}
     >
       <AccountMark account={account} />
       <span className="min-w-0 flex-1">
@@ -169,9 +169,12 @@ export function AnalyticsFilters({ period, custom, today, accounts, balances, av
   const [picker, setPicker] = useState<"date" | "account" | null>(null);
   const close = () => setPicker(null);
   const active = accounts.filter((account) => !account.archived);
-  const [showArchived] = useShowArchived();
-  // Keep a selected archived account listed so the current filter is always visible in the picker.
-  const archived = accounts.filter((account) => account.archived && (showArchived || account.id === accountId));
+  const [alwaysShowArchived] = useShowArchived();
+  const [archiveVisibility, setArchiveVisibility] = useState<boolean>();
+  const showArchived = archiveVisibility ?? alwaysShowArchived;
+  const archived = accounts.filter((account) => account.archived);
+  // Keep the current selection visible when the rest of the archived accounts are hidden.
+  const visibleArchived = showArchived ? archived : archived.filter(({ id }) => id === accountId);
   const account = accounts.find(({ id }) => id === accountId);
   const accountLabel = account ? `${account.name}${account.archived ? " · Archived" : ""}` : "All accounts";
   const pickAccount = (id: string) => {
@@ -210,22 +213,36 @@ export function AnalyticsFilters({ period, custom, today, accounts, balances, av
             </span>
             {!accountId && <Check className="size-4 shrink-0 text-brand" aria-hidden="true" />}
           </HapticButton>
-          {[
-            ...GROUPS.map(({ type, label, icon }) => ({ key: type, label, icon, items: active.filter((item) => item.type === type) })),
-            { key: "archived", label: "Archived", icon: undefined, items: archived },
-          ].map(({ key, label, icon: Icon, items }) => items.length > 0 && (
-            <section key={key} aria-label={label}>
-              <h3 className="mb-1 flex items-center gap-1.5 px-3 text-xs font-semibold text-ink-3">
-                {Icon && <Icon className="size-3.5" aria-hidden="true" />}
-                {label}
-              </h3>
-              <div className="space-y-0.5">
-                {items.map((item) => (
+          {GROUPS.map(({ type, label, icon: Icon }) => {
+            const items = active.filter((item) => item.type === type);
+            return items.length > 0 && (
+              <section key={type} aria-label={label}>
+                <h3 className="mb-1 flex items-center gap-1.5 px-3 text-xs font-semibold text-ink-3">
+                  <Icon className="size-3.5" aria-hidden="true" /> {label}
+                </h3>
+                <div className="space-y-0.5">
+                  {items.map((item) => (
+                    <AccountOption key={item.id} account={item} balance={balances.get(item.id)} selected={accountId === item.id} onClick={() => pickAccount(item.id)} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+          {archived.length > 0 && (
+            <Chip active={showArchived} onClick={() => setArchiveVisibility(!showArchived)}>
+              <Archive className="size-4" aria-hidden="true" /> {showArchived ? "Hide" : "Show"} archived ({archived.length})
+            </Chip>
+          )}
+          {visibleArchived.length > 0 && (
+            <section aria-label="Archived">
+              <h3 className="mb-1 px-3 text-xs font-semibold text-ink-3">Archived</h3>
+              <div className="space-y-1">
+                {visibleArchived.map((item) => (
                   <AccountOption key={item.id} account={item} balance={balances.get(item.id)} selected={accountId === item.id} onClick={() => pickAccount(item.id)} />
                 ))}
               </div>
             </section>
-          ))}
+          )}
         </div>
       </Sheet>
     </>

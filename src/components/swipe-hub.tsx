@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { SwipePager } from "@/components/swipe-pager";
-import { Card, cx, Loading, PageHeader, Segmented } from "@/components/ui";
+import { ArchivedBadge, Card, cx, Loading, PageHeader, Segmented } from "@/components/ui";
 import { useIsDesktop } from "@/lib/hooks";
 import type { Wallet } from "lucide-react";
 
@@ -104,12 +104,15 @@ export function GroupTitle({ icon: Icon, children }: { icon: typeof Wallet; chil
   );
 }
 
-export function Row({ href, lead, title, sub, trail }: { href: string; lead: ReactNode; title: ReactNode; sub: ReactNode; trail?: ReactNode }) {
+export function Row({ href, lead, title, sub, trail, archived }: { href: string; lead: ReactNode; title: ReactNode; sub: ReactNode; trail?: ReactNode; archived?: boolean }) {
   return (
-    <Link href={href} className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors active:bg-pale lg:hover:bg-pale">
-      {lead}
+    <Link href={href} className={cx("flex min-h-16 items-center gap-3 px-4 py-3 transition-colors active:bg-pale lg:hover:bg-pale", archived && "bg-pale/50 text-ink-2")}>
+      {archived ? <span className="shrink-0 opacity-50">{lead}</span> : lead}
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{title}</p>
+        <div className="flex items-center gap-1">
+          <p className="min-w-0 truncate font-medium">{title}</p>
+          {archived && <ArchivedBadge />}
+        </div>
         <div className="truncate text-xs text-ink-3">{sub}</div>
       </div>
       {trail && <div className="shrink-0 text-right">{trail}</div>}

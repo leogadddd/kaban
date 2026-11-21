@@ -98,8 +98,9 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
                     <Row
                       key={a.id}
                       href={`/accounts/view?id=${a.id}`}
+                      archived={a.archived}
                       lead={bank ? <BankLogo bank={bank} size={36} /> : <span className="grid size-9 shrink-0 place-items-center rounded-xl text-ink" style={{ background: `color-mix(in srgb, ${a.color} 28%, var(--color-surface))` }} aria-hidden="true"><Icon className="size-5" /></span>}
-                      title={<>{a.name} {a.archived && <span className="ml-1 rounded-full bg-pale px-2 py-0.5 text-[0.65rem] text-ink-3">Archived</span>}</>}
+                      title={a.name}
                       sub={
                         a.type === "credit" ? (
                           <div className="mt-1 flex items-center gap-2">
@@ -164,7 +165,7 @@ function DesktopAccounts({ ledger, list }: { ledger: Ledger; list: Ledger["accou
       </div>
       <div className="grid grid-cols-2 gap-5 xl:grid-cols-3">
         {GROUPS.flatMap(({ type }) => list.filter((a) => a.type === type)).map((a) => (
-          <Link key={a.id} href={`/accounts/view?id=${a.id}`} className={a.archived ? "opacity-60" : "transition hover:-translate-y-1"}>
+          <Link key={a.id} href={`/accounts/view?id=${a.id}`} className={a.archived ? undefined : "transition hover:-translate-y-1"}>
             <AccountCard b={ledger.balances.get(a.id)!} />
           </Link>
         ))}
@@ -211,12 +212,11 @@ function PeoplePane({ ledger, avatars, onAdd }: { ledger: Ledger; avatars: Reado
                 <Row
                   key={p.id}
                   href={`/owed/person?id=${p.id}`}
-                  lead={<span className={p.archived ? "opacity-60" : undefined}><Avatar name={p.name} color={p.color} avatar={avatars.get(p.id)} size={36} /></span>}
+                  archived={p.archived}
+                  lead={<Avatar name={p.name} color={p.color} avatar={avatars.get(p.id)} size={36} />}
                   title={
                     ledger.familyPersonIds.has(p.id) ? (
                       <span className="flex items-center gap-2"><span className="truncate">{p.name}</span><FamilyBadge /></span>
-                    ) : p.archived ? (
-                      <>{p.name} <span className="ml-1 rounded-full bg-pale px-2 py-0.5 text-[0.65rem] text-ink-3">Archived</span></>
                     ) : p.name
                   }
                   sub={shared === 0 ? p.nickname || "No shared expenses yet" : paid > 0 ? <>Paid back <Money minor={paid} className="text-income" /></> : <>Shared <Money minor={shared} /></>}
@@ -315,6 +315,7 @@ function OwedPane({ ledger, avatars, onAdd }: { ledger: Ledger; avatars: Readonl
                   href={`/owed/person?id=${r.person.id}`}
                   lead={<Avatar name={r.person.name} color={r.person.color} avatar={avatars.get(r.person.id)} size={36} />}
                   title={r.person.name}
+                  archived={r.person.archived}
                   sub={
                     <div className="mt-1 flex items-center gap-2">
                       <Progress value={pct} className="h-1.5 flex-1" />
