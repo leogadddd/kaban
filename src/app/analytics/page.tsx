@@ -165,6 +165,8 @@ export default function AnalyticsPage() {
               custom={{ from, to }}
               today={today}
               accounts={ledger.accounts}
+              balances={ledger.balances}
+              availableFunds={ledger.totals.availableFunds}
               accountId={accountId}
               onPeriod={(next, range) => { setPeriod(next); if (range) setCustom(range); }}
               onAccount={setAccountId}
