@@ -27,6 +27,7 @@ const ROUTES = [
   "/profile/edit",
   "/sync",
   "/settings",
+  "/settings/payday",
   "/welcome",
   "/ready",
   "/terms",

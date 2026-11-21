@@ -1,18 +1,14 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, CalendarDays, CreditCard, OctagonAlert, Receipt, Sparkles, Wallet } from "lucide-react";
-import { BigMoney, Button, Card, cx, Field, inputCls, Loading, Money, PageHeader, SectionTitle, Sheet } from "@/components/ui";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { AlertTriangle, CalendarDays, CreditCard, OctagonAlert, Receipt, Wallet } from "lucide-react";
+import { BigMoney, Card, cx, Loading, Money, PageHeader, SectionTitle } from "@/components/ui";
 import { daysLabel } from "@/components/tools-ui";
 import { addDays, formatDay, fromISO, toISO } from "@/lib/dates";
 import { useMoney } from "@/lib/privacy";
-import { setMeta } from "@/lib/repo";
-import { DEFAULT_PAYDAYS, detectPaydays, PAYDAYS_META } from "@/lib/tools";
+import { formatPaydays } from "@/lib/tools";
 import { useSafeToSpend } from "@/lib/tools-hooks";
-
-const ordinal = (n: number) => `${n}${n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th"}`;
-const paydayText = (days: number[]) => days.map(ordinal).join(" and ");
-const same = (a: number[], b: number[]) => a.length === b.length && a.every((d, i) => d === b[i]);
 
 function Row({ op, label, detail, children, strong }: { op?: "−" | "+" | "=" | "÷"; label: ReactNode; detail?: ReactNode; children: ReactNode; strong?: boolean }) {
   return (
@@ -27,44 +23,10 @@ function Row({ op, label, detail, children, strong }: { op?: "−" | "+" | "=" |
   );
 }
 
-function PaydayForm({ current, onDone }: { current: number[]; onDone: () => void }) {
-  const [first, setFirst] = useState(String(current[0] ?? 15));
-  const [second, setSecond] = useState(current[1] ? String(current[1]) : "");
-  const parse = (v: string) => (v.trim() === "" ? null : Number(v));
-  const a = parse(first);
-  const b = parse(second);
-  const valid = (n: number | null) => n === null || (Number.isInteger(n) && n >= 1 && n <= 31);
-  const ok = a !== null && valid(a) && valid(b) && a !== b;
-  async function save(days: number[]) {
-    await setMeta(PAYDAYS_META, [...new Set(days)].sort((x, y) => x - y));
-    onDone();
-  }
-  return (
-    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (ok) save([a!, ...(b !== null ? [b] : [])]); }}>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Payday" error={valid(a) && a !== null ? undefined : "Pick a day from 1 to 31"}>
-          {(id) => <input id={id} className={inputCls} inputMode="numeric" value={first} onChange={(e) => setFirst(e.target.value.replace(/\D/g, "").slice(0, 2))} />}
-        </Field>
-        <Field label="Second payday" error={valid(b) ? (a === b ? "Pick a different day" : undefined) : "Pick a day from 1 to 31"}>
-          {(id) => <input id={id} className={inputCls} inputMode="numeric" placeholder="None" value={second} onChange={(e) => setSecond(e.target.value.replace(/\D/g, "").slice(0, 2))} />}
-        </Field>
-      </div>
-      <p className="px-1 text-xs text-ink-3">Days past the end of a short month move to its last day, so the 30th is Feb 28 in February. Leave the second one empty if you&apos;re paid once a month.</p>
-      <Button type="submit" disabled={!ok} wrapperClassName="grid">Save paydays</Button>
-      {!same(current, DEFAULT_PAYDAYS) && (
-        <Button type="button" variant="ghost" wrapperClassName="grid" onClick={() => save(DEFAULT_PAYDAYS)}>Reset to the 15th and 30th</Button>
-      )}
-    </form>
-  );
-}
-
 export default function SafeToSpendPage() {
-  const { ledger, allowance, paydays, custom, today, ready } = useSafeToSpend();
+  const { ledger, allowance, paydays, today, ready } = useSafeToSpend();
   const { hidden } = useMoney();
-  const [editing, setEditing] = useState(false);
-  const detected = useMemo(() => detectPaydays(ledger.txns, today), [ledger.txns, today]);
   const { cash, bills, billsTotal, cards, cardsTotal, instalmentsTotal, savings, spendable, spentToday, perDay, leftToday, cycle } = allowance;
-  const suggest = detected && !same(detected, paydays) ? detected : null;
   const over = spendable < 0 || perDay <= 0;
   const addBack = spendable < 0 ? 0 : spentToday;
   const usedShare = perDay > 0 ? Math.min(100, (spentToday / perDay) * 100) : 100;
@@ -174,33 +136,20 @@ export default function SafeToSpendPage() {
           )}
 
           <Card>
-            <SectionTitle action={<button type="button" onClick={() => setEditing(true)} className="min-h-10 px-1 text-sm font-medium text-brand">Change</button>}>Paydays</SectionTitle>
+            <SectionTitle action={<Link href="/settings/payday" className="inline-flex min-h-10 items-center px-1 text-sm font-medium text-brand">Payday settings</Link>}>Paydays</SectionTitle>
             <p className="flex items-center gap-2 px-1 text-sm text-ink-2">
               <CalendarDays className="size-4 shrink-0 text-brand" aria-hidden="true" />
-              {paydayText(paydays)} of the month{!custom && " (default)"}
+              {formatPaydays(paydays)} of the month
             </p>
             <p className="mt-1 px-1 text-xs text-ink-3">
               This pay cycle: {formatDay(cycle.start)} to {formatDay(cycle.nextPayday)}.{paydays.some((d) => d > 28) && " In shorter months, pay falls on the last day."}
             </p>
-            {suggest && (
-              <div className="mt-3 flex items-start gap-2.5 rounded-2xl bg-pale px-3 py-3">
-                <Sparkles className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
-                <div className="min-w-0 flex-1 text-sm">
-                  <p className="text-ink-2">Your income usually comes in on the <span className="font-semibold text-ink">{paydayText(suggest)}</span>.</p>
-                  <button type="button" onClick={() => setMeta(PAYDAYS_META, suggest)} className="mt-1 min-h-10 font-medium text-brand">Use these paydays</button>
-                </div>
-              </div>
-            )}
           </Card>
 
           <p className="flex items-start gap-2 px-1 text-xs text-ink-3">
             <Wallet className="mt-px size-3.5 shrink-0" aria-hidden="true" />
             Bills are recurring expenses spotted in your history. Card payments and transfers between your accounts don&apos;t change this number.
           </p>
-
-          <Sheet open={editing} onClose={() => setEditing(false)} title="Paydays">
-            {editing && <PaydayForm current={paydays} onDone={() => setEditing(false)} />}
-          </Sheet>
         </div>
       )}
     </>

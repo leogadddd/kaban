@@ -104,10 +104,10 @@ function BudgetRow({ status, onOpen }: { status: BudgetStatus; onOpen: () => voi
 export default function BudgetsPage() {
   const ledger = useLedger();
   const budgets = useBudgets();
-  const { paydays, loading } = usePaydays();
+  const { paydays, moveEarlier, loading } = usePaydays();
   const { hidden } = useMoney();
   const today = todayISO();
-  const statuses = useMemo(() => budgetStatuses(budgets, ledger.txns, today, paydays).sort((a, b) => b.percent - a.percent), [budgets, ledger.txns, today, paydays]);
+  const statuses = useMemo(() => budgetStatuses(budgets, ledger.txns, today, paydays, moveEarlier).sort((a, b) => b.percent - a.percent), [budgets, ledger.txns, today, paydays, moveEarlier]);
   const [form, setForm] = useState<{ editing?: Budget } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const selected = statuses.find((s) => s.budget.category === open);

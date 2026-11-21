@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, ChevronRight, Cloud, Info, LogOut, Search, ShieldCheck, SlidersHorizontal, Smartphone, Trash2, UserX, X, Zap } from "lucide-react";
+import { Bell, CalendarDays, ChevronRight, Cloud, Info, LogOut, Search, ShieldCheck, SlidersHorizontal, Smartphone, Trash2, UserX, X, Zap } from "lucide-react";
 import { alertDialog, confirmDialog, confirmSignOut } from "@/components/dialog";
 import { PersonAvatar } from "@/components/family-ui";
 import { HapticLink } from "@/components/haptic-button";
@@ -64,6 +64,7 @@ export default function SettingsPage() {
 
             <SettingsGroup title="Preferences">
               <SettingsLink href="/settings/general" icon={SlidersHorizontal} label="General" detail="Theme, hide amounts" />
+              <SettingsLink href="/settings/payday" icon={CalendarDays} label="Payday" detail="Pay schedule and weekend rule" />
               <SettingsLink href="/settings/notifications" icon={Bell} label="Notifications" detail={notify.cardDue ? "Payment reminders on" : "Off"} />
               {sync.configured && (
                 <SettingsLink

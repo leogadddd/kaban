@@ -16,7 +16,17 @@ export interface ToolLedger {
 // ---------- Pay cycles ----------
 
 export const PAYDAYS_META = "paydays";
+export const PAYDAY_WEEKEND_META = "paydayWeekendEarly";
 export const DEFAULT_PAYDAYS = [15, 30];
+
+export function formatPaydays(days: number[]) {
+  const suffixes: Record<number, string> = { 1: "st", 2: "nd", 3: "rd" };
+  const ordinals = days.map((day) => {
+    const suffix = day >= 11 && day <= 13 ? "th" : suffixes[day % 10] ?? "th";
+    return `${day}${suffix}`;
+  });
+  return new Intl.ListFormat("en-PH").format(ordinals);
+}
 
 /** Clean a stored payday list: whole days 1–31, unique, ascending, at least one. */
 export function normalisePaydays(value: unknown): number[] {
@@ -25,9 +35,14 @@ export function normalisePaydays(value: unknown): number[] {
   return unique.length ? unique.slice(0, 4) : DEFAULT_PAYDAYS;
 }
 
-/** Payday dates in a month, each clamped to the month's length (30 → Feb 28). */
-function paydaysIn(year: number, month0: number, days: number[]): string[] {
-  return [...new Set(days.map((d) => toISO(clampedDate(year, month0, d))))].sort();
+/** Clamp to the month's length before applying the weekend rule. */
+function paydaysIn(year: number, month0: number, days: number[], moveEarlier: boolean): string[] {
+  return days.map((day) => {
+    const date = clampedDate(year, month0, day);
+    if (!moveEarlier) return toISO(date);
+    const weekday = date.getDay();
+    return toISO(addDays(date, weekday === 0 ? -2 : weekday === 6 ? -1 : 0));
+  });
 }
 
 export interface PayCycle {
@@ -41,12 +56,13 @@ export interface PayCycle {
   length: number;
 }
 
-export function payCycle(today: string, paydays: number[]): PayCycle {
+export function payCycle(today: string, paydays: number[], moveEarlier = true): PayCycle {
   const d = fromISO(today);
   const candidates: string[] = [];
-  for (let k = -1; k <= 1; k++) {
+  // A payday on the first can already have shifted into the preceding month.
+  for (let k = -1; k <= 2; k++) {
     const m = new Date(d.getFullYear(), d.getMonth() + k, 1);
-    candidates.push(...paydaysIn(m.getFullYear(), m.getMonth(), paydays));
+    candidates.push(...paydaysIn(m.getFullYear(), m.getMonth(), paydays, moveEarlier));
   }
   candidates.sort();
   const start = [...candidates].reverse().find((c) => c <= today) ?? today;
@@ -55,14 +71,17 @@ export function payCycle(today: string, paydays: number[]): PayCycle {
 }
 
 /** Upcoming paydays after `from`, up to and including `to`. */
-export function paydaysBetween(from: string, to: string, paydays: number[]): string[] {
-  const out: string[] = [];
+export function paydaysBetween(from: string, to: string, paydays: number[], moveEarlier = true): string[] {
+  const out = new Set<string>();
   const start = fromISO(from);
-  const end = fromISO(to);
+  // Include nominal paydays that can shift in from the next month.
+  const end = addDays(fromISO(to), moveEarlier ? 2 : 0);
   for (let m = new Date(start.getFullYear(), start.getMonth(), 1); m <= end; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
-    for (const p of paydaysIn(m.getFullYear(), m.getMonth(), paydays)) if (p > from && p <= to) out.push(p);
+    for (const date of paydaysIn(m.getFullYear(), m.getMonth(), paydays, moveEarlier)) {
+      if (date > from && date <= to) out.add(date);
+    }
   }
-  return out;
+  return [...out].sort();
 }
 
 /**
@@ -274,9 +293,16 @@ export function detectRecurring(txns: Txn[], today: string, kind: "expense" | "i
 }
 
 /** Dates a recurring item is expected on in (from, to]. A semi-monthly salary follows the configured paydays. */
-export function expectedDates(r: Recurring, from: string, to: string, paydays?: number[]): string[] {
+export function expectedDates(r: Recurring, from: string, to: string, paydays?: number[], moveEarlier = true): string[] {
   if (r.lapsed) return [];
-  if (r.cadence === "semimonthly" && r.kind === "income" && paydays) return paydaysBetween(from, to, paydays);
+  if (r.kind === "income" && paydays) {
+    if (r.cadence === "semimonthly") return paydaysBetween(from, to, paydays, moveEarlier);
+    if (r.cadence === "monthly" && paydays.length === 1) {
+      const next = fromISO(r.next);
+      const nearUpcomingIncome = paydaysBetween(toISO(addDays(next, -3)), toISO(addDays(next, 2)), paydays, false);
+      if (nearUpcomingIncome.length) return paydaysBetween(from, to, paydays, moveEarlier);
+    }
+  }
   const out: string[] = [];
   const anchorDay = fromISO(r.next).getDate();
   let date = r.next;
@@ -378,8 +404,8 @@ export function billsDue(recurring: Recurring[], today: string, until: string): 
  * listed separately; later portions are left to later cycles. Recomputed from live balances, so
  * whatever isn't spent today rolls into tomorrow.
  */
-export function safeToSpend(ledger: ToolLedger, today: string, paydays: number[], recurring = detectRecurring(ledger.txns, today)): Allowance {
-  const cycle = payCycle(today, paydays);
+export function safeToSpend(ledger: ToolLedger, today: string, paydays: number[], recurring = detectRecurring(ledger.txns, today), moveEarlier = true): Allowance {
+  const cycle = payCycle(today, paydays, moveEarlier);
   const upToToday = ledger.txns.filter((t) => t.date <= today);
   const balances = accountBalances(ledger.activeAccounts, upToToday);
   let cash = 0;
@@ -471,18 +497,18 @@ export interface BudgetStatus {
   txns: Txn[];
 }
 
-export function budgetRange(period: BudgetPeriod, today: string, paydays: number[]) {
+export function budgetRange(period: BudgetPeriod, today: string, paydays: number[], moveEarlier = true) {
   if (period === "cycle") {
-    const c = payCycle(today, paydays);
+    const c = payCycle(today, paydays, moveEarlier);
     return { from: c.start, to: toISO(addDays(fromISO(c.nextPayday), -1)) };
   }
   const d = fromISO(today);
   return { from: toISO(new Date(d.getFullYear(), d.getMonth(), 1)), to: toISO(new Date(d.getFullYear(), d.getMonth() + 1, 0)) };
 }
 
-export function budgetStatuses(budgets: Budget[], txns: Txn[], today: string, paydays: number[]): BudgetStatus[] {
+export function budgetStatuses(budgets: Budget[], txns: Txn[], today: string, paydays: number[], moveEarlier = true): BudgetStatus[] {
   return budgets.map((budget) => {
-    const { from, to } = budgetRange(budget.period, today, paydays);
+    const { from, to } = budgetRange(budget.period, today, paydays, moveEarlier);
     const matching = txns.filter((t) => t.state === "active" && t.type === "expense" && (t.category || "Other") === budget.category && t.date >= from && t.date <= to);
     const spent = matching.reduce((s, t) => s + t.amountMinor, 0);
     const percent = budget.limitMinor > 0 ? (spent / budget.limitMinor) * 100 : 0;
@@ -537,7 +563,7 @@ export interface Forecast {
 
 export const MIN_FORECAST_HISTORY = 60;
 
-export function forecast(ledger: ToolLedger, today: string, horizon: string, paydays: number[]): Forecast {
+export function forecast(ledger: ToolLedger, today: string, horizon: string, paydays: number[], moveEarlier = true): Forecast {
   const active = ledger.txns.filter((t) => t.state === "active" && t.date <= today);
   const first = active.reduce<string | null>((m, t) => (!m || t.date < m ? t.date : m), null);
   const historyDays = first ? daysBetween(first, today) + 1 : 0;
@@ -568,7 +594,7 @@ export function forecast(ledger: ToolLedger, today: string, horizon: string, pay
   const pace = historyDays ? Math.round(spentSoFar / historyDays) : 0;
 
   const events: ForecastEvent[] = [];
-  for (const r of income) for (const date of expectedDates(r, today, horizon, paydays)) events.push({ date, label: r.label, amount: r.typical, worst: r.typical, best: r.typical, kind: "income" });
+  for (const r of income) for (const date of expectedDates(r, today, horizon, paydays, moveEarlier)) events.push({ date, label: r.label, amount: r.typical, worst: r.typical, best: r.typical, kind: "income" });
   // Bills paid from cash/debit leave cash on their date; card-charged ones show up through the card's due date.
   const billByKey = new Map(bills.map((r) => [r.key, r]));
   for (const b of billsDue(bills, today, toISO(addDays(fromISO(horizon), 1)))) {

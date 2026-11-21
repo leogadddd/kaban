@@ -187,9 +187,9 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
           </Link>
         </div>
 
-        <SafeToSpendCard />
-
         <CardStack items={cards} />
+
+        <SafeToSpendCard />
 
         <Card>
           <div className="flex items-end justify-between">

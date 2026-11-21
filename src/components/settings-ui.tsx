@@ -113,6 +113,7 @@ export const SETTINGS_INDEX: SettingsEntry[] = [
   { label: "Hide amounts", page: "General", href: "/settings/general", keywords: "privacy blur mask balances money hidden" },
   { label: "Hide voided transactions", page: "General", href: "/settings/general", keywords: "void voided cancelled deleted remove hide clutter" },
   { label: "Show archived items", page: "General", href: "/settings/general", keywords: "archive archived restore hidden old accounts people unarchive" },
+  { label: "Payday", page: "Payday", href: "/settings/payday", keywords: "paydays pay schedule salary income weekend friday safe to spend budgeting" },
   { label: "Payment reminders", page: "Notifications", href: "/settings/notifications", keywords: "notifications alerts credit card due date remind" },
   { label: "Notifications", page: "Notifications", href: "/settings/notifications", keywords: "push alerts permission" },
   { label: "Automatic sync", page: "Sync", href: "/settings/sync", keywords: "cloud background auto" },
