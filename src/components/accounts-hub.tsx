@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AccountCard } from "@/components/account-card";
 import { BankLogo } from "@/components/bank-logo";
 import { DebtSheet } from "@/components/debt-sheets";
+import { FamilyBadge } from "@/components/family-ui";
 import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { GroupTitle, Row, SwipeHub, Tile, Tiles, type HubPane } from "@/components/swipe-hub";
 import { Avatar, Button, ButtonLink, Card, Chip, EmptyState, Field, inputCls, Money, Progress, Sheet } from "@/components/ui";
@@ -201,7 +202,11 @@ function PeoplePane({ ledger, onAdd }: { ledger: Ledger; onAdd: () => void }) {
                   key={p.id}
                   href={`/owed/person?id=${p.id}`}
                   lead={<Avatar name={p.name} color={p.color} size={36} />}
-                  title={p.name}
+                  title={
+                    ledger.familyPersonIds.has(p.id) ? (
+                      <span className="flex items-center gap-2"><span className="truncate">{p.name}</span><FamilyBadge /></span>
+                    ) : p.name
+                  }
                   sub={shared === 0 ? p.nickname || "No shared expenses yet" : paid > 0 ? <>Paid back <Money minor={paid} className="text-income" /></> : <>Shared <Money minor={shared} /></>}
                   trail={
                     owes > 0 ? (

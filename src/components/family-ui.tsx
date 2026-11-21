@@ -52,6 +52,10 @@ export function FamilyMark({ icon, color, size = 44 }: { icon: string; color: st
   );
 }
 
+export function FamilyBadge() {
+  return <span className="inline-flex shrink-0 items-center rounded-full bg-pale px-2 py-0.5 text-xs font-medium text-brand">Family</span>;
+}
+
 export const ROLE_LABEL = { owner: "Owner", admin: "Admin", member: "Member" } as const;
 
 /**

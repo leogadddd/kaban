@@ -5,6 +5,7 @@ import { liveQuery } from "dexie";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useLedgerDatabase, type KabanDB } from "./db";
 import { accountBalances, debtStatuses, totals } from "./finance";
+import { getMeta, isFamilyPerson } from "./repo";
 import type { Account, Debt, InstalmentEntry, Person, SplitAllocation, Txn } from "./types";
 
 export interface Ledger {
@@ -14,6 +15,7 @@ export interface Ledger {
   txns: Txn[];
   instalments: InstalmentEntry[];
   people: Person[];
+  familyPersonIds: Set<string>;
   splits: SplitAllocation[];
   /** Transactions that have split allocations (a row check that stays O(1) on long lists). */
   splitTxnIds: Set<string>;
@@ -26,19 +28,20 @@ export interface Ledger {
 }
 
 async function loadLedger(db: KabanDB) {
-  const [accounts, txns, instalments, people, splits, debts] = await Promise.all([
+  const [accounts, txns, instalments, people, splits, debts, familyLinks] = await Promise.all([
     db.accounts.orderBy("sortOrder").toArray(),
     db.transactions.toArray(),
     db.instalments.toArray(),
     db.people.orderBy("name").toArray(),
     db.splits.toArray(),
     db.debts.toArray(),
+    getMeta<Record<string, string>>("familyPeople", db),
   ]);
   txns.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
-  return buildLedger({ accounts, txns, instalments, people, splits, debts });
+  return buildLedger({ accounts, txns, instalments, people, splits, debts, familyLinks });
 }
 
-function buildLedger(data?: { accounts: Account[]; txns: Txn[]; instalments: InstalmentEntry[]; people: Person[]; splits: SplitAllocation[]; debts: Debt[] }): Ledger {
+function buildLedger(data?: { accounts: Account[]; txns: Txn[]; instalments: InstalmentEntry[]; people: Person[]; splits: SplitAllocation[]; debts: Debt[]; familyLinks?: Record<string, string> }): Ledger {
   const accounts = data?.accounts ?? [];
   const txns = data?.txns ?? [];
   const balances = accountBalances(accounts, txns);
@@ -49,6 +52,7 @@ function buildLedger(data?: { accounts: Account[]; txns: Txn[]; instalments: Ins
     txns,
     instalments: data?.instalments ?? [],
     people: data?.people ?? [],
+    familyPersonIds: new Set(data?.people.filter((p) => isFamilyPerson(p.id, data.familyLinks)).map((p) => p.id)),
     splits: data?.splits ?? [],
     splitTxnIds: new Set((data?.splits ?? []).map((s) => s.transactionId)),
     debts: data?.debts ?? [],
