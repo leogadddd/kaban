@@ -12,6 +12,7 @@ export type NavDirection = "forward" | "back" | "up" | "down" | "tab";
 const TABS = ["/home", "/accounts", "/people", "/owed", "/activity", "/payments", "/instalments", "/family", "/analytics"];
 const MODALS = ["/add", "/accounts/new", "/welcome"];
 const MORE = ["/sync", "/settings"];
+const PAYDAY_SETTINGS = "/settings/payday";
 
 function depth(path: string): number {
   if (TABS.includes(path)) return 1;
@@ -23,6 +24,9 @@ export function navDirection(from: string, to: string): NavDirection | null {
   if (from === to) return null;
   if (MODALS.includes(to)) return "up";
   if (MODALS.includes(from)) return "down";
+  // Payday is a detail screen when opened from Settings or Safe to Spend.
+  if (to === PAYDAY_SETTINGS) return "forward";
+  if (from === PAYDAY_SETTINGS && to === "/tools/safe-to-spend") return "back";
   if (TABS.includes(from) && TABS.includes(to)) return "tab";
   const a = depth(from);
   const b = depth(to);
