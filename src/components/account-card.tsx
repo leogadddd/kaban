@@ -10,7 +10,7 @@ import { bankFor } from "@/lib/banks";
 import { formatMoney } from "@/lib/money";
 import { useMoney } from "@/lib/privacy";
 import { BankLogo } from "./bank-logo";
-import { cx } from "./ui";
+import { ArchivedBadge, cx } from "./ui";
 
 const TYPE_META = {
   cash: { label: "Cash", icon: Wallet },
@@ -31,18 +31,18 @@ export function AccountCard({ b, className }: { b: AccountBalance; className?: s
   const dot = s.lastIndexOf(".");
   return (
     <div
-      className={cx("account-card-tinted flex h-48 flex-col justify-between overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface p-5 shadow-soft", className)}
+      className={cx("flex h-48 flex-col justify-between overflow-hidden rounded-[var(--radius-card)] border border-line p-5 shadow-soft", a.archived ? "border-dashed bg-pale/50 text-ink-2" : "account-card-tinted bg-surface", className)}
       style={style}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium">{bank?.kind === "paylater" ? "Pay later" : meta.label}{a.issuer ? ` · ${a.issuer}` : ""}</p>
+          <p className="text-sm font-medium">{bank?.kind === "paylater" ? "Pay later" : meta.label}{a.issuer ? ` · ${a.issuer}` : ""}{a.archived && <ArchivedBadge />}</p>
           <p className="text-lg font-semibold tracking-tight">{a.name}</p>
         </div>
         {bank ? (
-          <BankLogo bank={bank} size={40} className="shadow-sm" />
+          <BankLogo bank={bank} size={40} className={cx("shadow-sm", a.archived && "opacity-50")} />
         ) : (
-          <span className="grid size-10 place-items-center rounded-2xl" style={{ background: "color-mix(in srgb, var(--account-color) 28%, var(--color-surface))" }}>
+          <span className={cx("grid size-10 place-items-center rounded-2xl", a.archived && "opacity-50")} style={{ background: "color-mix(in srgb, var(--account-color) 28%, var(--color-surface))" }}>
             <Icon className="size-5" />
           </span>
         )}

@@ -262,6 +262,10 @@ export function Segmented<T extends string>({
   );
 }
 
+export function ArchivedBadge() {
+  return <span className="ml-1 shrink-0 rounded-full border border-line bg-surface px-2 py-0.5 text-[0.65rem] font-medium text-ink-3">Archived</span>;
+}
+
 export function Chip({ active, children, onClick, className }: { active?: boolean; children: ReactNode; onClick?: () => void; className?: string }) {
   return (
     <HapticButton
