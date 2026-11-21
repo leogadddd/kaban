@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, CircleUserRound, List, LogIn, RefreshCw, Settings, UserPlus } from "lucide-react";
+import { ChevronRight, CircleUserRound, List, LogIn, RefreshCw, Settings, UserPlus, Wrench } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
@@ -60,6 +60,7 @@ export function ProfileButton({ wrapperClassName }: { wrapperClassName?: string 
 
   const rows = [
     { href: "/activity", label: "Activity", icon: List },
+    { href: "/tools", label: "Tools", icon: Wrench },
     { href: "/sync", label: "Sync & Backup", icon: RefreshCw },
     { href: "/settings", label: "Settings", icon: Settings },
   ];

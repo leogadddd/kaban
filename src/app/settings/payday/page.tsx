@@ -80,7 +80,7 @@ export default function PaydaySettingsPage() {
           <SettingsGroup title="Weekend rule">
             <SettingsSwitch
               icon={CalendarDays}
-              label="Move weekend paydays earlier"
+              label="Pay early on weekends"
               detail="Saturday or Sunday paydays move to Friday"
               checked={moveEarlier}
               onChange={(value) => void savePreference(PAYDAY_WEEKEND_META, value)}
