@@ -11,6 +11,7 @@ import { Avatar, BigMoney, Button, ButtonLink, Card, EmptyState, Loading, Money,
 import { FamilyBadge } from "@/components/family-ui";
 import { GroupedTxns } from "@/components/txn-row";
 import { formatDay } from "@/lib/dates";
+import { useFamilies, useFamilyPersonAvatars } from "@/lib/family";
 import { useLedger } from "@/lib/hooks";
 import { setPersonArchived, voidDebt } from "@/lib/repo";
 
@@ -26,6 +27,7 @@ function PersonDebts() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const ledger = useLedger();
+  const avatars = useFamilyPersonAvatars(useFamilies(), ledger.familyPersonLinks);
   const [repay, setRepay] = useState<RepayTarget>(null);
   const [adding, setAdding] = useState(false);
   const [tab, setTab] = useState<"open" | "all">("open");
@@ -35,6 +37,7 @@ function PersonDebts() {
   if (!person) return <EmptyState title="Person not found" action={<Link href="/owed" className="text-brand">Back</Link>} />;
 
   const isFamily = ledger.familyPersonIds.has(person.id);
+  const avatar = avatars.get(person.id);
   const all = ledger.debtStatus.filter((d) => d.debt.personId === id).sort((a, b) => b.debt.date.localeCompare(a.debt.date));
   const shown = tab === "open" ? all.filter((d) => !d.settled) : all;
   const outstanding = all.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
@@ -50,7 +53,7 @@ function PersonDebts() {
       <div className="space-y-4 px-4">
         <Card className="space-y-4">
           <div className="flex items-center gap-4">
-            <Avatar name={person.name} color={person.color} size={56} />
+            <Avatar name={person.name} color={person.color} avatar={avatar} size={56} />
             <div className="min-w-0 flex-1">
               <p className="text-sm text-ink-3">{outstanding > 0 ? "Owes you" : "All settled"}</p>
               <BigMoney minor={outstanding} className="block text-3xl" centsClass="text-xl" />
@@ -185,7 +188,7 @@ function PersonDebts() {
           </Button>
         )}
       </div>
-      <RepaySheet target={repay} onClose={() => setRepay(null)} ledger={ledger} />
+      <RepaySheet target={repay} onClose={() => setRepay(null)} ledger={ledger} avatar={avatar} />
       <DebtSheet open={adding} onClose={() => setAdding(false)} ledger={ledger} personId={person.id} />
     </>
   );

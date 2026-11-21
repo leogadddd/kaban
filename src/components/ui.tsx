@@ -467,7 +467,11 @@ function MobileSheet({ title, onClose, children }: { title?: string; onClose: ()
   );
 }
 
-export function Avatar({ name, color, size = 40 }: { name: string; color: string; size?: number }) {
+export function Avatar({ name, color, avatar, size = 40 }: { name: string; color: string; avatar?: string; size?: number }) {
+  if (avatar) {
+    // eslint-disable-next-line @next/next/no-img-element -- family profile photos are small inline data URLs
+    return <img src={avatar} alt="" width={size} height={size} className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
+  }
   const initials = name
     .split(/\s+/)
     .map((s) => s[0])

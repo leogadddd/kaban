@@ -5,6 +5,7 @@
 //
 // Shared accounts are read-only snapshots: the owner's device builds one per shared account and publishes
 // it when it changes. Nothing here writes to the personal ledger tables or their outbox.
+import { useMemo } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KabanDB } from "./db";
 import { allTables, uid, visibleDatabase } from "./db";
@@ -12,7 +13,7 @@ import { cycleInfo } from "./billing";
 import { todayISO } from "./dates";
 import { accountBalances, effectOn } from "./finance";
 import { useMeta } from "./hooks";
-import { getMeta, setMeta } from "./repo";
+import { familyPersonId, getMeta, setMeta } from "./repo";
 import { supabase } from "./supabase";
 import type { Account, AccountType, Txn, TxnType } from "./types";
 
@@ -149,6 +150,19 @@ export const useProfile = () => useMeta<Profile>(PROFILE);
 export const useFamilies = () => useMeta<FamilyState>(FAMILIES);
 export const useShareSettings = () => useMeta<ShareSettings>(SHARES);
 export const useFamilyQueue = () => useMeta<QueuedTxn[]>(QUEUE);
+
+/** Resolve profile photos by family user ID and the ledger's existing contact links. */
+export function useFamilyPersonAvatars(state: FamilyState | null | undefined, links: Record<string, string>) {
+  return useMemo(() => {
+    const photos = new Map<string, string>();
+    for (const family of state?.families ?? []) {
+      for (const member of family.members) {
+        if (member.avatar) photos.set(links[member.user_id] ?? familyPersonId(member.user_id), member.avatar);
+      }
+    }
+    return photos;
+  }, [state, links]);
+}
 
 export const isAdmin = (f: Pick<Family, "role">) => f.role === "owner" || f.role === "admin";
 /** A family becomes active once someone else has joined. */

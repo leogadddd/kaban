@@ -14,15 +14,15 @@ import { bankFor } from "@/lib/banks";
 
 // The forms mount only while the sheet is open, so each opening starts with fresh state.
 
-export function DebtSheet({ open, onClose, ledger, personId }: { open: boolean; onClose: () => void; ledger: Ledger; personId?: string }) {
+export function DebtSheet({ open, onClose, ledger, personId, avatars }: { open: boolean; onClose: () => void; ledger: Ledger; personId?: string; avatars?: ReadonlyMap<string, string> }) {
   return (
     <Sheet open={open} onClose={onClose} title="Record a debt">
-      <DebtForm onClose={onClose} ledger={ledger} personId={personId} />
+      <DebtForm onClose={onClose} ledger={ledger} personId={personId} avatars={avatars} />
     </Sheet>
   );
 }
 
-function DebtForm({ onClose, ledger, personId }: { onClose: () => void; ledger: Ledger; personId?: string }) {
+function DebtForm({ onClose, ledger, personId, avatars }: { onClose: () => void; ledger: Ledger; personId?: string; avatars?: ReadonlyMap<string, string> }) {
   const [person, setPerson] = useState(personId ?? "");
   const [newName, setNewName] = useState("");
   const [amount, setAmount] = useState("");
@@ -51,9 +51,15 @@ function DebtForm({ onClose, ledger, personId }: { onClose: () => void; ledger: 
         <div>
           <p className="mb-1.5 px-1 text-sm font-medium text-ink-2">Who owes you?</p>
           <div className="flex flex-wrap gap-2">
-            {ledger.people.filter((p) => !p.archived).map((p) => (
-              <Chip key={p.id} active={person === p.id} onClick={() => setPerson(person === p.id ? "" : p.id)}>{p.name}</Chip>
-            ))}
+            {ledger.people.filter((p) => !p.archived).map((p) => {
+              const avatar = avatars?.get(p.id);
+              return (
+                <Chip key={p.id} active={person === p.id} onClick={() => setPerson(person === p.id ? "" : p.id)}>
+                  {avatar && <Avatar name={p.name} color={p.color} avatar={avatar} size={20} />}
+                  {p.name}
+                </Chip>
+              );
+            })}
           </div>
           {!person && <input className={cx(inputCls, "mt-2")} placeholder="…or type a new name" value={newName} onChange={(e) => setNewName(e.target.value)} aria-label="New person name" />}
         </div>
@@ -70,15 +76,15 @@ function DebtForm({ onClose, ledger, personId }: { onClose: () => void; ledger: 
 /** Who is paying, and optionally which single debt. Without debtId the payment covers their oldest debts first. */
 export type RepayTarget = { personId: string; debtId?: string } | null;
 
-export function RepaySheet({ target, onClose, ledger }: { target: RepayTarget; onClose: () => void; ledger: Ledger }) {
+export function RepaySheet({ target, onClose, ledger, avatar }: { target: RepayTarget; onClose: () => void; ledger: Ledger; avatar?: string }) {
   return (
     <Sheet open={!!target} onClose={onClose} title="Record payment">
-      {target && <RepayForm target={target} onClose={onClose} ledger={ledger} />}
+      {target && <RepayForm target={target} onClose={onClose} ledger={ledger} avatar={avatar} />}
     </Sheet>
   );
 }
 
-function RepayForm({ target, onClose, ledger }: { target: NonNullable<RepayTarget>; onClose: () => void; ledger: Ledger }) {
+function RepayForm({ target, onClose, ledger, avatar }: { target: NonNullable<RepayTarget>; onClose: () => void; ledger: Ledger; avatar?: string }) {
   const { fmt } = useMoney();
   const person = ledger.personById.get(target.personId);
   const funds = ledger.activeAccounts.filter((a) => a.type !== "credit");
@@ -123,7 +129,7 @@ function RepayForm({ target, onClose, ledger }: { target: NonNullable<RepayTarge
     <form onSubmit={submit} className="space-y-4">
       {/* Who is paying and what they owe */}
       <div className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-line">
-        <Avatar name={person.name} color={person.color} size={44} />
+        <Avatar name={person.name} color={person.color} avatar={avatar} size={44} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{person.name}</p>
           <p className="text-sm text-ink-3">

@@ -337,13 +337,15 @@ export async function ensureFamilyPeople(db: KabanDB, members: { userId: string;
   });
 }
 
+/** Stable across devices of the same ledger owner. */
+export const familyPersonId = (userId: string) => `fm-${userId}`.slice(0, 80);
+
 /** The People entry for a family member: remembered, else one with the same name, else a new one. */
 async function familyPerson(db: KabanDB, author: { userId: string; name: string }) {
   const links = ((await db.meta.get("familyPeople"))?.value as Record<string, string> | undefined) ?? {};
   const linked = links[author.userId] && (await db.people.get(links[author.userId]));
   if (linked) return linked.id;
-  // Same id on every device of this user, so two devices importing at once don't make two people.
-  const id = `fm-${author.userId}`.slice(0, 80);
+  const id = familyPersonId(author.userId);
   let person = await db.people.get(id);
   if (!person) {
     const wanted = author.name.trim().toLowerCase();
