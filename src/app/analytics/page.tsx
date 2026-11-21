@@ -32,8 +32,10 @@ function SummaryCard({ label, amount, before, tone }: {
   return (
     <Card className="min-w-0 p-3 lg:p-4">
       <p className="text-xs text-ink-3">{label}</p>
-      <p className="mt-0.5 break-words text-lg font-semibold lg:text-2xl"><Money minor={amount} tone={tone} compact /></p>
-      <p className="mt-1 text-xs text-ink-3"><Money minor={amount - before} sign compact /> change</p>
+      <p className="mt-0.5 wrap-anywhere text-base font-semibold sm:text-lg lg:text-2xl"><Money minor={amount} tone={tone} /></p>
+      <p className="mt-1 wrap-anywhere text-xs text-ink-3">
+        <Money minor={amount - before} sign /> <span className="block">change</span>
+      </p>
     </Card>
   );
 }

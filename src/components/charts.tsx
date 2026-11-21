@@ -79,7 +79,7 @@ export function FlowChart({ data, onSelect }: { data: AnalyticsBucket[]; onSelec
                 <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: INK3, fontSize: 11 }} minTickGap={12} />
                 <YAxis width={44} tickFormatter={(v) => fmt(v, { compact: true })} tickLine={false} axisLine={false} tick={{ fill: INK3, fontSize: 10 }} />
                 <Tooltip
-                  cursor={{ fill: "rgba(23,107,77,0.06)" }}
+                  cursor={{ fill: "var(--color-pale)", fillOpacity: 0.45, stroke: "none" }}
                   content={({ active, payload }) =>
                     active && payload?.[0] ? (
                       <Tip>
@@ -111,8 +111,8 @@ export function FlowChart({ data, onSelect }: { data: AnalyticsBucket[]; onSelec
                     {formatAnalyticsRange(bucket)}
                   </button>
                 </th>
-                <td className="text-right"><Money minor={bucket.income} compact /></td>
-                <td className="text-right"><Money minor={bucket.expense} compact /></td>
+                <td className="text-right"><Money minor={bucket.income} /></td>
+                <td className="text-right"><Money minor={bucket.expense} /></td>
               </tr>
             ))}
           </tbody>
