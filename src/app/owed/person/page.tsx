@@ -1,13 +1,14 @@
 "use client";
 
 import { confirmDialog } from "@/components/dialog";
-import { undoToast } from "@/components/undo-toast";
+import { noticeToast, undoToast } from "@/components/undo-toast";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DebtSheet, RepaySheet, type RepayTarget } from "@/components/debt-sheets";
 import { Avatar, BigMoney, Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, Progress, SectionTitle, Segmented } from "@/components/ui";
+import { FamilyBadge } from "@/components/family-ui";
 import { GroupedTxns } from "@/components/txn-row";
 import { formatDay } from "@/lib/dates";
 import { useLedger } from "@/lib/hooks";
@@ -33,6 +34,7 @@ function PersonDebts() {
   const person = ledger.personById.get(id);
   if (!person) return <EmptyState title="Person not found" action={<Link href="/owed" className="text-brand">Back</Link>} />;
 
+  const isFamily = ledger.familyPersonIds.has(person.id);
   const all = ledger.debtStatus.filter((d) => d.debt.personId === id).sort((a, b) => b.debt.date.localeCompare(a.debt.date));
   const shown = tab === "open" ? all.filter((d) => !d.settled) : all;
   const outstanding = all.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
@@ -44,7 +46,7 @@ function PersonDebts() {
 
   return (
     <>
-      <PageHeader title={person.name} back="/owed" />
+      <PageHeader title={person.name} back="/owed" subtitle={isFamily ? <FamilyBadge /> : undefined} />
       <div className="space-y-4 px-4">
         <Card className="space-y-4">
           <div className="flex items-center gap-4">
@@ -81,7 +83,7 @@ function PersonDebts() {
           <Button variant="secondary" wrapperClassName="min-w-0" className="px-3 text-sm whitespace-nowrap" onClick={() => setAdding(true)}>
             <Plus className="size-4 shrink-0" /> New debt
           </Button>
-          <ButtonLink href="/add" variant="secondary" wrapperClassName="min-w-0" className="px-3 text-sm whitespace-nowrap">
+          <ButtonLink href={`/add?type=expense&splitWith=${encodeURIComponent(person.id)}`} variant="secondary" wrapperClassName="min-w-0" className="px-3 text-sm whitespace-nowrap">
             <Split className="size-4 shrink-0" /> Split a bill
           </ButtonLink>
         </div>
@@ -152,29 +154,36 @@ function PersonDebts() {
           </section>
         )}
 
-        <Button
-          variant="ghost"
-          wrapperClassName="w-full"
-          onClick={async () => {
-            if (
-              !(await confirmDialog({
-                title: `Archive ${person.name}?`,
-                body:
-                  outstanding > 0
-                    ? `${person.name} still owes you. Their debts stay on record, but they'll be hidden from your people list.`
-                    : `Their debt history stays on record, but they'll be hidden from your people list.`,
-                confirmLabel: "Archive person",
-              }))
-            )
-              return;
-            const personId = person.id;
-            await setPersonArchived(personId, true);
-            router.replace("/people");
-            undoToast(`${person.name} archived`, () => setPersonArchived(personId, false));
-          }}
-        >
-          <Archive className="size-4" /> Archive person
-        </Button>
+        {!isFamily && (
+          <Button
+            variant="ghost"
+            wrapperClassName="w-full"
+            onClick={async () => {
+              if (
+                !(await confirmDialog({
+                  title: `Archive ${person.name}?`,
+                  body:
+                    outstanding > 0
+                      ? `${person.name} still owes you. Their debts stay on record, but they'll be hidden from your people list.`
+                      : `Their debt history stays on record, but they'll be hidden from your people list.`,
+                  confirmLabel: "Archive person",
+                }))
+              )
+                return;
+              const personId = person.id;
+              try {
+                await setPersonArchived(personId, true);
+              } catch (error) {
+                noticeToast(error instanceof Error ? error.message : "Couldn’t archive this person.", "error");
+                return;
+              }
+              router.replace("/people");
+              undoToast(`${person.name} archived`, () => setPersonArchived(personId, false));
+            }}
+          >
+            <Archive className="size-4" /> Archive person
+          </Button>
+        )}
       </div>
       <RepaySheet target={repay} onClose={() => setRepay(null)} ledger={ledger} />
       <DebtSheet open={adding} onClose={() => setAdding(false)} ledger={ledger} personId={person.id} />

@@ -68,9 +68,11 @@ function Editor() {
 
   const [existing, setExisting] = useState<Txn | null | undefined>(editId ? undefined : null);
   const linkedType = TYPES.includes(params.get("type") as TxnType) ? (params.get("type") as TxnType) : undefined;
+  const splitPersonId = !editId && linkedType === "expense" ? params.get("splitWith") : null;
+  const splitPerson = splitPersonId ? ledger.personById.get(splitPersonId) : undefined;
   const [type, setType] = useState<TxnType>(linkedType ?? "expense");
   // New records walk type → account → details; edits and fully deep-linked records open on the form.
-  const [step, setStepState] = useState<Step>(() => (editId ? "form" : !linkedType ? "type" : params.get("account") ? "form" : "account"));
+  const [step, setStepState] = useState<Step>(() => (editId ? "form" : !linkedType ? "type" : (params.get("account") || splitPersonId) ? "form" : "account"));
   // The page itself already animates in as a sheet; only animate step content once the user moves between steps.
   const [stepMoved, setStepMoved] = useState(false);
   const setStep = (next: Step) => {
@@ -139,6 +141,10 @@ function Editor() {
   useEffect(() => {
     if (!ledger.ready || initialised.current || editId) return;
     initialised.current = true;
+    if (splitPerson) {
+      setSplitOn(true);
+      setParticipants([ME, splitPerson.id]);
+    }
     const want = params.get("account")?.toLowerCase();
     const match = want && ledger.activeAccounts.find((a) => a.id === want || a.name.toLowerCase() === want);
     const fallbackCredit = ledger.activeAccounts.find((a) => a.type === "credit");
@@ -147,12 +153,13 @@ function Editor() {
     else if (type === "card_payment" || type === "transfer" || type === "income") setAccountId(fallbackFunds?.id ?? "");
     else setAccountId((fallbackCredit ?? fallbackFunds)?.id ?? "");
     if (type === "card_payment" && !toAccountId) setToAccountId(fallbackCredit?.id ?? "");
-  }, [ledger.ready, ledger.activeAccounts, params, type, editId, toAccountId]);
+  }, [ledger.ready, ledger.activeAccounts, params, type, editId, splitPerson, toAccountId]);
 
   // Accounts other family members shared with this user (expense, income and refund only; not when editing).
   const { userId } = useSyncState();
   const familyState = useFamilies();
-  const targets = useMemo(() => (editId ? [] : sharedTargets(familyState, userId)), [editId, familyState, userId]);
+  // Splits create local debts, so this flow needs an account from this ledger.
+  const targets = useMemo(() => (editId || splitPerson ? [] : sharedTargets(familyState, userId)), [editId, splitPerson, familyState, userId]);
   const sharedMap = useMemo(() => new Map(targets.map((t) => [t.key, t])), [targets]);
   const sharedFor = (t: TxnType) => (FAMILY_TXN_TYPES.includes(t) ? targets.map((x) => x.account) : []);
   const accounts = ledger.activeAccounts.concat(
@@ -374,6 +381,8 @@ function Editor() {
           <HapticButton onClick={close} wrapperClassName="-ml-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Close">
             <X className="size-6" />
           </HapticButton>
+        ) : splitPerson ? (
+          <span className="size-11" />
         ) : (
           <HapticButton onClick={stepBack} wrapperClassName="-ml-2" className="grid size-11 place-items-center rounded-full active:bg-pale" aria-label="Back">
             <ChevronLeft className="size-6" />
@@ -539,7 +548,7 @@ function Editor() {
                   <div className="space-y-3 pt-4">
                     <div className="flex flex-wrap gap-2">
                       <Chip active={participants.includes(ME)} onClick={() => toggleParticipant(ME)}>Me</Chip>
-                      {ledger.people.filter((p) => !p.archived).map((p) => (
+                      {ledger.people.filter((p) => !p.archived || p.id === splitPerson?.id).map((p) => (
                         <Chip key={p.id} active={participants.includes(p.id)} onClick={() => toggleParticipant(p.id)}>
                           {p.name}
                         </Chip>

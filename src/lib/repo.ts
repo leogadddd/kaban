@@ -385,6 +385,10 @@ export async function setTransactionVoid(id: string, voided: boolean, db = getDa
 
 // ---------- People & debts ----------
 
+export function isFamilyPerson(id: string, links?: Record<string, string>) {
+  return id.startsWith("fm-") || Object.values(links ?? {}).includes(id);
+}
+
 export async function savePerson(input: { name: string; nickname?: string; color?: string }, id?: string, db = getDatabase()): Promise<string> {
   const name = input.name.trim();
   if (!name) throw new Error("Enter a name");
@@ -420,6 +424,9 @@ export async function setPersonArchived(id: string, archived: boolean) {
   await db.transaction("rw", allTables(db), async () => {
     const p = await db.people.get(id);
     if (!p) return;
+    if (archived && isFamilyPerson(id, await getMeta<Record<string, string>>("familyPeople", db))) {
+      throw new Error("Family members can’t be archived.");
+    }
     const next = { ...p, archived, updatedAt: Date.now(), version: p.version + 1 };
     await db.people.put(next);
     await enqueue(db, "person", id, next.version, next);
