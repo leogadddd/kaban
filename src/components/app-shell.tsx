@@ -17,6 +17,7 @@ import {
   Users,
   UsersRound,
   WalletCards,
+  Wrench,
 } from "lucide-react";
 import { requestPersistence, useLedgerDatabase } from "@/lib/db";
 import { startSync, useSyncState } from "@/lib/sync";
@@ -46,8 +47,12 @@ const NAV = [
   { href: "/accounts", label: "Accounts", icon: WalletCards, match: groupHrefs("accounts") },
   { href: "/add", label: "Add", icon: Plus, match: [] },
   { href: "/family", label: "Family", icon: UsersRound, match: FAMILY_ROUTES },
-  { href: "/analytics", label: "Analytics", icon: BarChart3, match: ["/analytics"] },
+  { href: "/analytics", label: "Analytics", icon: BarChart3, match: ["/analytics", "/tools"] },
 ] as const;
+
+/** Budgeting tools live under the Analytics tab on phones; the sidebar lists them on their own. */
+const TOOLS = { href: "/tools", label: "Tools", icon: Wrench };
+const TOOL_ROUTES = ["/tools", "/tools/safe-to-spend", "/tools/budgets", "/tools/forecast", "/tools/recurring"];
 
 const MORE: { href: string; label: string; short?: string; icon: typeof Users }[] = [
   { href: "/activity", label: "Activity", icon: List },
@@ -69,9 +74,9 @@ const HIDE_NAV = ["/welcome", "/ready", "/add", "/accounts/new", ...AUTH_ROUTES]
 /** Screens presented like modals: full screen on phones, a centered card on desktop. */
 const MODAL_ROUTES = ["/add", "/accounts/new"];
 /** Form-like pages that read better as a single column on desktop. */
-const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", ...SETTINGS_ROUTES, "/payments", "/notifications", "/profile", "/profile/edit", ...FAMILY_ROUTES.slice(1)];
+const NARROW = [...UNGATED, "/add", "/accounts/new", "/people", "/owed/person", "/sync", "/settings", ...SETTINGS_ROUTES, "/payments", "/notifications", "/profile", "/profile/edit", ...FAMILY_ROUTES.slice(1), ...TOOL_ROUTES];
 /** Read-only screens where pulling down from the top syncs with the cloud now (phones only). */
-const PULL_TO_REFRESH = ["/home", "/accounts", "/accounts/view", "/activity", "/people", "/owed", "/owed/person", "/instalments", "/payments", "/analytics", "/family", "/family/members", "/notifications"];
+const PULL_TO_REFRESH = ["/home", "/accounts", "/accounts/view", "/activity", "/people", "/owed", "/owed/person", "/instalments", "/payments", "/analytics", ...TOOL_ROUTES, "/family", "/family/members", "/notifications"];
 /** Shortest time the launch splash stays up, counted from page load. */
 const SPLASH_MIN_MS = 1000;
 /** Public pages that render without the app chrome or the onboarding gate. */
@@ -309,7 +314,7 @@ function NavItem({ href, label, icon: Icon, active }: { href: string; label: str
 
 /** Desktop navigation: everything from the bottom bar and the More drawer in one column. */
 function Sidebar({ pathname }: { pathname: string }) {
-  const items = [...NAV.filter((n) => n.href !== "/add"), ...MORE];
+  const items = [...NAV.filter((n) => n.href !== "/add"), TOOLS, ...MORE];
   return (
     <aside data-nav-peer style={{ viewTransitionName: "sidebar" }} className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface px-4 py-6 lg:flex" aria-label="Primary">
       <Link href="/home" className="mb-6 flex items-center gap-2.5 px-2">
@@ -324,7 +329,7 @@ function Sidebar({ pathname }: { pathname: string }) {
           const active = pathname.startsWith(href);
           return (
             <div key={href}>
-              {i === NAV.length - 1 && <p className="mt-5 mb-1 px-3 text-[0.68rem] font-semibold tracking-wide text-ink-3 uppercase">More</p>}
+              {i === NAV.length && <p className="mt-5 mb-1 px-3 text-[0.68rem] font-semibold tracking-wide text-ink-3 uppercase">More</p>}
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}

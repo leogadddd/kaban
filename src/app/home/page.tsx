@@ -22,6 +22,7 @@ import { LogoMark } from "@/lib/logo";
 import { useMoney } from "@/lib/privacy";
 import { useProfile } from "@/lib/family";
 import { KabanChest } from "@/components/kaban-chest";
+import { SafeToSpendCard } from "@/components/tools-ui";
 
 type Pane = "money" | "credit";
 
@@ -185,6 +186,8 @@ function MoneyPane({ ledger, onCredit }: { ledger: ReturnType<typeof useLedger>;
             <p className="mt-2 text-xs text-ink-3">Net position <Money minor={totals.netPosition} /></p>
           </Link>
         </div>
+
+        <SafeToSpendCard />
 
         <CardStack items={cards} />
 

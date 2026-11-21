@@ -26,6 +26,7 @@ import { useLedger } from "@/lib/hooks";
 import { useMoney } from "@/lib/privacy";
 import type { Txn } from "@/lib/types";
 import { AnalyticsFilters } from "./filters";
+import { ToolsLink } from "@/components/tools-ui";
 
 /** What the drill-down sheet shows: a title, the matching transactions, and optionally the same slice of the comparison period. */
 type Selection = { title: string; range: DateRange; txns: Txn[]; prior?: { range: DateRange; txns: Txn[] } };
@@ -156,7 +157,7 @@ export default function AnalyticsPage() {
 
   return (
     <>
-      <PageHeader title="Analytics" />
+      <PageHeader title="Analytics" action={<ToolsLink />} />
       {!ledger.ready ? <Loading /> : (
         <div className="space-y-4 px-4 pb-4">
           <div className="space-y-2">
