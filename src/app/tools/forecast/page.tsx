@@ -23,14 +23,14 @@ function monthEnd(today: string, payday: string) {
 
 export default function ForecastPage() {
   const ledger = useLedger();
-  const { paydays, loading } = usePaydays();
+  const { paydays, moveEarlier, loading } = usePaydays();
   const { hidden } = useMoney();
   const today = todayISO();
   const [horizon, setHorizon] = useState<Horizon>("payday");
-  const payday = payCycle(today, paydays).nextPayday;
+  const payday = payCycle(today, paydays, moveEarlier).nextPayday;
   const end = monthEnd(today, payday);
   const until = horizon === "payday" ? payday : end;
-  const f = useMemo(() => forecast(ledger, today, until, paydays), [ledger, today, until, paydays]);
+  const f = useMemo(() => forecast(ledger, today, until, paydays, moveEarlier), [ledger, today, until, paydays, moveEarlier]);
   const days = daysBetween(today, until);
   const hasCash = ledger.activeAccounts.some((a) => a.type !== "credit");
   const dips = f.lowest && f.lowest.balance < f.start;

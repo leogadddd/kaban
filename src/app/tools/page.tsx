@@ -26,13 +26,13 @@ function ToolCard({ href, icon: Icon, title, body, children }: { href: string; i
 }
 
 export default function ToolsPage() {
-  const { ledger, allowance, paydays, recurring, today, ready } = useSafeToSpend();
+  const { ledger, allowance, paydays, moveEarlier, recurring, today, ready } = useSafeToSpend();
   const budgets = useBudgets();
-  const statuses = useMemo(() => budgetStatuses(budgets, ledger.txns, today, paydays), [budgets, ledger.txns, today, paydays]);
+  const statuses = useMemo(() => budgetStatuses(budgets, ledger.txns, today, paydays, moveEarlier), [budgets, ledger.txns, today, paydays, moveEarlier]);
   const flagged = statuses.filter((s) => s.level !== "ok").length;
   const live = recurring.filter((r) => !r.lapsed);
   const changed = live.filter((r) => r.priceChange).length;
-  const outlook = useMemo(() => forecast(ledger, today, allowance.cycle.nextPayday, paydays), [ledger, today, allowance.cycle.nextPayday, paydays]);
+  const outlook = useMemo(() => forecast(ledger, today, allowance.cycle.nextPayday, paydays, moveEarlier), [ledger, today, allowance.cycle.nextPayday, paydays, moveEarlier]);
 
   return (
     <>
