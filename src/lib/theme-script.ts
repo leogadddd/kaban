@@ -27,6 +27,8 @@ export const SPLASH_CSS = `
     display: none;
     --splash-bg: #f7faf7;
     --splash-ink: #17241d;
+    --splash-art-fade: 120ms;
+    --splash-overlay-fade: 200ms;
   }
 
   :root[data-theme="dark"] #splash {
@@ -43,13 +45,23 @@ export const SPLASH_CSS = `
     justify-items: center;
     gap: 18px;
     background: var(--color-bg, var(--splash-bg));
-    transition: opacity 320ms ease, visibility 0s linear 320ms;
+    /* Finish fading the splash artwork before the Home mascot becomes visible. */
+    transition: opacity var(--splash-overlay-fade) ease var(--splash-art-fade),
+      visibility 0s linear calc(var(--splash-art-fade) + var(--splash-overlay-fade));
   }
 
   :root[data-splash][data-ready] #splash {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+  }
+
+  #splash > * {
+    transition: opacity var(--splash-art-fade) ease-out;
+  }
+
+  :root[data-splash][data-ready] #splash > * {
+    opacity: 0;
   }
 
   .splash-chest {
@@ -67,7 +79,8 @@ export const SPLASH_CSS = `
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :root[data-splash] #splash {
+    :root[data-splash] #splash,
+    #splash > * {
       transition: none;
     }
   }
