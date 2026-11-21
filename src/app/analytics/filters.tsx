@@ -11,9 +11,9 @@ import type { Account } from "@/lib/types";
 const PERIODS: { value: AnalyticsPeriod; label: string }[] = [
   { value: "this-month", label: "This month" },
   { value: "last-month", label: "Last month" },
-  { value: "3-months", label: "Last 3 full months" },
-  { value: "6-months", label: "Last 6 full months" },
-  { value: "12-months", label: "Last 12 full months" },
+  { value: "3-months", label: "Last 3 months" },
+  { value: "6-months", label: "Last 6 months" },
+  { value: "12-months", label: "Last 12 months" },
   { value: "custom", label: "Custom dates" },
 ];
 
@@ -26,17 +26,17 @@ function PickerTrigger({ label, value, icon: Icon, open, onClick }: {
 }) {
   return (
     <HapticButton
-      wrapperClassName="w-full"
+      wrapperClassName="min-w-0 shrink-0 max-w-[60%]"
       type="button"
       aria-label={`${label}: ${value}`}
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={onClick}
-      className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3.5 py-2.5 text-left hover:bg-pale"
+      className="flex min-h-10 w-full items-center gap-1.5 rounded-full border border-line bg-surface py-1.5 pr-2.5 pl-3 text-left hover:bg-pale"
     >
-      <Icon className="size-[1.15rem] shrink-0 text-brand" aria-hidden="true" />
-      <span className="min-w-0 flex-1 wrap-anywhere text-sm font-medium">{value}</span>
-      <ChevronDown className="size-4 shrink-0 text-ink-3" aria-hidden="true" />
+      <Icon className="size-4 shrink-0 text-brand" aria-hidden="true" />
+      <span className="min-w-0 truncate text-sm font-medium">{value}</span>
+      <ChevronDown className="size-3.5 shrink-0 text-ink-3" aria-hidden="true" />
     </HapticButton>
   );
 }
@@ -114,7 +114,7 @@ export function AnalyticsFilters({ period, custom, today, accounts, accountId, o
 
   return (
     <>
-      <div className="grid gap-2 sm:grid-cols-2 lg:max-w-2xl">
+      <div className="flex gap-2">
         <PickerTrigger label="Date range" value={PERIODS.find(({ value }) => value === period)!.label} icon={CalendarDays} open={picker === "date"} onClick={() => setPicker("date")} />
         <PickerTrigger label="Account" value={accountLabel} icon={WalletCards} open={picker === "account"} onClick={() => setPicker("account")} />
       </div>
