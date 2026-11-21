@@ -1,7 +1,8 @@
 "use client";
 
 import { createElement, useMemo, useState } from "react";
-import { ChevronDown, PieChart, Plus } from "lucide-react";
+import { PieChart, Plus } from "lucide-react";
+import { Select } from "@/components/picker";
 import { GroupedTxns } from "@/components/txn-row";
 import { BudgetFlag } from "@/components/tools-ui";
 import { Button, Card, cx, EmptyState, Field, inputCls, Loading, Money, PageHeader, Progress, Segmented, Sheet } from "@/components/ui";
@@ -46,18 +47,14 @@ function BudgetForm({ budgets, editing, suggestions, onDone }: { budgets: Budget
     >
       <Field label="Category">
         {(id) => (
-          <div className="relative">
-            <select
-              id={id}
-              className={cx(inputCls, "block h-12 appearance-none", !editing && "pr-10")}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              disabled={!!editing}
-            >
-              {choices.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
-            </select>
-            {!editing && <ChevronDown className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-ink-3" aria-hidden="true" />}
-          </div>
+          <Select
+            id={id}
+            value={category}
+            onChange={setCategory}
+            disabled={!!editing}
+            title="Category"
+            options={choices.map((c) => ({ value: c.name, label: c.name, icon: c.icon }))}
+          />
         )}
       </Field>
       <Field label="Limit" hint={lastMonth ? <>You spent <Money minor={lastMonth} /> on this last month.</> : undefined}>

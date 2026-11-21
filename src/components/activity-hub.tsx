@@ -5,6 +5,7 @@ import { CalendarClock, CreditCard, History, Plus, Search, SlidersHorizontal, X 
 import { useMemo, useState } from "react";
 import { DateField } from "@/components/date-field";
 import { HapticButton, HapticLink } from "@/components/haptic-button";
+import { Select } from "@/components/picker";
 import { SwipeHub, Tile, Tiles, type HubPane } from "@/components/swipe-hub";
 import { GroupedTxns } from "@/components/txn-row";
 import { ButtonLink, Card, Chip, cx, EmptyState, inputCls, Money, Progress, Segmented } from "@/components/ui";
@@ -126,19 +127,28 @@ function AllPane({ ledger }: { ledger: Ledger }) {
               </div>
             )}
             <div className="grid grid-cols-2 gap-2">
-              <select className={inputCls} value={accountId} onChange={(e) => setAccountId(e.target.value)} aria-label="Account">
-                <option value="">All accounts</option>
-                {ledger.accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-              <select className={inputCls} value={type} onChange={(e) => setType(e.target.value as TxnType | "")} aria-label="Type">
-                <option value="">All types</option>
-                {(Object.keys(TYPE_LABEL) as TxnType[]).map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
-              </select>
+              <Select
+                aria-label="Account"
+                value={accountId}
+                onChange={setAccountId}
+                options={[{ value: "", label: "All accounts" }, ...ledger.accounts.map((a) => ({ value: a.id, label: a.name }))]}
+              />
+              <Select<TxnType | "">
+                aria-label="Type"
+                value={type}
+                onChange={setType}
+                options={[{ value: "", label: "All types" }, ...(Object.keys(TYPE_LABEL) as TxnType[]).map((t) => ({ value: t, label: TYPE_LABEL[t] }))]}
+              />
             </div>
-            <select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
-              <option value="">All categories</option>
-              {[...new Set([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES].map((c) => c.name))].map((c) => <option key={c}>{c}</option>)}
-            </select>
+            <Select
+              aria-label="Category"
+              value={category}
+              onChange={setCategory}
+              options={[
+                { value: "", label: "All categories" },
+                ...[...new Map([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES].map((c) => [c.name, c])).values()].map((c) => ({ value: c.name, label: c.name, icon: c.icon })),
+              ]}
+            />
             <div className="flex items-center justify-between">
               <Chip active={showVoid} onClick={() => setShowVoid((v) => !v)}>Show voided</Chip>
               {activeFilters > 0 && <HapticButton onClick={clear} className="flex items-center gap-1 text-sm text-brand"><X className="size-4" /> Clear</HapticButton>}

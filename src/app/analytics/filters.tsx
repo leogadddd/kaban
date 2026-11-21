@@ -5,6 +5,7 @@ import { useState } from "react";
 import { BankLogo } from "@/components/bank-logo";
 import { DateField } from "@/components/date-field";
 import { HapticButton } from "@/components/haptic-button";
+import { PickerOption } from "@/components/picker";
 import { Button, Chip, cx, Money, Progress, Sheet } from "@/components/ui";
 import type { AnalyticsPeriod, DateRange } from "@/lib/analytics";
 import { bankFor } from "@/lib/banks";
@@ -42,21 +43,6 @@ function PickerTrigger({ label, value, icon: Icon, lead, open, onClick }: {
       {lead ?? <Icon className="size-4 shrink-0 text-brand" aria-hidden="true" />}
       <span className="min-w-0 truncate text-sm font-medium">{value}</span>
       <ChevronDown className="size-3.5 shrink-0 text-ink-3" aria-hidden="true" />
-    </HapticButton>
-  );
-}
-
-function PickerOption({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
-  return (
-    <HapticButton
-      wrapperClassName="w-full"
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-      className={cx("flex min-h-12 w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-pale", selected && "bg-pale text-brand")}
-    >
-      <span className="min-w-0 wrap-anywhere">{label}</span>
-      {selected && <Check className="size-4 shrink-0" aria-hidden="true" />}
     </HapticButton>
   );
 }
