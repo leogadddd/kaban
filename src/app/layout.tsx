@@ -44,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Launch splash: plain HTML + inline CSS so it paints before the app's JavaScript arrives. The inline
             display:none keeps it hidden even if that CSS is missing; SPLASH_CSS shows it with !important. */}
         <div id="splash" aria-hidden="true" style={{ display: "none" }}>
-          <ChestArt eyes="open" effects={false} className="splash-chest" />
+          <ChestArt lidLift={12} eyes="open" effects={false} className="splash-chest" />
           <p className="splash-name">Kaban</p>
         </div>
         <AppShell>{children}</AppShell>
