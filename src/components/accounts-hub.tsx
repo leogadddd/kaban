@@ -11,6 +11,7 @@ import { HapticButton, HapticLink } from "@/components/haptic-button";
 import { GroupTitle, Row, SwipeHub, Tile, Tiles, type HubPane } from "@/components/swipe-hub";
 import { Avatar, Button, ButtonLink, Card, Chip, EmptyState, Field, inputCls, Money, Progress, Sheet } from "@/components/ui";
 import { bankFor } from "@/lib/banks";
+import { useShowArchived } from "@/lib/display-prefs";
 import { useFamilies, useFamilyPersonAvatars } from "@/lib/family";
 import { useLedger } from "@/lib/hooks";
 import { savePerson } from "@/lib/repo";
@@ -68,7 +69,9 @@ const GROUPS: { type: AccountType; label: string; icon: typeof Wallet }[] = [
 ];
 
 function AccountsPane({ ledger }: { ledger: Ledger }) {
-  const [showArchived, setShowArchived] = useState(false);
+  const [alwaysShow] = useShowArchived();
+  const [peek, setPeek] = useState(false);
+  const showArchived = alwaysShow || peek;
   const list = showArchived ? ledger.accounts : ledger.activeAccounts;
   const archivedCount = ledger.accounts.filter((a) => a.archived).length;
 
@@ -131,9 +134,9 @@ function AccountsPane({ ledger }: { ledger: Ledger }) {
         )}
       </div>
 
-      {archivedCount > 0 && (
-        <Chip active={showArchived} onClick={() => setShowArchived((v) => !v)}>
-          <Archive className="size-4" /> {showArchived ? "Hide" : "Show"} archived ({archivedCount})
+      {archivedCount > 0 && !alwaysShow && (
+        <Chip active={peek} onClick={() => setPeek((v) => !v)}>
+          <Archive className="size-4" /> {peek ? "Hide" : "Show"} archived ({archivedCount})
         </Chip>
       )}
     </div>
@@ -179,7 +182,12 @@ function DesktopAccounts({ ledger, list }: { ledger: Ledger; list: Ledger["accou
 /* ---------- People ---------- */
 
 function PeoplePane({ ledger, avatars, onAdd }: { ledger: Ledger; avatars: ReadonlyMap<string, string>; onAdd: () => void }) {
+  const [alwaysShow] = useShowArchived();
+  const [peek, setPeek] = useState(false);
+  const showArchived = alwaysShow || peek;
   const people = ledger.people.filter((p) => !p.archived);
+  const archivedPeople = ledger.people.filter((p) => p.archived);
+  const listed = showArchived ? [...people, ...archivedPeople] : people;
   const owedTotal = ledger.debtStatus.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
   const owing = people.filter((p) => ledger.debtStatus.some((d) => d.debt.personId === p.id && d.outstanding > 0)).length;
 
@@ -190,11 +198,11 @@ function PeoplePane({ ledger, avatars, onAdd }: { ledger: Ledger; avatars: Reado
         <Tile label={owing ? `Owed by ${owing} ${owing === 1 ? "person" : "people"}` : "Owed to you"}><Money minor={owedTotal} /></Tile>
       </Tiles>
 
-      {people.length ? (
+      {listed.length ? (
         <section>
           <GroupTitle icon={Users}>Split bills and lend to</GroupTitle>
           <Card className="divide-y divide-line overflow-hidden p-0!">
-            {people.map((p) => {
+            {listed.map((p) => {
               const ds = ledger.debtStatus.filter((d) => d.debt.personId === p.id);
               const owes = ds.reduce((s, d) => s + Math.max(0, d.outstanding), 0);
               const shared = ds.reduce((s, d) => s + d.debt.amountMinor, 0);
@@ -203,10 +211,12 @@ function PeoplePane({ ledger, avatars, onAdd }: { ledger: Ledger; avatars: Reado
                 <Row
                   key={p.id}
                   href={`/owed/person?id=${p.id}`}
-                  lead={<Avatar name={p.name} color={p.color} avatar={avatars.get(p.id)} size={36} />}
+                  lead={<span className={p.archived ? "opacity-60" : undefined}><Avatar name={p.name} color={p.color} avatar={avatars.get(p.id)} size={36} /></span>}
                   title={
                     ledger.familyPersonIds.has(p.id) ? (
                       <span className="flex items-center gap-2"><span className="truncate">{p.name}</span><FamilyBadge /></span>
+                    ) : p.archived ? (
+                      <>{p.name} <span className="ml-1 rounded-full bg-pale px-2 py-0.5 text-[0.65rem] text-ink-3">Archived</span></>
                     ) : p.name
                   }
                   sub={shared === 0 ? p.nickname || "No shared expenses yet" : paid > 0 ? <>Paid back <Money minor={paid} className="text-income" /></> : <>Shared <Money minor={shared} /></>}
@@ -227,6 +237,12 @@ function PeoplePane({ ledger, avatars, onAdd }: { ledger: Ledger; avatars: Reado
         </section>
       ) : (
         <EmptyState icon={<Users className="size-6" />} title="No people yet" body="Add the friends or relatives you split bills with or lend money to. They don't need an account." action={<Button onClick={onAdd}><UserPlus className="size-4" /> Add person</Button>} />
+      )}
+
+      {archivedPeople.length > 0 && !alwaysShow && (
+        <Chip active={peek} onClick={() => setPeek((v) => !v)}>
+          <Archive className="size-4" /> {peek ? "Hide" : "Show"} archived ({archivedPeople.length})
+        </Chip>
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { confirmDialog } from "@/components/dialog";
 import { noticeToast, undoToast } from "@/components/undo-toast";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Check, HandCoins, Plus, Split, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DebtSheet, RepaySheet, type RepayTarget } from "@/components/debt-sheets";
 import { Avatar, BigMoney, Button, ButtonLink, Card, EmptyState, Loading, Money, PageHeader, Progress, SectionTitle, Segmented } from "@/components/ui";
@@ -157,7 +157,21 @@ function PersonDebts() {
           </section>
         )}
 
-        {!isFamily && (
+        {!isFamily && person.archived && (
+          <Button
+            variant="secondary"
+            wrapperClassName="w-full"
+            onClick={async () => {
+              const personId = person.id;
+              await setPersonArchived(personId, false);
+              undoToast(`${person.name} restored`, () => setPersonArchived(personId, true));
+            }}
+          >
+            <ArchiveRestore className="size-4" /> Restore person
+          </Button>
+        )}
+
+        {!isFamily && !person.archived && (
           <Button
             variant="ghost"
             wrapperClassName="w-full"

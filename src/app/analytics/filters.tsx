@@ -8,6 +8,7 @@ import { HapticButton } from "@/components/haptic-button";
 import { Button, cx, Money, Progress, Sheet } from "@/components/ui";
 import type { AnalyticsPeriod, DateRange } from "@/lib/analytics";
 import { bankFor } from "@/lib/banks";
+import { useShowArchived } from "@/lib/display-prefs";
 import type { AccountBalance } from "@/lib/finance";
 import type { Account, AccountType } from "@/lib/types";
 
@@ -168,7 +169,9 @@ export function AnalyticsFilters({ period, custom, today, accounts, balances, av
   const [picker, setPicker] = useState<"date" | "account" | null>(null);
   const close = () => setPicker(null);
   const active = accounts.filter((account) => !account.archived);
-  const archived = accounts.filter((account) => account.archived);
+  const [showArchived] = useShowArchived();
+  // Keep a selected archived account listed so the current filter is always visible in the picker.
+  const archived = accounts.filter((account) => account.archived && (showArchived || account.id === accountId));
   const account = accounts.find(({ id }) => id === accountId);
   const accountLabel = account ? `${account.name}${account.archived ? " · Archived" : ""}` : "All accounts";
   const pickAccount = (id: string) => {

@@ -1,16 +1,17 @@
 "use client";
 
-import { Ban, EyeOff, Moon, Sun, SunMoon } from "lucide-react";
+import { Archive, Ban, EyeOff, Moon, Sun, SunMoon } from "lucide-react";
 import { HapticButton } from "@/components/haptic-button";
 import { usePrivacy } from "@/components/privacy-toggle";
 import { SettingsGroup, SettingsSwitch } from "@/components/settings-ui";
 import { cx, PageHeader } from "@/components/ui";
-import { useHideVoided } from "@/lib/display-prefs";
+import { useHideVoided, useShowArchived } from "@/lib/display-prefs";
 import { setThemePref, useThemePref, type ThemePref } from "@/lib/theme";
 
 export default function GeneralSettingsPage() {
   const [hidden, toggleHidden] = usePrivacy();
   const [hideVoided, setHideVoided] = useHideVoided();
+  const [showArchived, setShowArchived] = useShowArchived();
   return (
     <>
       <PageHeader title="General" back="/settings" privacy={false} />
@@ -27,6 +28,10 @@ export default function GeneralSettingsPage() {
 
         <SettingsGroup title="Transactions" footer="Voided transactions stay saved and never count toward balances. Find them in Activity with the “Show voided” filter.">
           <SettingsSwitch icon={Ban} label="Hide voided transactions" detail="On Home, account and card pages" checked={hideVoided} onChange={setHideVoided} />
+        </SettingsGroup>
+
+        <SettingsGroup title="Archived" footer="Archived accounts and people keep their full history and never count toward your totals. Turn this on to list them again so you can view or restore them.">
+          <SettingsSwitch icon={Archive} label="Show archived items" detail="Accounts, people and Analytics filters" checked={showArchived} onChange={setShowArchived} />
         </SettingsGroup>
       </div>
     </>

@@ -17,3 +17,11 @@ export function useVisibleTxns(txns: Txn[]): Txn[] {
   const [hide] = useHideVoided();
   return hide ? txns.filter((t) => t.state !== "void") : txns;
 }
+
+const SHOW_ARCHIVED = "showArchived";
+
+/** Show archived accounts and people in lists and filters. Archived items never count toward totals either way. */
+export function useShowArchived(): [boolean, (v: boolean) => void] {
+  const on = useMeta<boolean>(SHOW_ARCHIVED) === true;
+  return [on, (v) => void setMeta(SHOW_ARCHIVED, v)];
+}
